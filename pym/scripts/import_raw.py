@@ -110,6 +110,7 @@ class Runner(pym.cli.Cli):
         self.worker.encoding = self.args.encoding
         self.worker.header_row_num = self.args.header_row
         self.worker.data_row_num = self.args.data_row
+        self.worker.null_value = self.args.null_value
 
         # Load column definition if needed
         if self.args.map and self.args.cmd in ('create-table', 'import'):
@@ -172,6 +173,11 @@ def parse_args(app_class):
         default=1,
         type=int,
         help="""Number of first data row"""
+    )
+    parser.add_argument(
+        '--null-value',
+        default='NULL',
+        help="""Value to use as NULL in database"""
     )
     parser.add_argument(
         'cmd',
