@@ -199,6 +199,14 @@
         for (i = 0; i < imax; i++) {
             this.growl(resp.msgs[i]);
         }
+        if (imax < 1) {
+            if (resp.ok) {
+                this.growl({kind: 'success', text: 'Ok'});
+            }
+            else {
+                this.growl({kind: 'warning', text: 'Unspecified error occurred'});
+            }
+        }
     };
 
     return my;
