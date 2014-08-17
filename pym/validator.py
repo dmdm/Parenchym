@@ -364,6 +364,15 @@ class Validator(object):
         # Yeah, we actually have a value
         return v
 
+    def fetch_json(self, k, default=None, required=True, multiple=False):
+        v = self.fetch(k=k, default=default, required=required,
+            multiple=multiple)
+        try:
+            return json_deserializer(v)
+        except ValueError:
+            raise ValidationError("Invalid JSON: '{}'".format(k))
+
+
     def fetch_int(self, k, default=None, required=True, multiple=False):
         """
         Fetches an input parameter as integer.
