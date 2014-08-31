@@ -64,6 +64,7 @@ class InitialiseDbCli(pym.cli.Cli):
                 command.stamp(alembic_cfg, "head")
 
             mark_changed(sess)
+        self.cache.flushall()
 
     @staticmethod
     def _create_schema(sess):

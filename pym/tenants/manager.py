@@ -131,9 +131,6 @@ def add_user(sess, tenant, user, owner, **kwargs):
     :param owner: ID, ``principal``, or instance of a user.
     """
     ten = Tenant.find(sess, tenant)
-    g_ten = sess.query(Group).filter(
-        Group.name == ten.name,
-        Group.kind == GROUP_KIND_TENANT
-    ).one()
+    g_ten = ten.load_my_group()
     create_group_member(sess, owner, g_ten, member_user=user, **kwargs)
     sess.flush()

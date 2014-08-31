@@ -47,9 +47,11 @@ auth.tkt_policy.secret: SECRET
 ### auth.allow_registration: False
 # Initial password for user 'root'
 auth.user_root.pwd: SECRET
-# Auth provider
-# 'sqlalchemy'
-auth.provider: sqlalchemy
+# Class for auth provider (login/logout)
+auth.provider: pym.auth.AuthProvider
+# Class for user objects
+auth.class.user: pym.auth.models.User
+
 # Encrypt password using this scheme.
 # Pym uses passlib with one of these schemes:
 #   ldap_plaintext, ldap_salted_sha1, sha512_crypt, pbkdf2_sha512

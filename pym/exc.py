@@ -25,3 +25,15 @@ class SchedulerError(PymError):
 
 class ValidationError(Exception):
     pass
+
+
+class ItemExistsError(PymError):
+
+    def __init__(self, *args, item=None, **kwargs):
+        """
+        Signals that a specific item already exists.
+
+        May reference instance of that item in attribute ``item``.
+        """
+        super().__init__(*args, **kwargs)
+        self.item = item

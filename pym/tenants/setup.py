@@ -20,14 +20,10 @@ def setup_resources(sess):
 
 def setup_tenants(sess):
     # Create tenant. Cascade also creates a resource and a group
-    tmgr.create_tenant(sess, SYSTEM_UID, name=DEFAULT_TENANT_NAME,
+    ten = tmgr.create_tenant(sess, SYSTEM_UID, name=DEFAULT_TENANT_NAME,
         title=DEFAULT_TENANT_TITLE, cascade=True)
     # Put all so far existing users into our group
-    g = sess.query(Group).filter(sa.and_(
-        Group.tenant_id == None,
-        Group.name == DEFAULT_TENANT_NAME,
-        Group.kind == GROUP_KIND_TENANT
-    )).one()
+    g = ten.group
     uu = sess.query(User)
     for u in uu:
         create_group_member(sess, owner=SYSTEM_UID, group=g, member_user=u)

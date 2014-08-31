@@ -5,7 +5,7 @@ from sqlalchemy.orm import (relationship, backref)
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.hybrid import hybrid_property
 import pyramid.security
-#from pyramid.decorator import reify
+from sqlalchemy.orm.exc import NoResultFound
 import zope.interface
 
 import pym.lib
@@ -26,48 +26,6 @@ class IHelpNode(zope.interface.Interface):
 
 class ISystemNode(zope.interface.Interface):
     pass
-
-
-# class RootNode(pym.lib.BaseNode):
-#     __name__ = 'root'
-#     __acl__ = [
-#         (Allow, 'g:wheel', ALL_PERMISSIONS),
-#     ]
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "Root"
-#         self['help'] = HelpNode(self)
-#         self['__sys__'] = ISystemNode(self)
-#
-#
-# # ===[ HELP ]=======
-#
-#
-# class HelpNode(pym.lib.BaseNode):
-#     __name__ = 'help'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "Help"
-#
-#     def __getitem__(self, item):
-#         return KeyError()
-#
-#
-# # ===[ SYSTEM ]======
-#
-#
-# class SystemNode(pym.lib.BaseNode):
-#     __name__ = '__sys__'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "System"
-#         self['auth'] = pam.AuthNode(self)
-#
-#
-# root_node = RootNode(None)
 
 
 def root_factory(request):
@@ -217,54 +175,34 @@ class ResourceNode(DbBase, DefaultMixin):
         if user and group:
             raise pym.exc.PymError("Ace cannot reference user and group "
                                    "simultaneously.")
-        ace = pam.Ace()
 
-        if isinstance(owner, int):
-            ace.owner_id = owner
-        elif isinstance(owner, str):
-            o = sess.query(pam.User).filter(
-                pam.User.principal == owner
-            ).one()
-            ace.owner_id = o.id
-        else:
-            ace.owner_id = owner.id
-
-        if user:
-            if isinstance(user, int):
-                ace.user_id = user
-            elif isinstance(user, str):
-                u = sess.query(pam.User).filter(
-                    pam.User.principal == user
-                ).one()
-                ace.user_id = u.id
-            else:
-                ace.user_id = user.id
-
-        if group:
-            if isinstance(group, int):
-                ace.group_id = group
-            elif isinstance(group, str):
-                g = sess.query(pam.Group).filter(
-                    pam.Group.name == group
-                ).one()
-                ace.group_id = g.id
-            else:
-                ace.group_id = group.id
-
+        owner = pam.User.find(sess, owner)
         if permission:
-            if isinstance(permission, int):
-                ace.permission_id = permission
-            elif isinstance(permission, str):
-                p = sess.query(pam.Permission).filter(
-                    pam.Permission.name == permission
-                ).one()
-                ace.permission_id = p.id
-            elif isinstance(permission, pam.Permissions):
-                p = sess.query(pam.Permission).filter(
-                    pam.Permission.name == permission.value
-                ).one()
-                ace.permission_id = p.id
-            else:
+            if isinstance(permission, pam.Permissions):
+                permission = permission.value
+            permission = pam.Permission.find(sess, permission)
+        fil = [
+            pam.Ace.allow == allow,
+            pam.Ace.permission_id == permission.id
+        ]
+        if user:
+            user = pam.User.find(sess, user)
+            fil.append(pam.Ace.user_id == user.id)
+        if group:
+            group = pam.Group.find(sess, group)
+            fil.append(pam.Ace.group_id == group.id)
+
+        try:
+            ace = sess.query(pam.Ace).filter(*fil).one()
+            raise pym.exc.ItemExistsError("Ace exists. See attribute 'item'.", item=ace)
+        except NoResultFound:
+            ace = pam.Ace()
+            ace.owner_id = owner.id
+            if user:
+                ace.user_id = user.id
+            if group:
+                ace.group_id = group.id
+            if permission:
                 ace.permission_id = permission.id
 
         ace.allow = allow
@@ -427,12 +365,12 @@ class ResourceNode(DbBase, DefaultMixin):
             if ace.allow:
                 if perms[ace.permission_id]['parents']:
                     for p in perms[ace.permission_id]['parents']:
-                        pyr_ace2 = (pyr_ace[0], pyr_ace[1], p['name'])
+                        pyr_ace2 = (pyr_ace[0], pyr_ace[1], p[1])
                         acl.append(pyr_ace2)
             # If deny, deny all children
             else:
                 for ch in perms[ace.permission_id]['children']:
-                    pyr_ace2 = (pyr_ace[0], pyr_ace[1], ch['name'])
+                    pyr_ace2 = (pyr_ace[0], pyr_ace[1], ch[1])
                     acl.append(pyr_ace2)
         return acl
 

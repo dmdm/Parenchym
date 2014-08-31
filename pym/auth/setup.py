@@ -65,6 +65,7 @@ CREATE OR REPLACE VIEW pym.vw_group_browse AS
            "group".tenant_id               AS tenant_id,
            t.name                        AS tenant_name,
            "group".name                    AS name,
+           "group".kind                    AS kind,
            "group".descr                   AS descr,
            "group".mtime                   AS mtime,
            "group".editor_id                  AS editor_id,
@@ -226,7 +227,7 @@ def setup_users(sess, root_pwd):
         first_name='system',
         display_name='System',
         # Groups do not exist yet. Do not auto-create them
-        groups=False
+        group_names=False
     )
 
     # 2// Create groups
@@ -296,7 +297,7 @@ def setup_users(sess, root_pwd):
         display_name='Root',
         pwd=root_pwd,
         is_enabled=True,
-        groups=[g_wheel.name, g_users.name]
+        group_names=[g_wheel.name, g_users.name]
     )
     authmgr.create_user(
         sess,
@@ -310,7 +311,7 @@ def setup_users(sess, root_pwd):
         is_enabled=False,
         # This user is not member of any group
         # Not-authenticated users are automatically 'nobody'
-        groups=False
+        group_names=False
     )
     authmgr.create_user(
         sess,
@@ -323,7 +324,7 @@ def setup_users(sess, root_pwd):
         display_name='Sample Data',
         is_enabled=False,
         # This user is not member of any group
-        groups=False
+        group_names=False
     )
     authmgr.create_user(
         sess,
@@ -336,7 +337,7 @@ def setup_users(sess, root_pwd):
         display_name='Unit-Tester',
         is_enabled=False,
         user_type='System',
-        groups=[g_unit_testers.name]
+        group_names=[g_unit_testers.name]
     )
 
     # 5// Set sequence counter for user-created things
