@@ -119,7 +119,9 @@ class Cli(object):
                 dict(
                     __file__=fn_config,
                     here=os.path.dirname(fn_config)
-                )
+                ),
+                # Keep module loggers
+                disable_existing_loggers=False
             )
         if lgg:
             self.lgg = lgg
