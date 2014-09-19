@@ -27,6 +27,10 @@ class ValidationError(Exception):
     pass
 
 
+class WorkerError(Exception):
+    pass
+
+
 class ItemExistsError(PymError):
 
     def __init__(self, *args, item=None, **kwargs):

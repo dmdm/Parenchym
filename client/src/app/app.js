@@ -24,6 +24,7 @@ define(PYM_APP_REQUIREMENTS,
               ]
             );
           $httpProvider.interceptors.push('PymHttpErrorInterceptor');
+          $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
         }
       ]
     );
