@@ -209,6 +209,25 @@
         }
     };
 
+    /**
+     * Binds given method to given object.
+     *
+     * By means of a wrapper, ensures that ``method`` is always bound to
+     * ``object`` regardless of its calling environment.
+     * Iow, inside ``method``, ``this`` always points to ``object``.
+     *
+     * See http://alistapart.com/article/getoutbindingsituations
+     *
+     * @param {object}
+     * @param {method}
+     * @returns {Function}
+     */
+    my.createBoundedWrapper = function (object, method) {
+        return function() {
+            return method.apply(object, arguments);
+        };
+    };
+
     return my;
 }));
 

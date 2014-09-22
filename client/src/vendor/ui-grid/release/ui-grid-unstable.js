@@ -1,4 +1,4 @@
-/*! ui-grid - v2.0.7-g61c9c86 - 2014-09-22
+/*! ui-grid - v2.0.12-g1e20b74-03f94f8 - 2014-09-19
 * Copyright (c) 2014 ; License: MIT */
 (function () {
   'use strict';
@@ -900,7 +900,7 @@ angular.module('ui.grid').directive('uiGridColumnMenu', ['$log', '$timeout', '$w
               // Sort this column then rebuild the grid's rows
               uiGridCtrl.grid.sortColumn($scope.col, add)
                 .then(function () {
-                  if (uiGridCtrl.columnMenuScope) { uiGridCtrl.columnMenuScope.hideMenu(); }
+                  uiGridCtrl.columnMenuScope.hideMenu();
                   uiGridCtrl.grid.refresh();
                 });
             }
@@ -999,7 +999,6 @@ angular.module('ui.grid').directive('uiGridColumnMenu', ['$log', '$timeout', '$w
   }]);
 
 })();
-
 (function(){
   'use strict';
 
@@ -3988,13 +3987,10 @@ angular.module('ui.grid')
   Grid.prototype.getColumnSorting = function getColumnSorting() {
     var self = this;
 
-    var sortedCols = [], myCols;
+    var sortedCols = [];
 
     // Iterate through all the columns, sorted by priority
-    // Make local copy of column list, because sorting is in-place and we do not want to
-    // change the original sequence of columns
-    myCols = self.columns.slice(0);
-    myCols.sort(rowSorter.prioritySort).forEach(function (col) {
+    self.columns.sort(rowSorter.prioritySort).forEach(function (col) {
       if (col.sort && typeof(col.sort.direction) !== 'undefined' && col.sort.direction && (col.sort.direction === uiGridConstants.ASC || col.sort.direction === uiGridConstants.DESC)) {
         sortedCols.push(col);
       }
@@ -4093,7 +4089,7 @@ angular.module('ui.grid')
     $log.debug('grid refresh');
     
     var self = this;
-    
+
     var p1 = self.processRowsProcessors(self.rows).then(function (renderableRows) {
       self.setVisibleRows(renderableRows);
     });
@@ -4267,7 +4263,6 @@ angular.module('ui.grid')
 }]);
 
 })();
-
 (function () {
 
   angular.module('ui.grid')
@@ -4439,21 +4434,12 @@ angular.module('ui.grid')
          */
         GridApi.prototype.registerMethod = function (featureName, methodName, callBackFn) {
           if (!this[featureName]) {
-            this[featureName] = {};
+            this[featureName] = {grid: this.grid};
           }
 
-          var feature = this[featureName],
-              fn;
-          // Make sure that 'this' inside methods of at least feature 'core'
-          // points to the grid.
-          if (featureName === 'core') {
-              fn = gridUtil.createBoundedWrapper(this.grid, callBackFn);
-          }
-          // Not sure where other features need their 'this' to point to.
-          else {
-              fn = callBackFn;
-          }
-          feature[methodName] = fn;
+          var feature = this[featureName];
+          feature[methodName] = callBackFn;
+          console.log('registered method ', callBackFn, ' on feature ', feature);
 
         };
 
@@ -4495,7 +4481,6 @@ angular.module('ui.grid')
       }]);
 
 })();
-
 (function(){
 
 angular.module('ui.grid')
@@ -6985,7 +6970,6 @@ module.service('rowSorter', ['$parse', 'uiGridConstants', function ($parse, uiGr
 
 var module = angular.module('ui.grid');
 
-
 function getStyles (elem) {
   return elem.ownerDocument.defaultView.getComputedStyle(elem, null);
 }
@@ -7121,32 +7105,6 @@ var uidPrefix = 'uiGrid-';
 module.service('gridUtil', ['$log', '$window', '$document', '$http', '$templateCache', '$timeout', '$injector', '$q', 'uiGridConstants',
   function ($log, $window, $document, $http, $templateCache, $timeout, $injector, $q, uiGridConstants) {
   var s = {
-
-    /**
-     * @ngdoc method
-     * @name createBoundedWrapper
-     * @methodOf ui.grid.service:GridUtil
-     *
-     * @param {object} Object to bind 'this' to
-     * @param {method} Method to bind
-     * @returns {Function} The wrapper that performs the binding
-     *
-     * @description
-     * Binds given method to given object.
-     *
-     * By means of a wrapper, ensures that ``method`` is always bound to
-     * ``object`` regardless of its calling environment.
-     * Iow, inside ``method``, ``this`` always points to ``object``.
-     *
-     * See http://alistapart.com/article/getoutbindingsituations
-     *
-     */
-    createBoundedWrapper: function(object, method) {
-        return function() {
-            return method.apply(object, arguments);
-        };
-    },
-
 
     /**
      * @ngdoc method

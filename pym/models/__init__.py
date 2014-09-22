@@ -407,7 +407,7 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None):
     :param fmap: Mapping of field names to functions. Each function is called to
         build the value for this field.
     :param excludes: Optional list of column names to exclude
-    :rtype: Dict
+    :rtype: dict
     """
     def convert_datetime(v):
         try:
