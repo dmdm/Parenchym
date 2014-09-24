@@ -591,9 +591,9 @@ class Ace(DbBase, DefaultMixin):
         return allow_deny, princ, perm
 
     def __repr__(self):
-        return "<{name}(id={id}, resource_node_id={r}, group_id={g}," \
+        return "<{name}(id={id}, resource_id={r}, group_id={g}," \
                " user_id={u}, sortix={ix}, permission_id={p}, allow={allow}>".format(
-                   id=self.id, r=self.resource_node_id, p=self.permission_id,
+                   id=self.id, r=self.resource_id, p=self.permission_id,
                    g=self.group_id, u=self.user_id, allow=self.allow,
                    ix=self.sortix, name=self.__class__.__name__
                )
