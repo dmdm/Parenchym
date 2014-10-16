@@ -41,8 +41,25 @@ class Scheduler(DbBase, DefaultMixin):
     STATE_RUNNING = 'r'
     STATE_ERROR = 'e'
 
+    SECTION_CACHE = 'cache'
+
     task = sa.Column(sa.Unicode(255), nullable=False)
     """Name of a task"""
+    _caption = sa.Column('caption', sa.Unicode(255), nullable=False)
+    """Caption for use in UI"""
+    section = sa.Column(sa.Unicode(255), nullable=True)
+    """Group tasks"""
+
+    @property
+    def caption(self):
+        return self._caption if self._caption else self.task
+
+    @caption.setter
+    def caption(self, v):
+        self._caption = v
+
+    descr = sa.Column(sa.UnicodeText(), nullable=True)
+    """Description of task"""
     out = sa.Column(JSON(), nullable=True)
     """Output"""
     state = sa.Column(sa.CHAR(1), nullable=False)
@@ -51,6 +68,10 @@ class Scheduler(DbBase, DefaultMixin):
     """Timestamp when last (or current) run was started."""
     end_time = sa.Column(sa.DateTime(), nullable=True)
     """Timestamp when last run ended"""
+    next_time = sa.Column(sa.DateTime(), nullable=True)
+    """Timestamp of next scheduled run"""
+    next_interval = sa.Column(sa.Interval(), nullable=True)
+    """Next scheduled run starts this interval after start_time"""
     duration = sa.Column(sa.Interval(), nullable=True)
     """Duration of last run"""
 
@@ -80,6 +101,21 @@ class Scheduler(DbBase, DefaultMixin):
         We call callback like this: ``callback(sess, user, *args, **kwargs)``.
         Callback runs in nested savepoint.
 
+        We catch all exceptions that that the callback may raise and save their
+        traceback in the ``out`` field. We log these exceptions also to the
+        logger, so that a history is available. Pass specific logger as keyword
+        ``lgg``, else we use the module's logger.
+
+        Scheduler itself may raise other exceptions, e.g.
+        :class:`pym.exc.SchedulerError`, which the caller must handle and log.
+
+        Additional ``args`` and ``kwargs`` are passed through to the callback.
+
+        We assume, a transaction is already started, and run the callback inside
+        its own savepoint. If an error occurs, we roll back this single savepoint,
+        leaving the rest of the transaction, in which also the status information
+        of the task is saved, intact.
+
         :param sess: Current DB session
         :param user: Instance of current user, used e.g. as owner or editor
         :param callback: Callable
@@ -87,13 +123,14 @@ class Scheduler(DbBase, DefaultMixin):
         :param kwargs: More keyword args
         :return: Instance of used task.
         """
+        lgg = kwargs.get('lgg', mlgg)
         task = cls.fetch(sess, callback.__name__, user)
         task.start(user)
         sp = transaction.savepoint()
         try:
             out = callback(sess, user, *args, **kwargs)
         except Exception as exc:
-            mlgg.exception(exc)
+            lgg.exception(exc)
             sp.rollback()
             out = [
                 str(exc),
@@ -112,6 +149,8 @@ class Scheduler(DbBase, DefaultMixin):
         self.editor_id = pym.auth.models.User.find(sess, user).id
         self.state = self.__class__.STATE_RUNNING
         self.start_time = datetime.datetime.now()
+        if self.next_interval:
+            self.next_time = self.start_time + self.next_interval
         sess.flush()
 
     def stop_ok(self, user, out=None):
