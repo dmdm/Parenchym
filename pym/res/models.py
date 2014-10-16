@@ -156,8 +156,8 @@ class ResourceNode(DbBase, DefaultMixin):
         passive_deletes=True,
         # Typically, a resource is loaded during traversal. We need its full ACL
         # then.
-        lazy='select',
-        ##lazy='joined',
+        ##lazy='select',
+        lazy='joined',
         ##join_depth=1,
     )
 
