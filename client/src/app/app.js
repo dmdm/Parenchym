@@ -8,8 +8,9 @@ function (angular, PYM) {
 
     PymApp.config(
         [
-                      '$httpProvider', '$provide',
-            function ( $httpProvider,   $provide) {
+                      '$httpProvider', '$provide', 'uiSelectConfig',
+            function ( $httpProvider,   $provide,   uiSelectConfig) {
+
                 $provide.factory('PymHttpErrorInterceptor',
                     [
                         '$q',
@@ -25,6 +26,8 @@ function (angular, PYM) {
                 );
                 $httpProvider.interceptors.push('PymHttpErrorInterceptor');
                 $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+                uiSelectConfig.theme = 'bootstrap';
             }
         ]
     );
@@ -324,6 +327,46 @@ function (angular, PYM) {
             };
         }
     );
+
+    /**
+     * AngularJS default filter with the following expression:
+     * "person in people | filter: {name: $select.search, age: $select.search}"
+     * performs a AND between 'name: $select.search' and 'age: $select.search'.
+     * We want to perform a OR.
+     *
+     * Lifted from angular ui select
+     * http://plnkr.co/edit/juqoNOt1z1Gb349XabQ2?p=preview
+     */
+    PymApp.filter('propsFilter', function() {
+      return function(items, props) {
+        var out = [];
+
+        if (angular.isArray(items)) {
+          items.forEach(function(item) {
+            var itemMatches = false;
+
+            var keys = Object.keys(props);
+            for (var i = 0; i < keys.length; i++) {
+              var prop = keys[i];
+              var text = props[prop].toLowerCase();
+              if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+                itemMatches = true;
+                break;
+              }
+            }
+
+            if (itemMatches) {
+              out.push(item);
+            }
+          });
+        } else {
+          // Let the output be the input untouched
+          out = items;
+        }
+
+        return out;
+      };
+    });
 
     PymApp.directive('pymSpinner', function() {
         return {
