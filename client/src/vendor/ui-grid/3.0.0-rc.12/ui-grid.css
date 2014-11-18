@@ -249,7 +249,7 @@ input[type="text"].ui-grid-filter-input:hover {
   border: 1px solid #d4d4d4;
 }
 .ui-grid-render-container {
-  position: inherit;
+  position: relative;
   -webkit-border-top-right-radius: 0;
   -webkit-border-bottom-right-radius: 0px;
   -webkit-border-bottom-left-radius: 0px;
@@ -265,9 +265,6 @@ input[type="text"].ui-grid-filter-input:hover {
   -moz-background-clip: padding-box;
   -webkit-background-clip: padding-box;
   background-clip: padding-box;
-}
-.ui-grid-render-container:focus {
-  outline: none;
 }
 .ui-grid-viewport {
   min-height: 20px;
@@ -506,7 +503,7 @@ input[type="text"].ui-grid-filter-input:hover {
 }
 .ui-grid-menu-button {
   z-index: 2;
-  position: absolute;
+  position: fixed;
   right: 0;
   background: #f3f3f3;
   border: 1px solid #d4d4d4;
@@ -522,7 +519,7 @@ input[type="text"].ui-grid-filter-input:hover {
 }
 .ui-grid-menu {
   z-index: 2;
-  position: fixed;
+  position: absolute;
   overflow: hidden;
   padding: 0 10px 20px 10px;
   cursor: pointer;
@@ -660,21 +657,6 @@ input[type="text"].ui-grid-filter-input:hover {
 .ui-grid[dir=rtl] .ui-grid-cell:first-child .ui-grid-vertical-bar {
   width: 0;
 }
-.ui-grid[dir=rtl] .ui-grid-menu-button {
-  z-index: 2;
-  position: absolute;
-  left: 0;
-  right: auto;
-  background: #f3f3f3;
-  border: 1px solid #d4d4d4;
-  cursor: pointer;
-  min-height: 27px;
-  font-weight: normal;
-}
-.ui-grid[dir=rtl] .ui-grid-menu-button .ui-grid-menu {
-  left: 0;
-  right: auto;
-}
 /*
    Animation example, for spinners
 */
@@ -780,9 +762,6 @@ input[type="text"].ui-grid-filter-input:hover {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 
 /* This file contains variable declarations (do not remove this line) */
@@ -804,11 +783,8 @@ input[type="text"].ui-grid-filter-input:hover {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
-.ui-grid-cell-focus {
+.ui-grid-cell-contents:focus {
   outline: 0;
   background-color: #b3c4c7;
 }
@@ -831,9 +807,6 @@ input[type="text"].ui-grid-filter-input:hover {
 */
 /**
 * @section Scrollbar styles
-*/
-/**
-* @section font library path
 */
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 div.ui-grid-cell input {
@@ -879,9 +852,6 @@ div.ui-grid-cell input.ng-valid {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 .expandableRow .ui-grid-row:nth-child(odd) .ui-grid-cell {
   background-color: #fdfdfd;
@@ -909,9 +879,6 @@ div.ui-grid-cell input.ng-valid {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 
 /* This file contains variable declarations (do not remove this line) */
@@ -932,65 +899,6 @@ div.ui-grid-cell input.ng-valid {
 */
 /**
 * @section Scrollbar styles
-*/
-/**
-* @section font library path
-*/
-/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
-
-/* This file contains variable declarations (do not remove this line) */
-/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
-/**
-* @section Grid styles
-*/
-/**
-* @section Header styles
-*/
-/** @description Colors for header gradient */
-/**
-* @section Grid body styles
-*/
-/** @description Colors used for row alternation */
-/**
-* @section Sort arrow colors
-*/
-/**
-* @section Scrollbar styles
-*/
-/**
-* @section font library path
-*/
-/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
-.movingColumn {
-  position: fixed;
-  border: 1px solid #d4d4d4;
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.2);
-}
-.movingColumn .ui-grid-icon-angle-down {
-  display: none;
-}
-
-/* This file contains variable declarations (do not remove this line) */
-/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
-/**
-* @section Grid styles
-*/
-/**
-* @section Header styles
-*/
-/** @description Colors for header gradient */
-/**
-* @section Grid body styles
-*/
-/** @description Colors used for row alternation */
-/**
-* @section Sort arrow colors
-*/
-/**
-* @section Scrollbar styles
-*/
-/**
-* @section font library path
 */
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 .ui-grid-pinned-container {
@@ -1046,9 +954,6 @@ div.ui-grid-cell input.ng-valid {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 .ui-grid-column-resizer {
   top: 0;
@@ -1093,9 +998,6 @@ div.ui-grid-cell input.ng-valid {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 .ui-grid-row-saving .ui-grid-cell {
   color: #848484 !important;
@@ -1126,9 +1028,6 @@ div.ui-grid-cell input.ng-valid {
 /**
 * @section Scrollbar styles
 */
-/**
-* @section font library path
-*/
 /*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
 .ui-grid-row-selected .ui-grid-cell {
   background-color: #c9dde1 !important;
@@ -1147,9 +1046,6 @@ div.ui-grid-cell input.ng-valid {
   opacity: 0.1;
 }
 .ui-grid-selection-row-header-buttons.ui-grid-row-selected {
-  opacity: 1;
-}
-.ui-grid-selection-row-header-buttons.ui-grid-all-selected {
   opacity: 1;
 }
 
