@@ -245,7 +245,6 @@ def receive_before_update(mapper, connection, target):
         if target.editor_id is None:
             raise ValueError('Editor must be set on update for ' + str(target))
 
-
 # ================================
 
 # import sqlparse
@@ -391,7 +390,7 @@ def exists(sess, name, schema='public'):
 
 # ===[ HELPER ]===================
 
-def todict(o, fully_qualified=False, fmap=None, excludes=None):
+def todict(o, fully_qualified=False, fmap=None, excludes=None, dict_class=dict):
     """Transmogrifies data of record object into dict.
 
     Inspired by
@@ -416,7 +415,7 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None):
             # 'NoneType' object has no attribute 'strftime'
             return None
 
-    d = {}
+    d = dict_class()
     if excludes is None:
         excludes = []
     if isinstance(o, sa.util.KeyedTuple):
