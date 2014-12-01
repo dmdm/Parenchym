@@ -1,5 +1,7 @@
 import datetime
 import re
+import sqlalchemy as sa
+import sqlalchemy.sql.expression
 from pym.exc import ValidationError
 from pym.lib import json_deserializer
 
@@ -193,7 +195,8 @@ class FilterValidator(object):
         try:
             fil = self.parent.inp['fil']
         except KeyError:
-            raise ValidationError("Missing filter")
+            #raise ValidationError("Missing filter")
+            return None
         try:
             fil = json_deserializer(fil)
         except ValueError:
@@ -259,9 +262,46 @@ class FilterValidator(object):
                             raise ValidationError("Invalid case: '{}'".format(case))
                     # this thing is garbage
                     else:
-                        raise ValidationError("Invalid thing: '{}'".format(thing))
+                        raise ValidationError("Invalid thing: '{}' ({})".format(thing, type(thing)))
 
-        check(fil[0], fil[1:])
+        # 1st level is always CONJ + TAIL
+        check(fil[0], fil[1])
+        return fil
+
+    def build_simple_grid_filter(self, entity):
+        """
+        Builds simple SA filter suitable for use in UI grid.
+
+        Structure created by client must be::
+
+            ['a', [
+                thing0,
+                thing1,
+                ...
+            ]]
+
+        with thing::
+
+            [fld, op, case, val]
+
+        All things are ANDed. We ignore client's setting for op and case, and
+        instead build search pattern for case-insensitive like (ilike). To
+        prevent SQL errors in case column is not a string, we cast all fields
+        to UnicodeText.
+
+        :param entity: Object to pull the SA fields from
+        :return: List of SA filter expressions, may be empty
+        """
+        fil_struct = self.filter
+        if not fil_struct:
+            return []
+        fil = []
+        for thing in fil_struct[1]:
+            fld, op, case, val = thing
+            f = sa.sql.expression.cast(getattr(entity, fld),
+                sa.UnicodeText)
+            v = '%' + val.strip().replace(' ', '%') + '%'
+            fil.append(f.ilike(v))
         return fil
 
     def build_filter(self, fil, allowed_fields, col_map):
