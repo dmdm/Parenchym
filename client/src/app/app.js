@@ -267,7 +267,6 @@ function (angular, PYM) {
             };
             Sorter.prototype.getFields = function () {
                 var self = this, vv = [];
-                console.log('ff', this.opts.sortDef[0], self.opts.sortDef[0]);
                 angular.forEach(self.opts.sortDef, function (sd) {
                     vv.push(sd[0]);
                 });
