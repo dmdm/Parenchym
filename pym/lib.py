@@ -95,6 +95,8 @@ class JsonEncoder(json.JSONEncoder):
             return obj.isoformat()
         if isinstance(obj, decimal.Decimal):
             return str(obj)
+        if isinstance(obj, datetime.timedelta):
+            return str(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 
