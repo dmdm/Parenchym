@@ -288,6 +288,8 @@ class jobify():
             ``sess``: Instance of a DB session (:class:`sqlalchemy.orm.Session`)
             ``lgg``: Instance of a logger (:class:`logging.Logger`)
             ``user``: Instance of a user (:class:`pym.auth.model.User`)
+            ``begin_transaction``: Tells whether caller already initiated a
+                transaction, which we will use, or we start our own (default).
 
         We catch any exception the decorated function may rise and store it in
         the ``out`` field. The function also runs inside its own savepoint,
