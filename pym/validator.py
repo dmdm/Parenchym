@@ -268,7 +268,7 @@ class FilterValidator(object):
         check(fil[0], fil[1])
         return fil
 
-    def build_simple_grid_filter(self, entity):
+    def build_simple_grid_filter(self, col_map):
         """
         Builds simple SA filter suitable for use in UI grid.
 
@@ -298,8 +298,7 @@ class FilterValidator(object):
         fil = []
         for thing in fil_struct[1]:
             fld, op, case, val = thing
-            f = sa.sql.expression.cast(getattr(entity, fld),
-                sa.UnicodeText)
+            f = sa.sql.expression.cast(col_map[fld], sa.UnicodeText)
             v = '%' + val.strip().replace(' ', '%') + '%'
             fil.append(f.ilike(v))
         return fil
