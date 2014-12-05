@@ -355,7 +355,6 @@ class jobify():
         return wrapped_f
 
 
-
 class JobStore(BaseJobStore):
 
     def __init__(self, sess, user_id=SYSTEM_UID, pickle_protocol=pickle.HIGHEST_PROTOCOL):

@@ -19,6 +19,15 @@ class JsonResp(object):
         self._is_ok = True
         self._data = None
 
+    def adapt(self, other):
+        """
+        Copies state and data of other resp object into self.
+        :param other: Other JsonResp object
+        """
+        self._msgs = other.msgs
+        self._data = other.data
+        self._is_ok = other.is_ok
+
     def add_msg(self, msg):
         """
         Adds a message of user-defined kind.

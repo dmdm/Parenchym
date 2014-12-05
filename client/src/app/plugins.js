@@ -56,3 +56,57 @@ Date.prototype.addBusinessDays = function (dd) {
 Date.prototype.diffDays = function (other) {
     return (other-this)/(1000*60*60*24);
 };
+
+Date.prototype.daysInMonth = function () {
+    return new Date(this.getFullYear(), this.getMonth(), 0).getDate();
+};
+
+Date.prototype.addDays = function (days) {
+    this.setDate(this.getDate() + days);
+    return this;
+};
+
+String.prototype.format = function () {
+    "use strict";
+
+    var args = Array.prototype.slice.call(arguments);
+    var i, imax, k;
+    var s, re, re_empty;
+
+    function isObject(value) {
+        return value !== null && typeof value === 'object';
+    }
+
+    function isDate(value) {
+        return toString.call(value) === '[object Date]';
+    }
+
+    function isString(value) {return typeof value === 'string';}
+
+    function isNumber(value) {return typeof value === 'number';}
+
+
+    function formatArg(a) {
+        console.log(a);
+        if (isDate(a)) {
+            return a.toISOString();
+        }
+        return a;
+    }
+
+    s = this;
+    re_empty = new RegExp('\\{\\}');
+    for (i=0, imax=args.length; i<imax; i++) {
+        var arg = args[i];
+        if (isObject(arg)) {
+            for (k in arg) {
+                re = new RegExp('\\{' + k + '\\}', 'g');
+                s = s.replace(re, formatArg(arg[k]));
+            }
+        }
+        else {
+            s = s.replace(re_empty, formatArg(arg));
+        }
+    }
+    return s;
+};
