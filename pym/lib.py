@@ -13,11 +13,12 @@ import json
 import decimal
 import slugify as python_slugify
 import sqlalchemy as sa
-import sqlalchemy.orm.exc
 import magic
 import colander
 import yaml
 import pym.exc
+# Legacy code expects JsonResp to be here
+from .resp import JsonResp
 
 
 ENV_DEVELOPMENT = 'development'
@@ -93,6 +94,8 @@ class JsonEncoder(json.JSONEncoder):
         if hasattr(obj, 'isoformat'):
             return obj.isoformat()
         if isinstance(obj, decimal.Decimal):
+            return str(obj)
+        if isinstance(obj, datetime.timedelta):
             return str(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
@@ -549,67 +552,6 @@ class BaseNode(dict):
     @property
     def title(self):
         return self._title if self._title else self.__name__
-
-
-class JsonResp(object):
-
-    def __init__(self):
-        """
-        Creates dict with status messages for a view response.
-
-        Add messages as simple strings. Response object will
-        have those messages suitable for PYM.growl().
-        """
-        self._msgs = []
-        self._is_ok = True
-        self._data = None
-
-    def add_msg(self, msg):
-        if msg['kind'] in ['error', 'fatal']:
-            self._is_ok = False
-        self._msgs.append(msg)
-
-    def notice(self, msg):
-        self.add_msg(dict(kind='notice', text=msg))
-
-    def info(self, msg):
-        self.add_msg(dict(kind='info', text=msg))
-
-    def warn(self, msg):
-        self.add_msg(dict(kind='warning', text=msg))
-
-    def error(self, msg):
-        self.add_msg(dict(kind='error', text=msg))
-
-    def fatal(self, msg):
-        self.add_msg(dict(kind='fatal', text=msg))
-
-    def ok(self, msg):
-        self.add_msg(dict(kind='success', text=msg))
-
-    def print(self):
-        for m in self._msgs:
-            print(m['kind'].upper(), m['text'])
-
-    @property
-    def data(self):
-        return self._data
-
-    @data.setter
-    def data(self, v):
-        self._data = v
-
-    @property
-    def resp(self):
-        return dict(
-            ok=self._is_ok,
-            msgs=self._msgs,
-            data=self._data
-        )
-
-    @property
-    def is_ok(self):
-        return self._is_ok
 
 
 def init_cli_locale(locale_name):

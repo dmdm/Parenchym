@@ -2,6 +2,7 @@ import configparser
 import logging
 import logging.config
 import sys
+import redis
 import yaml
 from collections import OrderedDict
 import pyramid.paster
@@ -47,6 +48,7 @@ class Cli(object):
         self.settings = None
         self.lang_code = None
         self.encoding = None
+        self.cache = None
 
         self._config = None
         self._sess = None
@@ -117,7 +119,9 @@ class Cli(object):
                 dict(
                     __file__=fn_config,
                     here=os.path.dirname(fn_config)
-                )
+                ),
+                # Keep module loggers
+                disable_existing_loggers=False
             )
         if lgg:
             self.lgg = lgg
@@ -153,6 +157,8 @@ class Cli(object):
         pym.models.init(settings, 'db.pym.sa.')
         self._sess = pym.models.DbSession()
         pym.init_auth(rc)
+        self.cache = redis.StrictRedis.from_url(
+            **self.rc.get_these('cache.redis'))
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         self.init_app(args, lgg=lgg, rc=rc, rc_key=rc_key,

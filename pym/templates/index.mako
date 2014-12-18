@@ -3,8 +3,9 @@
 ${parent.styles()}
 </%block>
 
-<div class="jumbotron">
-    <div class="container">
-        <h1>Parenchym</h1>
-    </div>
+<div class="outer-gutter">
+
+<p>To do things, you need to login.</p>
+
+
 </div>

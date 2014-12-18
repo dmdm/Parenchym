@@ -1,16 +1,17 @@
 import babel
 import pyramid.security
+import pyramid.util
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import INET, HSTORE, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
-from pyramid.security import Allow, ALL_PERMISSIONS
+from pyramid.security import ALL_PERMISSIONS
 import pyramid.i18n
 import zope.interface
 
 from pym.models import (
-    DbBase, DefaultMixin
+    DbBase, DefaultMixin, DbSession
 )
 from pym.models.types import CleanUnicode
 import pym.lib
@@ -23,6 +24,9 @@ from .const import (NOBODY_UID, NOBODY_PRINCIPAL, NOBODY_EMAIL,
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
+
+
+_dnr = pyramid.util.DottedNameResolver(None)
 
 
 class IAuthMgrNode(zope.interface.Interface):
@@ -116,21 +120,24 @@ class GroupMember(DbBase, DefaultMixin):
     IDENTITY_COL = None
 
     group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
         nullable=False)
     """This group is the container."""
     member_user_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.user.id",
+        sa.ForeignKey(
+            "pym.user.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
         nullable=True)
     """This user is the member."""
     member_group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
@@ -445,7 +452,8 @@ class Permission(DbBase, DefaultMixin):
         # Some permissions may have no parents.
         q = sa.text("SELECT id, name, parents "
             "FROM pym.vw_permissions_with_parents") \
-            .columns(id=sa.Integer(), name=sa.Unicode(),
+            .columns(
+                id=sa.Integer(), name=sa.Unicode(),
                 parents=ARRAY(sa.Unicode, dimensions=2)
             )
         rs = sess.execute(q)
@@ -465,7 +473,8 @@ class Permission(DbBase, DefaultMixin):
         # CAVEAT: Permissions without children are not listed!
         q = sa.text("SELECT id, name, children "
             "FROM pym.vw_permissions_with_children") \
-            .columns(id=sa.Integer(), name=sa.Unicode(),
+            .columns(
+                id=sa.Integer(), name=sa.Unicode(),
                 children=ARRAY(sa.Unicode, dimensions=2)
             )
         rs = sess.execute(q)
@@ -509,8 +518,10 @@ class Ace(DbBase, DefaultMixin):
         {'schema': 'pym'}
     )
 
-    resource_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.resource_tree.id",
+    resource_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            "pym.resource_tree.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_resource_fk'
@@ -519,7 +530,8 @@ class Ace(DbBase, DefaultMixin):
     )
     """Reference to a resource node."""
     group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_group_fk'
@@ -528,7 +540,8 @@ class Ace(DbBase, DefaultMixin):
     )
     """Reference to a group. Mandatory if user is not set."""
     user_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.user.id",
+        sa.ForeignKey(
+            "pym.user.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_user_fk'
@@ -545,7 +558,8 @@ class Ace(DbBase, DefaultMixin):
         important to setup ``sortix`` properly!
     """
     permission_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.permission_tree.id",
+        sa.ForeignKey(
+            "pym.permission_tree.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_permission_fk'
@@ -553,7 +567,8 @@ class Ace(DbBase, DefaultMixin):
         nullable=False
     )
     """Reference to a permission."""
-    allow = sa.Column(sa.Boolean(),
+    allow = sa.Column(
+        sa.Boolean(),
         nullable=False
     )
     """Allow if TRUE, deny if FALSE."""
@@ -576,9 +591,9 @@ class Ace(DbBase, DefaultMixin):
         return allow_deny, princ, perm
 
     def __repr__(self):
-        return "<{name}(id={id}, resource_node_id={r}, group_id={g}," \
+        return "<{name}(id={id}, resource_id={r}, group_id={g}," \
                " user_id={u}, sortix={ix}, permission_id={p}, allow={allow}>".format(
-                   id=self.id, r=self.resource_node_id, p=self.permission_id,
+                   id=self.id, r=self.resource_id, p=self.permission_id,
                    g=self.group_id, u=self.user_id, allow=self.allow,
                    ix=self.sortix, name=self.__class__.__name__
                )
@@ -624,15 +639,17 @@ class CurrentUser(object):
 
     SESS_KEY = 'auth:current_user'
 
-    def __init__(self, request):
+    def __init__(self, sess, request, user_class):
         self._request = request
         self._metadata = None
         self._groups = []
         self.uid = None
         self.principal = None
+        self.sess = sess
         self.init_nobody()
-        self.auth_provider = AuthProviderFactory.factory(
-            request.registry.settings['auth.provider'])
+        rc = request.registry.settings['rc']
+        cls = _dnr.resolve(rc.g('auth.provider'))
+        self.auth_provider = cls(self.sess, user_class)
 
     def load_by_principal(self, principal):
         u = self.auth_provider.load_by_principal(principal)
@@ -681,11 +698,15 @@ class CurrentUser(object):
         # Login methods throw AuthError exception. Caller should handle them.
         try:
             if '@' in login:
-                p = self.auth_provider.login_by_email(request=self._request,
-                    email=login, pwd=pwd, remote_addr=remote_addr)
+                p = self.auth_provider.login_by_email(
+                    request=self._request,
+                    email=login, pwd=pwd, remote_addr=remote_addr
+                )
             else:
-                p = self.auth_provider.login_by_principal(request=self._request,
-                    principal=login, pwd=pwd, remote_addr=remote_addr)
+                p = self.auth_provider.login_by_principal(
+                    request=self._request,
+                    principal=login, pwd=pwd, remote_addr=remote_addr
+                )
         except pym.exc.AuthError as exc:
             self._request.registry.notify(
                 UserAuthError(self._request, login, pwd,
@@ -769,15 +790,6 @@ class CurrentUser(object):
             return None
 
 
-class AuthProviderFactory(object):
-    @staticmethod
-    def factory(type_):
-        if type_ == 'sqlalchemy':
-            from . import manager
-            return manager
-        raise Exception("Unknown auth provider: '{0}'".format(type_))
-
-
 def get_current_user(request):
     """
     This method is used as a request method to reify a user object
@@ -785,7 +797,11 @@ def get_current_user(request):
     """
     #mlgg.debug("get user: {}".format(request.path))
     principal = pyramid.security.unauthenticated_userid(request)
-    cusr = CurrentUser(request)
+    sess = DbSession()
+    rc = request.registry.settings['rc']
+    user_class = _dnr.resolve(
+        rc.g('auth.class.user'))
+    cusr = CurrentUser(sess, request, user_class)
     if principal is not None:
         cusr.load_by_principal(principal)
     return cusr

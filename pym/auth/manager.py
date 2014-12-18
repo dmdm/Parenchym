@@ -3,126 +3,12 @@ import sqlalchemy as sa
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import and_
 
-from pym.models import DbSession
 from pym.exc import AuthError
 import pym.security
-from pym.cache import FromCache
-
 from .models import (User, Group, GroupMember)
-from .const import SYSTEM_UID
-from .events import BeforeUserLoggedIn, UserLoggedIn, UserLoggedOut
 
 
 PASSWORD_SCHEME = 'pbkdf2_sha512'
-
-
-# TODO Maybe refactor login/out functions to accept a DB session as parameter
-
-
-def load_by_principal(principal):
-    """
-    Loads a user instance by principal.
-    """
-    sess = DbSession()
-    try:
-        p = sess.query(User).options(
-            FromCache("auth_short_term",
-                cache_key='auth:user:{}'.format(principal))
-        ).filter(
-            User.principal == principal
-        ).one()
-    except NoResultFound:
-        raise AuthError("User not found by principal '{}'".format(principal))
-    return p
-
-
-def _login(request, filter_, pwd, remote_addr):
-    """
-    Performs login.
-
-    Called by the ``login_by...`` functions which initialise the filter.
-    """
-    filter_.append(User.is_enabled == True)
-    filter_.append(User.is_blocked == False)
-    sess = DbSession()
-    try:
-        u = sess.query(User).filter(and_(*filter_)).one()
-    except NoResultFound:
-        raise AuthError('User not found')
-    # We have found the requested user, now broadcast this info so that
-    # preparations can take place before we actually log him in.
-    request.registry.notify(BeforeUserLoggedIn(request, u))
-    # Now log user in
-    if not pym.security.pwd_context.verify(pwd, u.pwd):
-        raise AuthError('Wrong credentials')
-    # And save some stats
-    u.login_time = datetime.datetime.now()
-    u.login_ip = remote_addr
-    u.logout_time = None
-    u.editor_id = SYSTEM_UID
-    request.registry.notify(
-        UserLoggedIn(request, u)
-    )
-    return u
-
-
-def logout(request, uid):
-    """
-    Performs logout.
-    """
-    sess = DbSession()
-    u = sess.query(User).filter(User.id == uid).one()
-    u.login_ip = None
-    u.login_time = None
-    u.access_time = None
-    u.logout_time = datetime.datetime.now()
-    u.editor_id = SYSTEM_UID
-    request.registry.notify(UserLoggedOut(request, u))
-    return u
-
-
-def _check_credentials(*args):
-    """
-    Ensures that given credentials are not empty.
-
-    This ensures that login fails with empty password or empty
-    identity URL.
-    """
-    for a in args:
-        if not a:
-            raise AuthError('Missing credentials')
-
-
-def login_by_principal(request, principal, pwd, remote_addr):
-    """
-    Logs user in by principal and password, returns principal instance.
-
-    Raises exception :class:`pym.exc.AuthError` if user is not found.
-    """
-    _check_credentials(principal, pwd)
-    filter_ = [User.principal == principal]
-    return _login(request, filter_, pwd, remote_addr)
-
-
-def login_by_email(request, email, pwd, remote_addr):
-    """
-    Logs user in by email and password, returns principal instance.
-
-    Raises exception :class:`pym.exc.AuthError` if user is not found.
-    """
-    _check_credentials(email, pwd)
-    filter_ = [User.email == email]
-    return _login(request, filter_, pwd, remote_addr)
-
-
-# noinspection PyUnusedLocal
-def login_by_identity_url(request, identity_url, remote_addr):
-    """
-    Logs user in by identity URL (OpenID), returns principal instance.
-
-    Raises exception :class:`pym.exc.AuthError` if user is not found.
-    """
-    raise NotImplementedError()
 
 
 def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
@@ -136,7 +22,7 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     :param principal: Principal string for new user.
     :param pwd: User's password. We will encrypt it.
     :param email: User's email address.
-    :param groups: List of groups this user shall be member of. User is at least
+    :param group_names: List of groups this user shall be member of. User is at least
         member of group ``users``. If a group does not exist, it is created.
         Set to False to skip groups altogether.
     :param kwargs: See :class:`~pym.auth.models.User`.
@@ -166,14 +52,15 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     sess.flush()  # to get ID of user
 
     # Load/create the groups and memberships
-    if groups is not False:
+    if groups:
+        group_names = [Group.find(sess, g).name for g in groups]
         # Determine groups this user will be member of.
         # Always at least 'users'.
-        if groups:
-            groups = set(groups + ['users'])
+        if group_names:
+            group_names = set(group_names + ['users'])
         else:
-            groups = ['users']
-        for name in groups:
+            group_names = {'users'}
+        for name in group_names:
             # Try to load the specified group
             try:
                 g = sess.query(Group).filter(
@@ -260,15 +147,22 @@ def create_group(sess, owner, name, **kwargs):
     :param owner: ID, ``principal``, or instance of a user.
     :param ctime: Optional timestamp as creation time, defaults to now.
     :return: Instance of created group.
+    :raise: :class:`~pym.exc.ItemExistsError` if group already exists
     """
-    gr = Group()
-    gr.owner_id = User.find(sess, owner).id
-    gr.name = name
-    for k, v in kwargs.items():
-        setattr(gr, k, v)
-    sess.add(gr)
-    sess.flush()
-    return gr
+    owner_id = User.find(sess, owner).id
+    try:
+        g = sess.query(Group).filter(Group.name == name).one()
+        raise pym.exc.ItemExistsError("Group '{}' already exists".format(name),
+            item=g)
+    except NoResultFound:
+        gr = Group()
+        sess.add(gr)
+        gr.owner_id = owner_id
+        gr.name = name
+        for k, v in kwargs.items():
+            setattr(gr, k, v)
+        sess.flush()
+        return gr
 
 
 def update_group(sess, group, editor, **kwargs):
@@ -321,24 +215,43 @@ def create_group_member(sess, owner, group, member_user=None,
 
     For details about ``**kwargs``, see :class:`~pym.auth.models.GroupMember`.
 
-    :returns: Instance of created group_member
+    :return: Instance of created group_member
+    :raise: :class:`~pym.exc.ItemExistsError` if group mmber already exists
     """
     if not member_user and not member_group:
         raise pym.exc.PymError("Either member_user or member_group must be set")
     if member_user and member_group:
         raise pym.exc.PymError("Cannot set both member_user and member_group")
-    gm = GroupMember()
-    gm.owner_id = User.find(sess, owner).id
-    gm.group_id = Group.find(sess, group).id
+    owner_id = User.find(sess, owner).id
+    gr = Group.find(sess, group)
+    fil = [
+        GroupMember.group_id == gr.id
+    ]
     if member_user:
-        gm.member_user_id = User.find(sess, member_user).id
+        member = User.find(sess, member_user)
+        fil.append(GroupMember.member_user_id == member.id)
+        which = 'User'
     else:
-        gm.member_group_id = Group.find(sess, member_group).id
-    for k, v in kwargs.items():
-        setattr(gm, k, v)
-    sess.add(gm)
-    sess.flush()
-    return gm
+        member = Group.find(sess, member_group)
+        fil.append(GroupMember.member_group_id == member.id)
+        which = 'Group'
+    try:
+        gm = sess.query(GroupMember).filter(*fil).one()
+        m = "{} '{}' already is member of group '{}'".format(which, member, gr)
+        raise pym.exc.ItemExistsError(m, item=gm)
+    except NoResultFound:
+        gm = GroupMember()
+        sess.add(gm)
+        gm.owner_id = owner_id
+        gm.group_id = gr.id
+        if member_user:
+            gm.member_user_id = member.id
+        else:
+            gm.member_group_id = member.id
+        for k, v in kwargs.items():
+            setattr(gm, k, v)
+        sess.flush()
+        return gm
 
 
 def delete_group_member(sess, group_member):

@@ -3,6 +3,8 @@ import sqlalchemy.orm
 from sqlalchemy.ext.hybrid import hybrid_property
 import pyramid.i18n
 import zope.interface
+from pym.auth import Group
+from pym.auth.const import GROUP_KIND_TENANT
 
 from pym.models import (
     DbBase, DefaultMixin
@@ -10,6 +12,8 @@ from pym.models import (
 from pym.models.types import CleanUnicode
 import pym.lib
 import pym.exc
+import pym.auth.models as pam
+from .const import DEFAULT_TENANT_NAME
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
@@ -46,6 +50,20 @@ class Tenant(DbBase, DefaultMixin):
     # Load description only if needed
     descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
     """Optional description."""
+
+    @classmethod
+    def load_default_tenant(cls, sess):
+        return sess.query(cls).filter(cls.name == DEFAULT_TENANT_NAME).one()
+
+    def load_my_group(self):
+        sess = sa.inspect(self).session
+        return sess.query(Group).filter(
+            sa.and_(
+                Group.tenant_id == None,
+                Group.name == self.name,
+                Group.kind == GROUP_KIND_TENANT
+            )
+        ).one()
 
     @hybrid_property
     def title(self):

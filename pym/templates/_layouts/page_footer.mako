@@ -31,7 +31,7 @@
     <h3>Context ACL</h3>
     <table class="tblLayout">
         <tbody>
-            % for ace in request.context.__acl__:
+            % for ace in request.context.__acl__():
                 <tr>
                     % for x in ace:
                         <td style="border: solid 1px silver; padding: 2px 4px;">${x}</td>

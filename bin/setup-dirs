@@ -2,7 +2,7 @@
 
 # Creates directories for project and sets permissions
 
-PROJECT="Pym"
+PROJECT="Parenchym"
 EGG="Pym-0.0-py3.3.egg"
 if [ `hostname` == "foobar" ]
 then

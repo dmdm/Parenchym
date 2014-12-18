@@ -19,29 +19,29 @@
 
 //// Components
 //@import "sass-bootstrap/component-animations";
-//@import "sass-bootstrap/glyphicons";
-//@import "sass-bootstrap/dropdowns";
+@import "sass-bootstrap/glyphicons";
+@import "sass-bootstrap/dropdowns";
 //@import "sass-bootstrap/button-groups";
 //@import "sass-bootstrap/input-groups";
-//@import "sass-bootstrap/navs";
+@import "sass-bootstrap/navs";
 //@import "sass-bootstrap/navbar";
 //@import "sass-bootstrap/breadcrumbs";
-//@import "sass-bootstrap/pagination";
+@import "sass-bootstrap/pagination";
 //@import "sass-bootstrap/pager";
 //@import "sass-bootstrap/labels";
 //@import "sass-bootstrap/badges";
 //@import "sass-bootstrap/jumbotron";
 //@import "sass-bootstrap/thumbnails";
-//@import "sass-bootstrap/alerts";
+@import "sass-bootstrap/alerts";
 //@import "sass-bootstrap/progress-bars";
 //@import "sass-bootstrap/media";
 //@import "sass-bootstrap/list-group";
-//@import "sass-bootstrap/panels";
+@import "sass-bootstrap/panels";
 //@import "sass-bootstrap/wells";
 //@import "sass-bootstrap/close";
 
 //// Components w/ JavaScript
-//@import "sass-bootstrap/modals";
+@import "sass-bootstrap/modals";
 //@import "sass-bootstrap/tooltip";
 //@import "sass-bootstrap/popovers";
 //@import "sass-bootstrap/carousel";
@@ -69,6 +69,10 @@
 @import "font-awesome/stacked";
 @import "font-awesome/icons";
 
+/*!
+ *   Vendor
+ */
+@import "select2-bootstrap";
 
 /*!
  *   Parenchym

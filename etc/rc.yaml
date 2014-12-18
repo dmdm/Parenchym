@@ -7,10 +7,10 @@
 project.title: Parenchym
 project.subtitle: Application Framework
 project.description: Parenchym - Application Framework based on Pyramid
-project.keywords: Web Framework, Python
+project.keywords: Web Framework, Pyramid, Python
 project.version: 0.3
 project.author: Dirk Makowski (http://parenchym.com/)
-project.copyright: "&copy; 2014 Dirk Makowski"
+project.copyright: "(c) 2014 Dirk Makowski"
 project.copyright_link: http://parenchym.com/
 
 
@@ -19,12 +19,6 @@ debug: false
 
 upload_tmp_dir: "{here}/var/tmp_uploads"
 
-# ---[ Redis ]-------
-
-#redis.url: 'redis:///var/run/redis/redis.sock'
-redis.url: 'redis://localhost:6379'
-redis.db: 0
-redis.max_connections: ~
 
 
 # ---[ Encryption ]-------
@@ -47,9 +41,11 @@ auth.tkt_policy.secret: SECRET
 ### auth.allow_registration: False
 # Initial password for user 'root'
 auth.user_root.pwd: SECRET
-# Auth provider
-# 'sqlalchemy'
-auth.provider: sqlalchemy
+# Class for auth provider (login/logout)
+auth.provider: pym.auth.AuthProvider
+# Class for user objects
+auth.class.user: pym.auth.models.User
+
 # Encrypt password using this scheme.
 # Pym uses passlib with one of these schemes:
 #   ldap_plaintext, ldap_salted_sha1, sha512_crypt, pbkdf2_sha512
@@ -75,6 +71,20 @@ sass.out2: "{here}/pym/static/css/styles2.css"
 # ===========================================
 #   Database
 # ===========================================
+
+
+# ---[ Cache.Redis ]-------
+
+cache.redis.url: 'redis:///var/run/redis/redis.sock'
+cache.redis.db: 0
+
+
+# ---[ Redis ]-------
+
+#redis.url: 'redis:///var/run/redis/redis.sock'
+redis.url: 'redis://localhost:6379'
+redis.db: 1
+redis.max_connections: ~
 
 # {here} is expanded to absolute path which starts with `/'
 # To be absolute, URL must start with 4 `/', hence we type 3 `/' literally here

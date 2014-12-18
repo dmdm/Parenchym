@@ -113,21 +113,58 @@ body > footer {
     }
     .menu {
       display: none;
-      position: absolute;
+      min-width: 150px;
+      font-size: $font-size-base;
       background-color: white;
       border: solid 1px $breadcrumb-border-color;
       @include border-bottom-radius($border-radius-base);
-      background-color: $breadcrumb-bg;
-      padding: 4px 8px;
+      @include box-shadow(0 6px 12px rgba(0,0,0,.175));
+      background-color: white;
       white-space: nowrap;
-      z-index: 1000;
-  ul {
+      z-index: 9998;
+      position: relative;
+      left: -12px;
+
+      li {
+        width: 100%;
+        position: relative;
+        display: block;
+        vertical-align: middle;
+
+        &:hover {
+          background-color: $dropdown-link-hover-bg;
+        }
+
+        &:hover > ul {
+          display: inline-block;
+        }
+
+        i { display: inline-block; padding-top: 3px; }
+      }
+      a {
+        width: 100%;
+        display: inline-block;
+        padding: 3px;
+
+        &:hover { text-decoration: none; color: $dropdown-link-hover-color; }
+      }
+
+      ul {
+        z-index: 9999;
         margin: 0;
-        padding: 0px;
+        padding: 4px 8px;
         list-style-position: inside;
-    list-style-type: none;
+        list-style-type: none;
         ul {
-          margin-left: 12px;
+          min-width: 150px;
+          margin-left: 0px;
+          display: none;
+          position: absolute;
+          left: 132px;
+          top: -3px;
+          @include border-bottom-radius($border-radius-base);
+          @include box-shadow(0 6px 12px rgba(0,0,0,.175));
+          background-color: white;
         }
       }
     }
@@ -155,6 +192,10 @@ body > footer {
 }
 }
 
+.disabled > a {
+  pointer-events: none;
+}
+
 #page_title {
   font-size: 180%;
 }
@@ -173,4 +214,75 @@ body > footer {
   @include border-top-radius($border-radius-base);
   background-color:  $breadcrumb-bg;
   padding: 4px;
+}
+
+.popup-container { position: relative; }
+.popup-container:hover .popup { display: block; }
+.popup {
+    display: none;
+    position: absolute;
+    padding: 4px;
+    width: 250px;
+    border: solid 1px $breadcrumb-border-color;
+    text-align: left;
+    left: 18px;
+    z-index: 10;
+    @include border-top-radius($border-radius-base);
+    @include border-bottom-radius($border-radius-base);
+    @include box-shadow(0 6px 12px rgba(0,0,0,.175));
+}
+.popup hr {
+  margin: 4px;
+  border-top: solid 1px $breadcrumb-border-color;
+}
+
+.select2-container {
+  width: 100%;
+}
+
+.page-notes {
+  margin-top: 6ex;
+  font-size: 90%;
+}
+
+/*.grid { font-size: 88%; }*/
+.pym-grid-footer {
+  display: table-row;
+  height: 20px;
+  line-height: 90%;
+  .rowNumbers, .pageSizeChooser, .page, .spinner, .pym-grid-pagination, .spacer {
+    display: table-cell;
+    vertical-align: middle;
+  }
+  .spacer {
+    width: $padding-base-horizontal;
+  }
+  .pym-grid-pagination {
+    .pagination {
+      margin: 0;
+    }
+  }
+  .pageSizeChooser {
+    select {
+      padding-top: 2px;
+      padding-bottom: 0;
+      line-height: $line-height-base;
+      height: 28px;
+    }
+  }
+  .page {
+    input {
+      padding-top: 2px;
+      padding-bottom: 0;
+      line-height: $line-height-base;
+      height: 28px;
+      width: 4.5em;
+    }
+  }
+  .spinner {
+    padding-left: .5em;
+  }
+}
+.pym-grid-menu-bar {
+  margin-bottom: 1ex;
 }

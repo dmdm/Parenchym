@@ -16,7 +16,6 @@
         <meta name="author"      content="<%block name="meta_author">${request.registry.settings['project.author']}</%block>">
         <%block name="styles">
             <link rel="stylesheet" href="${request.static_url('pym:static/css/styles.css')}">
-            <!--link rel="stylesheet" href="${request.static_url('pym:static/vendor/jquery-ui-themes/themes/ui-lightness/jquery-ui.min.css')}"-->
             <link rel="stylesheet" href="${request.static_url('pym:static/vendor/pnotify/pnotify.custom.min.css')}">
             <link rel="stylesheet" href="${request.static_url('pym:static/css/styles2.css')}">
             % if request.registry.settings['environment'] != 'production':
@@ -25,13 +24,17 @@
         </%block>
         <script>
         <%block name="require_config">
-            var PYM_APP_REQUIREMENTS = ['ng'];
-            var PYM_APP_INJECTS = [];
+            ## List the minimal libs that require has to load
+            ## Mind to include those that PymApp.config initialises!
+            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'ui-select'];
+            ## List the minimal libs that anular has to inject.
+            ## Mind to include those that PymApp.config initialises!
+            var PYM_APP_INJECTS = ['ui.select'];
             var require = {
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
                     '${request.static_url('pym:static/app/plugins.js')}',
-                    //'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
+                    ##'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
                     '${request.static_url('pym:static/app/boot-ng.js')}'
                 ]
                 , paths: {
@@ -43,9 +46,12 @@
                     , 'pnotify.buttons': 'static-pym/vendor/pnotify/pnotify.buttons'
                     , 'select2':         'static-pym/vendor/select2/select2.min'
                     , 'ng':              'static-pym/vendor/angular/angular.min'
-                    , 'ng-resource':     'static-pym/vendor/angular-resource/angular-resource.min'
+                    , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
+                    , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
                     , 'ng-grid':         'static-pym/vendor/angular-grid/build/ng-grid.min'
-                    , 'ng-ui-grid':      'static-pym/vendor/angular-ui-grid/ui-grid-unstable.min'
+                    , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
+##                    , 'ui-grid':         'http://localhost:9002/dist/release/ui-grid'
+                    , 'ui-select':       'static-pym/vendor/ui-select/select.min'
                     , 'ng-ui':           'static-pym/vendor/angular-ui/build/angular-ui.min'
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
@@ -61,7 +67,10 @@
                     , 'pnotify.buttons':                      ['pnotify']
                     , 'ng':                                   {deps: ['jquery'], exports: 'angular'}
                     , 'ng-resource':                          ['ng']
+                    , 'ng-sanitize':                          ['ng']
                     , 'ng-grid':                              ['ng']
+                    , 'ui-select':                            ['ng', 'ng-sanitize']
+                    , 'ui-grid':                              ['ng']
                     , 'ng-ui':                                ['ng']
                     , 'ng-ui-select2':                        ['ng', 'select2']
                     , 'ng-ui-bs':                             ['ng']
@@ -84,7 +93,7 @@
         </%block>
     </head>
     <body>
-        <!--[if lt IE 7]>
+        <!--[if lt IE 10]>
             <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
         <![endif]-->
 
@@ -105,9 +114,8 @@
             ${pym.growl_flash()}
 
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
-                    ['$scope', '$http', 'URLS',
-            function ($scope, $http, URLS) {
-
+                    ['$scope', '$http',
+            function ($scope,   $http) {
                 $scope.model = {};
                 $scope.model.items = {};
                 $scope.model.active_item = null;
@@ -120,9 +128,7 @@
                         });
                 }
                 load_menu_items();
-
             }]);
-
         });
         </script>
     </body>

@@ -45,3 +45,39 @@ from pprint import pformat
     PYM.growl( ${m|n} );
 % endfor
 </%def>
+
+
+## ===[ HTML HELPER ]=======
+
+<%def name="tag(t, *args, content=None, close_tag=True, attr=None)">
+<%
+    aattr = []
+    if attr:
+        for k, v in attr.items():
+            if v is True:
+                # just use attribute without value
+                aattr.append(k)
+            elif v is False:
+                # do not set attribute
+                continue
+            else:
+                aattr.append('{}="{}"'.format(k, v))
+
+    s = '<{}'.format(t)
+
+    if args:
+        s += ' ' + ' '.join(args)
+
+    if aattr:
+        s += ' ' + ' '.join(aattr)
+
+    s += '>'
+
+    if content:
+        s += str(content)
+
+    if close_tag:
+        s += '</{}>'.format(t)
+%>
+    ${s|n}
+</%def>

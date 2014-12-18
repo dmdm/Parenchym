@@ -31,7 +31,7 @@ def create_tenant(sess, owner, name, cascade, **kwargs):
         # Create tenant's group
         create_group(sess, owner, name, kind=GROUP_KIND_TENANT,
             descr="All members of tenant " + name)
-        n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT)
+        n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
 
         try:
             title = kwargs['title']
@@ -131,9 +131,6 @@ def add_user(sess, tenant, user, owner, **kwargs):
     :param owner: ID, ``principal``, or instance of a user.
     """
     ten = Tenant.find(sess, tenant)
-    g_ten = sess.query(Group).filter(
-        Group.name == ten.name,
-        Group.kind == GROUP_KIND_TENANT
-    ).one()
+    g_ten = ten.load_my_group()
     create_group_member(sess, owner, g_ten, member_user=user, **kwargs)
     sess.flush()
