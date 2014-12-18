@@ -5,8 +5,9 @@
 <%block name="pageHeader" args="parent, pym, render_flash">
 
     <script type="text/ng-template"  id="menu_item_renderer.html">
+        <i ng-if="item.children.length > 0" class="fa fa-caret-right pull-right"></i>
         <a href="{{item.href}}">{{item.text}}</a>
-        <ul>
+        <ul ng-if="item.children.length > 0">
             <li ng-repeat="item in item.children" ng-include="'menu_item_renderer.html'"></li>
         </ul>
     </script>
