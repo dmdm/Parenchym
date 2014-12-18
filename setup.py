@@ -26,7 +26,7 @@ setup(
     author='Dirk Makowski',
     author_email='johndoe@example.com',
     url='http://parenchym.com',
-    keywords='web pyramid pylons',
+    keywords='web pyramid',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -37,7 +37,8 @@ setup(
       [paste.app_factory]
       main = pym:main
       [console_scripts]
-      pym-init-db = pym.scripts.initialisedb:main
+      pym-init-db = pym.scripts.init_db:main
+      pym-scheduler = pym.scripts.scheduler:main
       pym-import-raw = pym.scripts.import_raw:main
       pym = pym.scripts.pym:main
       """,

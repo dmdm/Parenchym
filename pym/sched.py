@@ -78,7 +78,7 @@ class Scheduler(DbBase, DefaultMixin):
     out = sa.Column(JSON(), nullable=True)
     """Output"""
     state = sa.Column(sa.CHAR(1), nullable=False, default=STATE_SLEEPING,
-                      server_default=sa.text(STATE_SLEEPING))
+                      server_default=sa.text("'" + STATE_SLEEPING + "'"))
     """ 's' = sleeping, 'r' = running, 'e' = error, 'w' = warning """
     schedule = sa.Column(MutableDict.as_mutable(JSON()), nullable=True)
     """CRONTAB-like schedule. See :class:`apscheduler.triggers.cron`"""

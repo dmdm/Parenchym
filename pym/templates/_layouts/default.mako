@@ -34,7 +34,7 @@
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
                     '${request.static_url('pym:static/app/plugins.js')}',
-                    //'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
+                    ##'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
                     '${request.static_url('pym:static/app/boot-ng.js')}'
                 ]
                 , paths: {

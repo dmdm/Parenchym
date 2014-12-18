@@ -1,5 +1,6 @@
 from pym.res.models import ResourceNode
-from pym.res.const import NODE_NAME_ROOT, NODE_NAME_SYS
+from pym.res.const import NODE_NAME_ROOT
+from pym.sys.const import NODE_NAME_SYS
 from . import manager as authmgr
 from .const import *
 from .models import Permission, Permissions
@@ -205,7 +206,7 @@ CREATE OR REPLACE VIEW pym.vw_permissions_with_children AS
 """
 
 
-def create_views(sess):
+def _create_views(sess, rc):
     sess.execute(SQL_VW_USER_BROWSE)
     sess.execute(SQL_VW_TENANT_BROWSE)
     sess.execute(SQL_VW_GROUP_BROWSE)
@@ -214,7 +215,7 @@ def create_views(sess):
     sess.execute(SQL_VW_PERMISSIONS_WITH_CHILDREN)
 
 
-def setup_users(sess, root_pwd):
+def _setup_users(sess, root_pwd):
     # 1// Create user system
     u_system = authmgr.create_user(
         sess,
@@ -349,7 +350,7 @@ def setup_users(sess, root_pwd):
     sess.flush()
 
 
-def setup_permissions(sess):
+def _setup_permissions(sess):
     """
     Sets up permission tree as follows:
 
@@ -417,7 +418,7 @@ def setup_permissions(sess):
     sess.add(p_visit)
 
 
-def setup_resources(sess):
+def _setup_resources(sess):
     n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
     n_sys = n_root[NODE_NAME_SYS]
 
@@ -443,13 +444,15 @@ def setup_resources(sess):
         iface='pym.auth.models.IPermissionMgrNode')
 
 
-def setup_basics(sess, root_pwd, schema_only=False):
-    create_views(sess)
-    if not schema_only:
-        setup_users(sess, root_pwd)
-        setup_permissions(sess)
+def create_schema(sess, rc):
+    pass
 
 
-def setup(sess, schema_only=False):
-    if not schema_only:
-        setup_resources(sess)
+def populate(sess, root_pwd, rc):
+    _setup_users(sess, root_pwd)
+    _setup_permissions(sess)
+
+
+def setup(sess, rc):
+    _create_views(sess, rc)
+    _setup_resources(sess)
