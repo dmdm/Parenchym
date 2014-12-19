@@ -88,10 +88,27 @@ sass.out2: "{here}/pym/static/css/styles2.css"
 # ===========================================
 
 
-# ---[ Cache.Redis ]-------
+# ---[ Cache ]-------
 
-cache.redis.url: 'redis:///var/run/redis/redis.sock'
-cache.redis.db: 0
+cache.regions: [region_default, region_auth_short_term, region_auth_long_term]
+
+cache.region_default.backend: dogpile.cache.redis
+cache.region_default.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_default.arguments.db: 0
+cache.region_default.arguments.redis_expiration_time: 300
+cache.region_default.arguments.distributed_lock: true
+
+cache.region_auth_short_term.backend: dogpile.cache.redis
+cache.region_auth_short_term.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_auth_short_term.arguments.db: 0
+cache.region_auth_short_term.arguments.redis_expiration_time: 600
+cache.region_auth_short_term.arguments.distributed_lock: true
+
+cache.region_auth_long_term.backend: dogpile.cache.redis
+cache.region_auth_long_term.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_auth_long_term.arguments.db: 0
+cache.region_auth_long_term.arguments.redis_expiration_time: 7200
+cache.region_auth_long_term.arguments.distributed_lock: true
 
 
 # ---[ Redis ]-------

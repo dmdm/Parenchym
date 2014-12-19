@@ -55,46 +55,16 @@ def auth_long_term_keygen(namespace, fn, **kwargs):
 
 region_default = make_region(
     function_key_generator=default_keygen
-).configure(
-    'dogpile.cache.redis',
-    arguments={
-        'url': 'redis:///var/run/redis/redis.sock',
-        #'host': 'localhost',
-        #'port': 6379,
-        'db': 0,
-        'redis_expiration_time': 60 * 5,   # 5 minutes
-        'distributed_lock': True
-    }
 )
 
 
 region_auth_short_term = make_region(
     function_key_generator=auth_short_term_keygen
-).configure(
-    'dogpile.cache.redis',
-    arguments={
-        'url': 'redis:///var/run/redis/redis.sock',
-        #'host': 'localhost',
-        #'port': 6379,
-        'db': 0,
-        'redis_expiration_time': 60 * 10,   # 10 minutes
-        'distributed_lock': True
-    }
 )
 
 
 region_auth_long_term = make_region(
     function_key_generator=auth_long_term_keygen
-).configure(
-    'dogpile.cache.redis',
-    arguments={
-        'url': 'redis:///var/run/redis/redis.sock',
-        #'host': 'localhost',
-        #'port': 6379,
-        'db': 0,
-        'redis_expiration_time': 60 * 60 * 2,   # 2 hours
-        'distributed_lock': True
-    }
 )
 
 

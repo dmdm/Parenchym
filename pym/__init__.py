@@ -124,6 +124,17 @@ def includeme(config):
     config.include(duh_view)
     # Redis
     config.include('pyramid_redis')
+    configure_cache_regions(config.registry.settings['rc'])
+
+
+def configure_cache_regions(rc):
+    import pym.cache
+    regions = rc.g('cache.regions')
+    for reg in regions:
+        backend = rc.g('cache.{}.backend'.format(reg))
+        arguments = rc.get_these('cache.{}.arguments.'.format(reg))
+        r = getattr(pym.cache, reg)
+        r.configure(backend, arguments=arguments)
 
 
 def init_auth(rc):
