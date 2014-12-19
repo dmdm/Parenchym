@@ -9,7 +9,7 @@ label { width: 6em; display: inline-block; }
 <%block name="meta_title">Login</%block>
 
 <div style="width: 500px; margin: 6ex auto;">
-    <form action="${url}" method="post">
+    <form action="${rc['urls']['login']}" method="post">
       <input type="hidden" name="referrer" value="${referrer}"/>
       <input type="hidden" name="XSRF_TOKEN" value="${request.session.get_csrf_token()}"/>
       <label for="login">Login</label> <input id="login" type="text" name="login" value=""/><br/>

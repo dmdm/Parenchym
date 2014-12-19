@@ -7,7 +7,7 @@ import pym.tenants.models
 @view_config(
     name='',
     context=pym.tenants.models.ITenantNode,
-    renderer='pym.tenants:templates/home.mako',
+    renderer='home.mako',
     permission='visit'
 )
 def home(context, request):

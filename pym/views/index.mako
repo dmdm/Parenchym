@@ -7,5 +7,7 @@ ${parent.styles()}
 
 <p>To do things, you need to login.</p>
 
+<p>The main menu is behind the <i class="fa fa-bars ccp-red"></i>.</p>
+
 
 </div>

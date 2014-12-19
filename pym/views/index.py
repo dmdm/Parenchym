@@ -17,7 +17,7 @@ import pym.menu
 @view_config(
     name='',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/index.mako',
+    renderer='index.mako',
     permission=NO_PERMISSION_REQUIRED
 )
 def index(context, request):
@@ -30,7 +30,7 @@ def index(context, request):
 @view_config(
     name='imprint',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/imprint.mako',
+    renderer='imprint.mako',
     permission=NO_PERMISSION_REQUIRED
 )
 def imprint(context, request):
@@ -41,7 +41,7 @@ def imprint(context, request):
 @view_config(
     name='main',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/main.mako',
+    renderer='main.mako',
     permission='visit'
 )
 def main(context, request):

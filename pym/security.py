@@ -7,7 +7,7 @@ import pyramid.session
 import pyramid.i18n
 from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
 from pyramid.view import forbidden_view_config, notfound_view_config
-from pyramid.events import subscriber, NewRequest
+from pyramid.events import subscriber, NewRequest, NewResponse
 import pym.i18n
 import Crypto
 
@@ -137,8 +137,12 @@ def validate_csrf_token(event):
             header='X-XSRF-TOKEN', raises=True)
 
 
-@subscriber(NewRequest)
+@subscriber(NewResponse)
 def set_csrf_token_cookie(event):
-    resp = event.request.response
-    resp.set_cookie('XSRF-TOKEN', value=event.request.session.get_csrf_token(),
-        max_age=30 * 3600)
+    request = event.request
+    resp = request.response
+    token = request.session.get_csrf_token()
+    cookie_token = request.cookies.get('XSRF-TOKEN', None)
+    if cookie_token != token:
+        resp.set_cookie('XSRF-TOKEN', value=token,
+            max_age=30 * 3600, overwrite=True)

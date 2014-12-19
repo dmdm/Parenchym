@@ -641,7 +641,7 @@ class CurrentUser(object):
 
     def __init__(self, sess, request, user_class):
         self._request = request
-        self._metadata = None
+        self._metadata = {}
         self._groups = []
         self.uid = None
         self.principal = None
@@ -656,13 +656,17 @@ class CurrentUser(object):
         self.init_from_user(u)
 
     def init_nobody(self):
-        self.uid = NOBODY_UID
-        self.principal = NOBODY_PRINCIPAL
-        self._metadata = dict(
-            email=NOBODY_EMAIL,
-            display_name=NOBODY_DISPLAY_NAME
-        )
-        self.groups = []
+        u = self.sess.query(User).get(NOBODY_UID)
+        if not u:
+            raise pym.exc.AuthError('User nobody not in database')
+        self.init_from_user(u)
+        # self.uid = NOBODY_UID
+        # self.principal = NOBODY_PRINCIPAL
+        # self._metadata = dict(
+        #     email=NOBODY_EMAIL,
+        #     display_name=NOBODY_DISPLAY_NAME
+        # )
+        # self.groups = []
 
     def init_from_user(self, u):
         """
@@ -788,6 +792,12 @@ class CurrentUser(object):
             return babel.Locale(loc)
         else:
             return None
+
+    def __repr__(self):
+        return "<{name}(id={id}, principal='{pr}', email='{email}')>".format(
+            id=self.uid, pr=self.principal, email=self.email,
+            name=self.__class__.__name__
+        )
 
 
 def get_current_user(request):

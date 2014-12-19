@@ -288,7 +288,9 @@ def _setup_users(sess, root_pwd):
     )
 
     # 4// Create users
-    authmgr.create_user(
+
+    # root
+    u = authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
         id=ROOT_UID,
@@ -300,6 +302,20 @@ def _setup_users(sess, root_pwd):
         is_enabled=True,
         group_names=[g_wheel.name, g_users.name]
     )
+    authmgr.create_group_member(
+        sess,
+        owner=SYSTEM_UID,
+        group=g_users,
+        member_user=u,
+    )
+    authmgr.create_group_member(
+        sess,
+        owner=SYSTEM_UID,
+        group=g_wheel,
+        member_user=u
+    )
+
+    # nobody
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
@@ -314,6 +330,8 @@ def _setup_users(sess, root_pwd):
         # Not-authenticated users are automatically 'nobody'
         group_names=False
     )
+
+    # sample data
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
@@ -327,6 +345,8 @@ def _setup_users(sess, root_pwd):
         # This user is not member of any group
         group_names=False
     )
+
+    # unit_tester
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,

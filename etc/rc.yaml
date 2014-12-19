@@ -20,6 +20,21 @@ debug: false
 upload_tmp_dir: "{here}/var/tmp_uploads"
 
 
+# ---[ OpenID Connect  ]-------
+
+# Client ID for web applications, if statically registered at provider
+# Key is ``oidc.me.`` + PROVIDER + PROJECT
+oidc.me.google.Parenchym:
+  client_id: SECRET
+  email_address: SECRET
+  client_secret: SECRET
+  redirect_uris: SECRET
+  javascript_origins: SECRET
+
+
+# URL to retrieve Google's Discovery Document
+oidc.discovery.google: https://accounts.google.com/.well-known/openid-configuration
+
 
 # ---[ Encryption ]-------
 

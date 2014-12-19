@@ -28,7 +28,7 @@
         this.base_url = rc['base_url'];
         my.init_growl();
         my.init_pym(rc);
-        my.init_ajax();
+        //my.init_ajax();
     };
 
     my.init_growl = function () {
@@ -48,6 +48,7 @@
         );
     };
 
+    /*
     my.init_ajax = function () {
         var that = this;
         $.ajaxSetup({
@@ -75,6 +76,7 @@
             that.growl(resp);
         });
     };
+    */
 
     /**
      * Sort select list by text
