@@ -259,7 +259,7 @@ class User(DbBase, DefaultMixin):
         def creator():
             # TODO Load nested groups
             return [(x.id, x.name) for x in self.groups]
-        key = 'auth:groups_for_user:{}'.format(self.id)
+        key = 'auth:user:{}:groups'.format(self.principal)
         return region_auth_long_term.get_or_create(key, creator)
 
     def __repr__(self):
