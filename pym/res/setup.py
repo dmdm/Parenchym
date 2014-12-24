@@ -1,6 +1,7 @@
 import os
 import logging
-from pym.auth.const import SYSTEM_UID, WHEEL_RID
+from pym.auth.const import SYSTEM_UID, WHEEL_RID, USERS_RID
+from pym.auth.models import Permissions
 import pym.models
 from .models import ResourceNode
 from .const import *
@@ -33,7 +34,9 @@ def _setup_resources(sess):
 
 def _setup_acl(sess, n_root):
     # Grant group 'wheel' all permissions on resource 'root'.
-    n_root.allow(sess, SYSTEM_UID, '*', group=WHEEL_RID)
+    n_root.allow(sess, SYSTEM_UID, Permissions.all.value, group=WHEEL_RID)
+    # Grant group 'users' permission 'visit' on resource 'root'.
+    n_root.allow(sess, SYSTEM_UID, Permissions.visit.value, group=USERS_RID)
 
 
 def create_schema(sess, rc):
