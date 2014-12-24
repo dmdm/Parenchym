@@ -109,8 +109,9 @@
 
         <%include file="pym:templates/_layouts/page_footer.mako" />
         <script>
-        require(['ng',     'pym/app'],
-        function( angular,  PymApp) {
+        require(['ng',     'pym/pym', 'pym/app'],
+        function( angular,  PYM,       PymApp) {
+            ## This needs PYM!
             ${pym.growl_flash()}
 
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
