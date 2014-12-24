@@ -18,7 +18,7 @@ class OpenIdConnectClient(object):
 
     def __init__(self, rc, session, app_name='Parenchym',
                  app_type=clientsecrets.TYPE_WEB):
-        """Glues Google's lib ``oauth2client`` to ``Parenchym``.
+        """Glues Google's ``oauth2client`` and ``Requests' oauthlib`` to ``Parenchym``.
 
         Some code adapted from Google's sample code ``gplus-quickstart-python``.
 
@@ -274,7 +274,7 @@ class OpenIdConnectClient(object):
     @auth_result.setter
     def auth_result(self, v):
         self.session[self.auth_result_key] = v
-        ti = requests.get(self._token_info_url + v['id_token']).json()
+        # ti = requests.get(self._token_info_url + v['id_token']).json()
         # from pprint import pprint
         # pprint(ti)
 
