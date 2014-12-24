@@ -136,8 +136,8 @@ class LoginOutView(object):
         cl = self.oidc_clients['google']
 
         auth_result = self.request.json_body.get('auth_result')
-        print('---[ auth result ]-------')
-        pprint(auth_result)
+        # print('---[ auth result ]-------')
+        # pprint(auth_result)
         # Parenchym already checks a CSRF token for AJAX requests in general.
         # Here we check the CSRF token that came back from a round-trip to Google.
         state = auth_result.get('state')
@@ -358,17 +358,17 @@ class LoginOutView(object):
             elif r == pym.google.oauth.OpenIdConnectClient.CONNECTED:
                 self.lgg.debug('User connected')
             gplus_id = str(cl.gplus_id)
-            print('---[ gplus id ]-------')
-            print(gplus_id)
-            print('---[ credentials access token ]-------')
-            print(cl.credentials.access_token)
-            print('---[ credentials id token ]-------')
-            pprint(cl.credentials.id_token)
-            # Fetch name and email address from gplus
-            print('---[ profile ]-------')
+            # print('---[ gplus id ]-------')
+            # print(gplus_id)
+            # print('---[ credentials access token ]-------')
+            # print(cl.credentials.access_token)
+            # print('---[ credentials id token ]-------')
+            # pprint(cl.credentials.id_token)
+            # # Fetch name and email address from gplus
+            # print('---[ profile ]-------')
             self.lgg.debug('Fetching profile')
             p = cl.fetch_profile()
-            pprint(p)
+            # pprint(p)
             r = _process(gplus_id, p)
             # We had scheduled any growl messages in response. This is okay as
             # long as we stay on the same page. If we redirect elsewhere, that

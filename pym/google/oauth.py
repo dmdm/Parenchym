@@ -275,8 +275,8 @@ class OpenIdConnectClient(object):
     def auth_result(self, v):
         self.session[self.auth_result_key] = v
         ti = requests.get(self._token_info_url + v['id_token']).json()
-        from pprint import pprint
-        pprint(ti)
+        # from pprint import pprint
+        # pprint(ti)
 
     @property
     def token_type(self):
