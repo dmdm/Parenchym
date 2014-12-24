@@ -7,7 +7,6 @@ import os
 from pym.rc import Rc
 import pym.auth.models
 import pym.models
-import pym.models.schema
 
 
 # this is the Alembic Config object, which provides
@@ -35,7 +34,7 @@ if not PYM_ENV:
 # The directory of the config file is our root_dir
 rc = Rc(environment=PYM_ENV,
     root_dir=os.path.normpath(
-        os.path.join(os.path.dirname(__file__), '..')
+        os.path.join(os.path.dirname(__file__), '..', '..', '..')
     )
 )
 rc.load()
@@ -53,16 +52,16 @@ def run_migrations_offline():
     script output.
 
     """
-    #url = config.get_main_option("sqlalchemy.url")
     url = rc.g('db.pym.sa.url')
     context.configure(
         url=url,
+        target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True
     )
 
     with context.begin_transaction():
-        context.run_migrations()
+        context.run_migrations(rc=rc)
 
 
 def run_migrations_online():
@@ -72,26 +71,23 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-#    engine = engine_from_config(
-#                config.get_section(config.config_ini_section),
-#                prefix='sqlalchemy.',
-#                poolclass=pool.NullPool)
     engine = engine_from_config(
-                rc.data,
-                prefix='db.pym.sa.',
-                poolclass=pool.NullPool)
+        rc.data,
+        prefix='db.pym.sa.',
+        poolclass=pool.NullPool
+    )
 
     connection = engine.connect()
     context.configure(
-                connection=connection,
+        connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True
-                )
+    )
 
     try:
         with context.begin_transaction():
-            context.run_migrations()
+            context.run_migrations(rc=rc)
     finally:
         connection.close()
 
@@ -99,4 +95,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

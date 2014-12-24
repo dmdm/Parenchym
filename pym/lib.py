@@ -636,6 +636,7 @@ def flash(request, text, kind='notice', title=None, status=None):
     """
     kind = kind.lower()
     tt = dict(
+        s='Success',
         i='Info',
         w='Warning',
         e='Error'.upper(),

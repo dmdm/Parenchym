@@ -1,4 +1,11 @@
+import functools
+import pyramid.i18n
+import pym.i18n
 from .exc import ValidationError, WorkerError
+
+_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
+
+RESPOND_FULL_EXCEPTION = False
 
 
 class JsonResp(object):
@@ -18,6 +25,36 @@ class JsonResp(object):
         self._msgs = []
         self._is_ok = True
         self._data = None
+
+    def call_wrapped(self, lgg, f, respond_full_exception=None):
+        """
+        Wraps a function call in a JsonResp object.
+
+        We call prepared function ``f`` with kwarg ``resp`` set to this JsonResp
+        object. We catch any exception and log it using the given logger
+        ``lgg``. Depending on :const:`pym.resp.RESPOND_FULL_EXCEPTION` we add the
+        exception or just a generic message as a fatal to the response.
+
+        If the function call succeeds, we store its return value in our ``data``
+        attribute.
+
+        :param lgg: Logger to log exceptions with.
+        :param f: Function to call
+        :param respond_full_exception: Whether or not to respond with exception
+            or generic message. Overrides module constant
+            ``RESPOND_FULL_EXCEPTION``. If None (default), we use module
+            constant.
+        """
+        if respond_full_exception is None:
+            respond_full_exception = RESPOND_FULL_EXCEPTION
+        try:
+            self.data = f(resp=self)
+        except Exception as exc:
+            lgg.exception(exc)
+            if respond_full_exception:
+                self.fatal(str(exc))
+            else:
+                self.fatal(_("A fatal error occurred"))
 
     def adapt(self, other):
         """

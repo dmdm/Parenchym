@@ -25,16 +25,28 @@ upload_tmp_dir: "{here}/var/tmp_uploads"
 # Client ID for web applications, if statically registered at provider
 # Key is ``oidc.me.`` + PROVIDER + PROJECT
 oidc.me.google.Parenchym:
-  client_id: SECRET
-  email_address: SECRET
-  client_secret: SECRET
-  redirect_uris: SECRET
-  javascript_origins: SECRET
-
+  # Path to JSON file with secrets as downloaded from Google Developers Console
+  secret_file: ~/google-client_secret.json
+  # override settings from secret file with these
+  #redirect_uri: http://localhost:6543/oauth2callback
+  redirect_uri: postmessage
+  javascript_origin: http://localhost:6543
+  response_type: code
+  scope:
+  - "https://www.googleapis.com/auth/plus.login"
+  - "https://www.googleapis.com/auth/plus.me"
+  - "email"
+  - "profile"
+  cookie_policy: single_host_origin
+  access_type: offline
+  approval_prompt: auto
+  request_visible_actions: http://schemas.google.com/AddActivity
+  theme: dark
 
 # URL to retrieve Google's Discovery Document
 oidc.discovery.google: https://accounts.google.com/.well-known/openid-configuration
-
+# URL to let Google parse the id_token (debugging only!)
+oidc.token_info.google: https://www.googleapis.com/oauth2/v1/tokeninfo?id_token=
 
 # ---[ Encryption ]-------
 
@@ -95,19 +107,19 @@ cache.regions: [region_default, region_auth_short_term, region_auth_long_term]
 cache.region_default.backend: dogpile.cache.redis
 cache.region_default.arguments.url: redis:///var/run/redis/redis.sock
 cache.region_default.arguments.db: 0
-cache.region_default.arguments.redis_expiration_time: 300
+cache.region_default.arguments.redis_expiration_time: 300  # 5 min
 cache.region_default.arguments.distributed_lock: true
 
 cache.region_auth_short_term.backend: dogpile.cache.redis
 cache.region_auth_short_term.arguments.url: redis:///var/run/redis/redis.sock
 cache.region_auth_short_term.arguments.db: 0
-cache.region_auth_short_term.arguments.redis_expiration_time: 600
+cache.region_auth_short_term.arguments.redis_expiration_time: 600  # 10 min
 cache.region_auth_short_term.arguments.distributed_lock: true
 
 cache.region_auth_long_term.backend: dogpile.cache.redis
 cache.region_auth_long_term.arguments.url: redis:///var/run/redis/redis.sock
 cache.region_auth_long_term.arguments.db: 0
-cache.region_auth_long_term.arguments.redis_expiration_time: 7200
+cache.region_auth_long_term.arguments.redis_expiration_time: 7200  # 2 hrs
 cache.region_auth_long_term.arguments.distributed_lock: true
 
 

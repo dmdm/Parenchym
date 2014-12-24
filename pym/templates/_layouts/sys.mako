@@ -60,6 +60,7 @@
                     , 'pym-v':           'static-pym/vendor'
                     , 'ccg':             'static-ccg/app'
                     , 'ccg-v':           'static-ccg/vendor'
+                    , 'google-client':   'https://apis.google.com/js/client:platform.js?onload=start'
                 }
                 , shim: {
                       'jq-ui':                                ['jquery']
@@ -75,6 +76,7 @@
                     , 'ng-ui-select2':                        ['ng', 'select2']
                     , 'ng-ui-bs':                             ['ng']
                     , 'ng-ui-router':                         ['ng']
+                    , 'google-client':                        ['ng']
                 }
                 , waitSeconds: 15
             };

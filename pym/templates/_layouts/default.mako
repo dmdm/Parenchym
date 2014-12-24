@@ -109,8 +109,8 @@
 
         <%include file="pym:templates/_layouts/page_footer.mako" />
         <script>
-        require(['requirejs/domReady!', 'jquery', 'pym/pym', 'ng',    'pym/app'],
-        function( doc,                   $,        PYM,       angular, PymApp) {
+        require(['ng',     'pym/app'],
+        function( angular,  PymApp) {
             ${pym.growl_flash()}
 
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
@@ -129,6 +129,8 @@
                 }
                 load_menu_items();
             }]);
+
+            return MainMenuCtrl;
         });
         </script>
     </body>

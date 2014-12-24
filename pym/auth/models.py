@@ -2,7 +2,8 @@ import babel
 import pyramid.security
 import pyramid.util
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import INET, HSTORE, ARRAY
+from sqlalchemy.dialects.postgresql import INET, HSTORE, ARRAY, JSON
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -152,6 +153,93 @@ class GroupMember(DbBase, DefaultMixin):
     member_group = relationship('Group', foreign_keys=[member_group_id])
 
 
+class GplusProfile():
+
+    def __init__(self, user):
+        self._user = user
+        if 'gplus' not in user._profile:
+            user._profile['gplus'] = {}
+
+    @property
+    def id(self):
+        return self._user.gplus_id
+
+    @id.setter
+    def id(self, v):
+        self._user.gplus_id = v
+
+    @property
+    def picture_url(self):
+        return self._user._profile['gplus'].get('picture_url')
+
+    @picture_url.setter
+    def picture_url(self, v):
+        self._user._profile['gplus']['picture_url'] = v
+
+    @property
+    def profile_url(self):
+        return self._user._profile['gplus'].get('profile_url')
+
+    @profile_url.setter
+    def profile_url(self, v):
+        self._user._profile['gplus']['profile_url'] = v
+
+
+class GenderEnum(pym.lib.Enum):
+    male = 'm'
+    female = 'f'
+    trans = 't'
+    unknown = None
+
+
+class UserProfile():
+
+    def __init__(self, user, gplus_class=GplusProfile):
+        if user._profile is None:
+            user._profile = {}
+        self._user = user
+        self._gplus = gplus_class(user)
+
+    @property
+    def gplus(self):
+        return self._gplus
+
+    @property
+    def locale_name(self):
+        return self._user._profile.get('locale_name')
+
+    @locale_name.setter
+    def locale_name(self, v):
+        self._user._profile['locale_name'] = v
+
+    @property
+    def gender(self):
+        v = self._user._profile.get('gender')
+        if v is None:
+            return None
+        for name, elem in GenderEnum.__members__.items():
+            if v == elem.value:
+                return elem
+        raise ValueError("Invalid gender: '{}'".format(v))
+
+    @gender.setter
+    def gender(self, v):
+        if isinstance(v, str):
+            for name, elem in GenderEnum.__members__.items():
+                if v == elem.value or v == name:
+                    self._user._profile['gender'] = v
+                    return
+            raise ValueError("Invalid gender: '{}'".format(v))
+        else:
+            self._user._profile['gender'] = v.value
+
+
+class UserRc():
+
+    def __init__(self, user):
+        self.user = user
+
+
 class User(DbBase, DefaultMixin):
     """
     A user account.
@@ -208,6 +296,9 @@ class User(DbBase, DefaultMixin):
     identity_url = sa.Column(CleanUnicode(255), index=True, unique=True,
         info={'colanderalchemy': {'title': _("Identity URL")}})
     """Used for login by OpenID."""
+    gplus_id = sa.Column(CleanUnicode(255), index=True, unique=True,
+        info={'colanderalchemy': {'title': _("Google+ ID")}})
+    """Used for login by Google+ (OpenID Connect)."""
     email = sa.Column(CleanUnicode(128), nullable=False,
         info={'colanderalchemy': {'title': _("Email")}})
     """Email address. Always lower cased."""
@@ -246,6 +337,33 @@ class User(DbBase, DefaultMixin):
         info={'colanderalchemy': {'title': _("Description")}})
     )
     """Optional description."""
+    _profile = sa.orm.deferred(
+        sa.Column(
+            'profile',
+            MutableDict.as_mutable(JSON()),
+            nullable=True,
+            default=dict(),
+            info={'colanderalchemy': {'title': _("Profile")}}
+        )
+    )
+    """Profile data as JSON (aka detailed 'about me')"""
+    _rc = sa.orm.deferred(
+        sa.Column(
+            'rc',
+            MutableDict.as_mutable(JSON()),
+            nullable=True,
+            info={'colanderalchemy': {'title': _("Rc")}}
+        )
+    )
+    """User's preferences"""
+    sessionrc = sa.orm.deferred(
+        sa.Column(
+            MutableDict.as_mutable(JSON()),
+            nullable=True,
+            info={'colanderalchemy': {'title': _("SessionRc")}}
+        )
+    )
+    """User's session"""
 
     group_memberships = relationship('GroupMember',
         foreign_keys='GroupMember.member_user_id')
@@ -254,6 +372,18 @@ class User(DbBase, DefaultMixin):
         #info={'colanderalchemy': {'title': _("Groups")}})
     """List of groups we are directly member of. Call :meth:`load_all_groups` to
     get all."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orm_init()
+
+    @sa.orm.reconstructor
+    def init_on_load(self):
+        self._orm_init()
+
+    def _orm_init(self):
+        self.profile = UserProfile(self)
+        self.rc = UserRc(self)
 
     def load_all_groups(self):
         def creator():
@@ -400,7 +530,7 @@ class Permission(DbBase, DefaultMixin):
         """
         perm.parent = self
 
-    @region_auth_long_term.cache_on_arguments()
+    @region_auth_long_term.cache_on_arguments(namespace='permission')
     def load_all(sess):
         """
         Returns detailed info about permissions.
@@ -637,9 +767,27 @@ def get_vw_group_member_browse():
 
 class CurrentUser(object):
 
-    SESS_KEY = 'auth:current_user'
+    SESSION_KEY = 'auth:current_user'
 
     def __init__(self, sess, request, user_class):
+        """
+        This class describes the current user.
+
+        This class gets bolted onto ``request`` and is used to handle the
+        current user. Even if no-one is logged in, we have a current user:
+        "nobody".
+
+        Use this class to process login/logout, and handle attributes of the
+        current user in the current session.
+
+        This class does not handle storage of user records itself, but relies
+        on an injected ``auth_provider``.
+
+        :param sess: Current DB session
+        :param request: Current request
+        :param user_class: Class that represents a stored user, needed for
+            ``auth_provider``.
+        """
         self._request = request
         self._metadata = {}
         self._groups = []
@@ -660,13 +808,6 @@ class CurrentUser(object):
         if not u:
             raise pym.exc.AuthError('User nobody not in database')
         self.init_from_user(u)
-        # self.uid = NOBODY_UID
-        # self.principal = NOBODY_PRINCIPAL
-        # self._metadata = dict(
-        #     email=NOBODY_EMAIL,
-        #     display_name=NOBODY_DISPLAY_NAME
-        # )
-        # self.groups = []
 
     def init_from_user(self, u):
         """
@@ -735,7 +876,7 @@ class CurrentUser(object):
             u = self.auth_provider.load_by_principal(principal)
         else:
             u = principal
-        self._request.session[self.__class__.SESS_KEY + '/prev_user'] = \
+        self._request.session[self.__class__.SESSION_KEY + '/prev_user'] = \
             self.principal
         self.init_from_user(u)
         self._request.session.new_csrf_token()
@@ -750,13 +891,17 @@ class CurrentUser(object):
         """
         try:
             principal = self._request.session[
-                self.__class__.SESS_KEY + '/prev_user']
+                self.__class__.SESSION_KEY + '/prev_user']
+            del self._request.session[self.__class__.SESSION_KEY + '/prev_user']
         except KeyError:
             return False
         u = self.auth_provider.load_by_principal(principal)
         self.init_from_user(u)
         self._request.session.new_csrf_token()
         return u
+
+    def is_impersonated(self):
+        return self.__class__.SESSION_KEY + '/prev_user' in self._request.session
 
     def logout(self):
         """
@@ -809,8 +954,7 @@ def get_current_user(request):
     principal = pyramid.security.unauthenticated_userid(request)
     sess = DbSession()
     rc = request.registry.settings['rc']
-    user_class = _dnr.resolve(
-        rc.g('auth.class.user'))
+    user_class = _dnr.resolve(rc.g('auth.class.user'))
     cusr = CurrentUser(sess, request, user_class)
     if principal is not None:
         cusr.load_by_principal(principal)

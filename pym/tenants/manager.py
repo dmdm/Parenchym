@@ -1,5 +1,6 @@
 import datetime
 import sqlalchemy as sa
+import pyramid.location
 from pym.auth.models import User, Group, GroupMember
 from pym.auth.manager import create_group, create_group_member
 from pym.auth.const import SYSTEM_UID, GROUP_KIND_TENANT

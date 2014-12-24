@@ -68,6 +68,9 @@ class AuthProvider():
         """
         Performs login.
 
+        If ``pwd`` is True, we do not check the password. This is necessary if
+        user logs in via third-party OpenID and we use only his email address.
+
         Called by the ``login_by...`` functions which initialise the filter.
         """
         filter_.append(self.user_class.is_enabled == True)
@@ -80,8 +83,9 @@ class AuthProvider():
         # preparations can take place before we actually log him in.
         request.registry.notify(BeforeUserLoggedIn(request, u))
         # Now log user in
-        if not pym.security.pwd_context.verify(pwd, u.pwd):
-            raise AuthError('Wrong credentials')
+        if pwd is not True:
+            if not pym.security.pwd_context.verify(pwd, u.pwd):
+                raise AuthError('Wrong credentials')
         # And save some stats
         u.login_time = datetime.datetime.now()
         u.login_ip = remote_addr

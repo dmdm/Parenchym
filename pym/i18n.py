@@ -24,7 +24,7 @@ def translate_choices(translate_func, choices):
     `translate_func` can be a partial (see `functools.partial`) initialised
     with domain and mapping. A translation function can be
     `pyramid.i18n.Localizer.translate()`, which can be obtained with
-    `pyramid.i18n.get_localizer(request)`.
+    ``request.localizer``.
 
     :param translate_func: A function to translate the strings.
     :param choices: Typically list of 2-tuples with choices. May also be a dict.
@@ -165,6 +165,8 @@ def fetch_translated(request, data):
     if request.user.preferred_locale:
         wanted.insert(0, str(request.user.preferred_locale))
     avail = list(data.keys())
+    if not avail:
+        return None
     loc = babel.Locale.negotiate(wanted, avail)
     if loc:
         return data[str(loc)]
@@ -172,4 +174,4 @@ def fetch_translated(request, data):
         try:
             return data['*']
         except KeyError:
-            return None
+            return data[avail[0]]

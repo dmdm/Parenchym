@@ -16,6 +16,7 @@ import pym.res
 import pym.res.models
 import pym.auth.manager
 import pym.lib
+import pym.resp
 
 from .rc import Rc
 
@@ -59,17 +60,22 @@ def main(global_config, **settings):
 
 
 def includeme(config):
+    rc = config.registry.settings['rc']
 
-    # Override deform templates
-    # Initialisation must take place from within dom-ready! Else
-    # deform.js and/or jquery is not loaded, because we use requirejs
-    def translator(term):
-        return get_localizer(get_current_request()).translate(term)
+    # Set some module constants based on RC settings
+    init_auth(rc)
+    pym.resp.RESPOND_FULL_EXCEPTION = rc.g('debug', False)
 
-    deform_templates = resource_filename('deform', 'templates')
-    search_path = (resource_filename('pym', 'deform_templates'),
-        deform_templates)
-    deform.Form.set_zpt_renderer(search_path, translator=translator)
+    # # Override deform templates
+    # # Initialisation must take place from within dom-ready! Else
+    # # deform.js and/or jquery is not loaded, because we use requirejs
+    # def translator(term):
+    #     return get_localizer(get_current_request()).translate(term)
+    #
+    # deform_templates = resource_filename('deform', 'templates')
+    # search_path = (resource_filename('pym', 'deform_templates'),
+    #     deform_templates)
+    # deform.Form.set_zpt_renderer(search_path, translator=translator)
 
     # Init resource root
     config.set_root_factory(res.models.root_factory)
@@ -79,7 +85,7 @@ def includeme(config):
     config.set_session_factory(session_factory)
 
     from .auth import group_finder
-    from .auth.models import get_current_user
+    from .auth.models import get_current_user, Permissions
 
     # Init Auth and Authz
     auth_pol = SessionAuthenticationPolicy(
@@ -89,13 +95,14 @@ def includeme(config):
     config.add_request_method(get_current_user, 'user', reify=True)
     config.set_authentication_policy(auth_pol)
     config.set_authorization_policy(authz_pol)
-    config.set_default_permission('view')
+    config.set_default_permission(Permissions.read.value)
 
     # i18n
     config.add_translation_dirs('pym:locale/')
-    config.add_translation_dirs('deform:locale/')
+    # config.add_translation_dirs('deform:locale/')
     config.set_locale_negotiator(i18n.locale_negotiator)
     config.add_request_method(i18n.get_locale, 'locale', reify=True)
+    config.add_request_method(i18n.fetch_translated, 'fetch_translated', reify=True)
     # This sets the translation string factory and domain
     # for use in templates. See pym.subscribers.add_localizer().
     i18n.tsf = TranslationStringFactory('pym')
@@ -116,15 +123,13 @@ def includeme(config):
 
     # Static assets for this project
     config.add_static_view('static-pym', 'pym:static')
-    config.add_static_view('static-deform', 'deform:static')
-
-    init_auth(config.registry.settings['rc'])
+    # config.add_static_view('static-deform', 'deform:static')
 
     # View predicates from pyramid_duh
     config.include(duh_view)
     # Redis
     config.include('pyramid_redis')
-    configure_cache_regions(config.registry.settings['rc'])
+    configure_cache_regions(rc)
 
 
 def configure_cache_regions(rc):

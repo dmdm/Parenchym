@@ -1,0 +1,8 @@
+#!/bin/bash
+
+pip install \
+	--upgrade \
+	--download-cache /var/cache/pip \
+	-f /var/cache/pip/ \
+	$@
+	

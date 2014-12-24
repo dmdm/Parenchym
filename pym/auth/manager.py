@@ -36,6 +36,7 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
 
     # Create the user
     u = User()
+    sess.add(u)
     # Cannot rely on find(), because when we initialise the DB, owner might not
     # yet exist.
     u.owner_id = owner if isinstance(owner, int) else User.find(sess, owner).id
@@ -48,7 +49,12 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     # If display_name is empty, use principal
     if not u.display_name:
         u.display_name = u.principal
-    sess.add(u)
+    # TODO Make sure display_name is unique by suffixing if necessary
+    # hint: lock user table for readonly, load all display_names that start with
+    #       current display_name. Fetch a suffix and check again. Repeat if
+    #       necessary.
+    # Principal and email must be unique too, but a violation of their uniqueness
+    # is better handled by the caller: we let the exception bubble up.
     sess.flush()  # to get ID of user
 
     # Load/create the groups and memberships
