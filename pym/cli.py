@@ -159,6 +159,7 @@ class Cli(object):
         pym.init_auth(rc)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
+        pym.configure_cache_regions(rc)
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         self.init_app(args, lgg=lgg, rc=rc, rc_key=rc_key,

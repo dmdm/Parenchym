@@ -102,8 +102,14 @@ sass.out2: "{here}/pym/static/css/styles2.css"
 
 # ---[ Cache ]-------
 
+# General URL to redis cache
+cache.redis.url: redis:///var/run/redis/redis.sock?db=0
+
 cache.regions: [region_default, region_auth_short_term, region_auth_long_term]
 
+# In principle, each region may define its own URL and DB independently, but
+# for the time being, to stay consistent with CLI scripts, all regions should
+# use the same database, denoted by 'cache.redis.url' above.
 cache.region_default.backend: dogpile.cache.redis
 cache.region_default.arguments.url: redis:///var/run/redis/redis.sock
 cache.region_default.arguments.db: 0
