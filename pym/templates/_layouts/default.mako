@@ -82,6 +82,7 @@
         </script>
         <%block name="scripts">
             <script src="${request.static_url('pym:static/vendor/requirejs/require.min.js')}"></script>
+##          PYM can and must be initialised even before the page is complete
             <script>
             require(['pym/pym'], function(PYM) {
                 PYM.init({
@@ -109,8 +110,8 @@
 
         <%include file="pym:templates/_layouts/page_footer.mako" />
         <script>
-        require(['ng',     'pym/pym', 'pym/app'],
-        function( angular,  PYM,       PymApp) {
+        require(['requirejs/domReady!', 'ng',     'pym/pym', 'pym/app'],
+        function( doc,                   angular,  PYM,       PymApp) {
             ## This needs PYM!
             ${pym.growl_flash()}
 
@@ -119,7 +120,6 @@
             function ($scope,   $http) {
                 $scope.model = {};
                 $scope.model.items = {};
-                $scope.model.active_item = null;
 
                 function load_menu_items()
                 {
@@ -130,7 +130,6 @@
                 }
                 load_menu_items();
             }]);
-
             return MainMenuCtrl;
         });
         </script>
