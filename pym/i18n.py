@@ -59,13 +59,6 @@ def locale_negotiator(request):
     which is a WebOb object, find the best match from our available
     languages.
     """
-    avail_languages = request.registry.settings['i18n.avail_languages']
-    loc = request.user.preferred_locale
-    if not loc:
-        loc = pyramid.i18n.default_locale_negotiator(request)
-    if loc:
-        if '*' in avail_languages or loc in avail_languages:
-            return loc
     # Some bots seem to transmit just '*' and WebOB then throws
     # an exception:
     #     Traceback (most recent call last):
@@ -110,6 +103,15 @@ def locale_negotiator(request):
     #   File "/home/ceres/.virtualenvs/pym-py32-env/lib/python3.2/site-packages/webob/acceptparse.py", line 316, in _check_offer
     #     raise ValueError("The application should offer specific types, got %r" % offer)
     # ValueError: The application should offer specific types, got '*'
+    avail_languages = request.registry.settings['i18n.avail_languages']
+    wanted_loc = request.user.preferred_locale
+    if wanted_loc is not None:
+        wanted_loc = str(wanted_loc)
+    if not wanted_loc:
+        wanted_loc = pyramid.i18n.default_locale_negotiator(request)
+    if wanted_loc:
+        if '*' in avail_languages or wanted_loc in avail_languages:
+            return wanted_loc
     try:
         return request.accept_language.best_match(avail_languages)
     except ValueError:

@@ -100,12 +100,13 @@ def includeme(config):
     # i18n
     config.add_translation_dirs('pym:locale/')
     # config.add_translation_dirs('deform:locale/')
+    # Use Parenchym's locale negotiator
     config.set_locale_negotiator(i18n.locale_negotiator)
+    # Pyramid since 1.5 provides ``request.locale_name``.
+    # We provide ``locale`` as an instance of ``babel.Locale``.
     config.add_request_method(i18n.get_locale, 'locale', reify=True)
+    # Convenience function
     config.add_request_method(i18n.fetch_translated, 'fetch_translated', reify=True)
-    # This sets the translation string factory and domain
-    # for use in templates. See pym.subscribers.add_localizer().
-    i18n.tsf = TranslationStringFactory('pym')
 
     # Mailer
     config.registry['mailer'] = Mailer.from_settings(config.registry.settings)

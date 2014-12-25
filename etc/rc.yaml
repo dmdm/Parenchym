@@ -103,7 +103,7 @@ sass.out2: "{here}/pym/static/css/styles2.css"
 # ---[ Cache ]-------
 
 # General URL to redis cache
-cache.redis.url: redis:///var/run/redis/redis.sock?db=0
+cache.redis.url: redis:///tmp/redis.sock?db=0
 
 cache.regions: [region_default, region_auth_short_term, region_auth_long_term]
 
@@ -111,19 +111,19 @@ cache.regions: [region_default, region_auth_short_term, region_auth_long_term]
 # for the time being, to stay consistent with CLI scripts, all regions should
 # use the same database, denoted by 'cache.redis.url' above.
 cache.region_default.backend: dogpile.cache.redis
-cache.region_default.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_default.arguments.unix_socket_path: redis:///tmp/redis.sock?db=0
 cache.region_default.arguments.db: 0
 cache.region_default.arguments.redis_expiration_time: 300  # 5 min
 cache.region_default.arguments.distributed_lock: true
 
 cache.region_auth_short_term.backend: dogpile.cache.redis
-cache.region_auth_short_term.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_auth_short_term.arguments.unix_socket_path: redis:///tmp/redis.sock?db=0
 cache.region_auth_short_term.arguments.db: 0
 cache.region_auth_short_term.arguments.redis_expiration_time: 600  # 10 min
 cache.region_auth_short_term.arguments.distributed_lock: true
 
 cache.region_auth_long_term.backend: dogpile.cache.redis
-cache.region_auth_long_term.arguments.url: redis:///var/run/redis/redis.sock
+cache.region_auth_long_term.arguments.unix_socket_path: redis:///tmp/redis.sock?db=0
 cache.region_auth_long_term.arguments.db: 0
 cache.region_auth_long_term.arguments.redis_expiration_time: 7200  # 2 hrs
 cache.region_auth_long_term.arguments.distributed_lock: true
@@ -131,9 +131,10 @@ cache.region_auth_long_term.arguments.distributed_lock: true
 
 # ---[ Redis ]-------
 
-#redis.url: 'redis:///var/run/redis/redis.sock'
-redis.url: 'redis://localhost:6379'
-redis.db: 1
+# Configure another connection, so that we can access the cache db from outside
+# of dogpile.cache.
+redis.unix_socket_path: /tmp/redis.sock
+redis.db: 0
 redis.max_connections: ~
 
 # {here} is expanded to absolute path which starts with `/'

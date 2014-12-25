@@ -200,6 +200,9 @@ class UserProfile():
         self._user = user
         self._gplus = gplus_class(user)
 
+    def get_all(self):
+        return self._user._profile
+
     @property
     def gplus(self):
         return self._gplus
@@ -820,6 +823,7 @@ class CurrentUser(object):
         self._metadata['first_name'] = u.first_name
         self._metadata['last_name'] = u.last_name
         self._metadata['display_name'] = u.display_name
+        self._metadata['preferred_locale'] = u.profile.locale_name
 
     def is_auth(self):
         """Tells whether user is authenticated, i.e. is not nobody

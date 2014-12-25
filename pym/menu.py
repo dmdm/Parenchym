@@ -5,6 +5,7 @@ import pyramid.location
 import pym.i18n
 from pym.tenants.const import DEFAULT_TENANT_NAME
 from pym.sys.const import NODE_NAME_SYS, NODE_NAME_SYS_CACHE_MGMT
+from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
 from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
@@ -37,6 +38,29 @@ _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 #         'href': url_to(node)
 #     })
 #     return menu
+
+
+def me_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+        translate=lambda s: s):
+    # Me
+    node_me = root_node[NODE_NAME_ME]
+    id_ = resource_path(node_me)
+    menu_me = {
+        'id': id_,
+        'text': translate(_("Me")),
+        'href': url_to(node_me),
+        'children': []
+    }
+    # Me / Profile
+    node_profile = node_me[NODE_NAME_ME_PROFILE]
+    id_ = resource_path(node_profile)
+    menu_me['children'].append({
+        'id': id_,
+        'text': translate(_("Profile")),
+        'href': url_to(node_profile),
+        'children': []
+    })
+    return menu_me
 
 
 def sys_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
@@ -105,7 +129,8 @@ def sys_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
 def main_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         translate=lambda s: s):
     menu = [
-        sys_menu(root_node, url_to, tenant, translate),
+        me_menu(root_node, url_to, tenant, translate),
+        sys_menu(root_node, url_to, tenant, translate)
     ]
     return menu
 

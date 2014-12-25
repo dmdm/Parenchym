@@ -107,6 +107,8 @@ class AuthProvider():
         u.logout_time = datetime.datetime.now()
         u.editor_id = SYSTEM_UID
         request.registry.notify(UserLoggedOut(request, u))
+        key = 'auth:user:{}'.format(u.principal)
+        request.redis.delete(key)
         return u
 
     def _check_credentials(*args):

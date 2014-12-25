@@ -12,9 +12,10 @@ from pyramid.i18n import get_localizer
 import pym.models
 import pym.auth.models
 import pym.events
+import pym.i18n
 
 
-_ = pyramid.i18n.TranslationStringFactory('Parenchym')
+_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 mlgg = logging.getLogger(__name__)
 
 DEBUG = False
@@ -44,11 +45,12 @@ def add_renderer_globals(event):
     Make globals available in all renderers.
 
     - ``h`` contains module :mod:`pym.renderer_globals`
-    - REMOVED ``_`` is the shortcut for translate method
+    - ``_`` is the shortcut for translate method
     - ``bfmt`` is an instance of :mod:`babel.support.Format`, initialised
       with current locale. It contains convenience functions like
       ``format_number()`` etc.
     - ``babel`` contains complete module :mod:`babel`
+    - ``localizer`` contains the current request's localizer
     """
     import pym.renderer_globals
     event['h'] = pym.renderer_globals
@@ -56,6 +58,18 @@ def add_renderer_globals(event):
     event['bfmt'] = babel.support.Format(request.locale_name)
     event['babel'] = babel
     event['icu'] = icu
+    event['_'] = request.tpl_translate
+    event['localizer'] = request.localizer
+
+
+@subscriber(NewRequest)
+def add_localizer(event):
+    request = event.request
+
+    def auto_translate(*args, **kwargs):
+        return request.localizer.translate(_(*args, **kwargs))
+
+    request.tpl_translate = auto_translate
 
 
 # @subscriber(NewRequest)

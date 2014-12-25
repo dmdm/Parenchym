@@ -22,6 +22,7 @@ import pym.google.oauth
 import pym.auth.models as pam
 import pym.auth.manager
 import pym.tenants
+from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
@@ -270,7 +271,7 @@ class LoginOutView(object):
             _update_gplus_profile(u, p)
             m = _("Created account for user {display_name}. If you later wish to"
                 " login directly with this account, enter your own password in"
-                " the profile settings.")
+                " the profile settings.".format(display_name=u.display_name))
             resp.ok(m)
             if u.display_name != display_name:
                 self.lgg.info("Had to change display name from '{}' to "
@@ -289,7 +290,8 @@ class LoginOutView(object):
             self.lgg.info('Logging in {} ({})'.format(u.principal, u.id))
             remember(self.request, self.request.user.principal)
             resp.ok(_("User {} logged in.").format(u.display_name))
-            return self.request.session['login.referrer']
+            return self.request.resource_url(
+                self.request.context.root[NODE_NAME_ME][NODE_NAME_ME_PROFILE])
 
         def _deny(email, email_verified):
             if not email:
