@@ -6,6 +6,7 @@ import pym.i18n
 from pym.tenants.const import DEFAULT_TENANT_NAME
 from pym.sys.const import NODE_NAME_SYS, NODE_NAME_SYS_CACHE_MGMT
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
+from pym.journals.const import NODE_NAME_JOURNALS, Journals
 from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
@@ -38,6 +39,30 @@ _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 #         'href': url_to(node)
 #     })
 #     return menu
+
+
+def journals_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+        translate=lambda s: s):
+    # Journals
+    node_journals = root_node[tenant][NODE_NAME_JOURNALS]
+    id_ = resource_path(node_journals)
+    menu_journals = {
+        'id': id_,
+        'text': translate(_("Journals")),
+        'href': url_to(node_journals),
+        'children': []
+    }
+    # Individual journals
+    for j in Journals:
+        node_j = node_journals
+        id_ = resource_path(node_j)
+        menu_journals['children'].append({
+            'id': id_,
+            'text': j.value['title'],
+            'href': url_to(node_j, j.value['name']),
+            'children': []
+        })
+    return menu_journals
 
 
 def me_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
@@ -130,6 +155,7 @@ def main_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         translate=lambda s: s):
     menu = [
         me_menu(root_node, url_to, tenant, translate),
+        journals_menu(root_node, url_to, tenant, translate),
         sys_menu(root_node, url_to, tenant, translate)
     ]
     return menu

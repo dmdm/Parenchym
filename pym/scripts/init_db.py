@@ -21,6 +21,7 @@ import pym.sys.setup
 import pym.auth.setup
 import pym.tenants.setup
 import pym.me.setup
+import pym.journals.setup
 
 
 class Runner(pym.cli.Cli):
@@ -48,7 +49,8 @@ class Runner(pym.cli.Cli):
             # pym.sys.setup.create_schema(sess, rc=self.rc)
             # pym.auth.setup.create_schema(sess, rc=self.rc)
             # pym.tenants.setup.create_schema(sess, rc=self.rc)
-            pym.me.setup.create_schema(sess, rc=self.rc)
+            # pym.me.setup.create_schema(sess, rc=self.rc)
+            # pym.journals.setup.create_schema(sess, rc=self.rc)
             mark_changed(sess)
         with transaction.manager:
             # Create all models
@@ -56,6 +58,7 @@ class Runner(pym.cli.Cli):
             # Users and stuff we need to setup the modules
             # pym.auth.setup.populate(sess, root_pwd=root_pwd, rc=self.rc)
             if not self.args.schema_only:
+                pass
                 # pym.res.setup.setup(sess, rc=self.rc)
                 # sess.flush()  # Need ID
                 # pym.sys.setup.setup(sess, rc=self.rc)
@@ -64,8 +67,10 @@ class Runner(pym.cli.Cli):
                 # sess.flush()  # Need ID
                 # pym.tenants.setup.setup(sess, rc=self.rc)
                 # sess.flush()  # Need ID
-                pym.me.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
+                # pym.me.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.journals.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
 
             if self.args.alembic_config:
                 alembic_cfg = alembic.config.Config(self.args.alembic_config)
