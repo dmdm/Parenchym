@@ -30,6 +30,8 @@ its parent.
 On the client-side, it integrates SASS, bootstrap, and angularjs and some of its
 third-party components via requirejs.
 
+Caching with Redis.
+
 
 Miscellaneous notes
 -------------------
