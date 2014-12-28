@@ -5,7 +5,7 @@ Web application Framework based on Pyramid.
 
 Licensed under the same license as Pyramid, see LICENSE.
 
-You can run Parenchym directly, or use it as a library. As-is Parenchym
+You can run Parenchym directly, or use it as a library. As-is, Parenchym
 presents a small application with login and registration facilities, the latter
 uses Google+ as auth provider.
 
