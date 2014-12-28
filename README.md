@@ -132,5 +132,18 @@ in a page template like this:
     </%block>
 
 
+### Other stuff
+
+- Basics to run a separate process as a scheduler using APScheduler, see ``pym-scheduler``
+
+- Generic importer to import arbitrary Excel or CSV files into a table: ``pym-import-raw``.
+
+- Basics to use remote headless LibreOffice, esp. LOCalc: ``pym/libuno.py``
+
+
+
+
+
+
 
 [1] http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/#the-pyramid-web-framework
