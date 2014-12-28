@@ -9,7 +9,7 @@ You can run Parenchym directly, or use it as a library. As-is Parenchym
 presents a small application with login and registration facilities, the latter
 uses Google+ as auth provider.
 
-See https://parenchym/py-pym-demo/
+See [demo](https://parenchym/py-pym-demo/)
 
 
 What is it good for?
