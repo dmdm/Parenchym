@@ -1,6 +1,5 @@
-#########
 Parenchym
-#########
+=========
 
 Web application Framework based on Pyramid.
 
@@ -8,7 +7,7 @@ Licensed under the same license as Pyramid, see LICENSE.
 
 
 What is it good for?
-====================
+--------------------
 
 Pyramid "is a small, fast, down-to-earth Python web framework"[1] with
 which you can write simple web applications with just a handful lines of code.
@@ -36,8 +35,8 @@ Caching with Redis.
 Miscellaneous notes
 -------------------
 
-Directories
-'''''''''''
+
+### Directories
 
 Server-side code is modeled as components, where-as each component should be
 a self-containing Python package. E.g. the ``auth`` package contains:
@@ -56,8 +55,7 @@ into ``pym/static``. The latter we do not have yet, so ``pym/static`` contains
 symlinks to ``client``.
 
 
-AngularJS application
-'''''''''''''''''''''
+### AngularJS application
 
 We bootstrap a complete angularjs application from ``client/src/app/app.js``.
 
@@ -95,8 +93,7 @@ has a certain architecture to provide payload as well as messages that the clien
 may growl. See :class:`pym.resp.JsonResp` for details.
 
 
-SASS/CSS
-''''''''
+### SASS/CSS
 
 We have a file-watcher that compiles our SASS files into the appropriate CSS
 files via the provided SASS compiler (``bin/sassc``):
