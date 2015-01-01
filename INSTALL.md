@@ -93,7 +93,7 @@ that matches your settings from the previous step. A sample is here:
 
     $ pym-init-db -c development.ini
 
-(If this doesn't seem to to do anything, I may have forgotten to uncomment some
+(If pym-init-db doesn't seem to to do anything, I may have forgotten to uncomment some
 setup methods. Go to
 
     pym/scripts/init_db.py
@@ -110,7 +110,7 @@ The line
 
     pym.auth.setup.populate()
 
-must also be active.
+must also be active.)
 
 
 8. Other dependencies

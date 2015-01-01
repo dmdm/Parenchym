@@ -177,10 +177,9 @@ class ResourceNode(DbBase, DefaultMixin):
                                    "simultaneously.")
 
         owner = pam.User.find(sess, owner)
-        if permission:
-            if isinstance(permission, pam.Permissions):
-                permission = permission.value
-            permission = pam.Permission.find(sess, permission)
+        if isinstance(permission, pam.Permissions):
+            permission = permission.value
+        permission = pam.Permission.find(sess, permission)
         fil = [
             pam.Ace.allow == allow,
             pam.Ace.permission_id == permission.id
@@ -211,6 +210,7 @@ class ResourceNode(DbBase, DefaultMixin):
             setattr(ace, k, v)
 
         self.acl.append(ace)
+        return ace
 
     def allow(self, sess, owner, permission, user=None, group=None,
             **kwargs):
@@ -229,7 +229,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        self._set_ace(sess=sess, owner=owner, allow=True, permission=permission,
+        return self._set_ace(sess=sess, owner=owner, allow=True, permission=permission,
             user=user, group=group, **kwargs)
 
     def deny(self, sess, owner, permission, user=None, group=None,
@@ -249,7 +249,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        self._set_ace(sess=sess, owner=owner, allow=False, permission=permission,
+        return self._set_ace(sess=sess, owner=owner, allow=False, permission=permission,
             user=user, group=group, **kwargs)
 
     def add_child(self, sess, owner, kind, name, **kwargs):

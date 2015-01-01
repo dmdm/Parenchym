@@ -6,6 +6,7 @@ import pym.i18n
 from pym.tenants.const import DEFAULT_TENANT_NAME
 from pym.sys.const import NODE_NAME_SYS, NODE_NAME_SYS_CACHE_MGMT
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
+from pym.fs.const import NODE_NAME_FS
 from pym.journals.const import NODE_NAME_JOURNALS, Journals
 from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
@@ -39,6 +40,20 @@ _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 #         'href': url_to(node)
 #     })
 #     return menu
+
+
+def fs_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+        translate=lambda s: s):
+    # Me
+    node_fs = root_node[NODE_NAME_FS]
+    id_ = resource_path(node_fs)
+    menu_fs = {
+        'id': id_,
+        'text': translate(_("Filesystem")),
+        'href': url_to(node_fs),
+        'children': []
+    }
+    return menu_fs
 
 
 def journals_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
@@ -156,7 +171,8 @@ def main_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
     menu = [
         me_menu(root_node, url_to, tenant, translate),
         journals_menu(root_node, url_to, tenant, translate),
-        sys_menu(root_node, url_to, tenant, translate)
+        sys_menu(root_node, url_to, tenant, translate),
+        fs_menu(root_node, url_to, tenant, translate)
     ]
     return menu
 

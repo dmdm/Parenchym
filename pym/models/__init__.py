@@ -8,6 +8,7 @@
 # http://stackoverflow.com/questions/4617291/how-do-i-get-a-raw-compiled-sql-query-from-a-sqlalchemy-expression
 
 import datetime
+import collections
 
 import sqlalchemy as sa
 from sqlalchemy import (
@@ -222,7 +223,9 @@ class DefaultMixin(object):
         if isinstance(obj, int):
             o = sess.query(cls).get(obj)
             if not o:
-                raise sa.orm.exc.NoResultFound()
+                raise sa.orm.exc.NoResultFound(
+                    "Failed to find {} by integer ID {}".format(
+                        cls.__name__, obj))
             return o
         elif isinstance(obj, cls):
             return obj
@@ -230,7 +233,12 @@ class DefaultMixin(object):
             if not cls.IDENTITY_COL:
                 raise TypeError('{} has no IDENTITY_COL'.format(cls.__name__))
             fil = {cls.IDENTITY_COL: obj}
-            return sess.query(cls).filter_by(**fil).one()
+            try:
+                return sess.query(cls).filter_by(**fil).one()
+            except sa.orm.exc.NoResultFound:
+                raise sa.orm.exc.NoResultFound(
+                    "Failed to find {} by identity value '{}' in column {}".format(
+                        cls.__name__, obj, cls.IDENTITY_COL))
 
     def is_deleted(self):
         return self.deleter_id is not None
@@ -390,24 +398,39 @@ def exists(sess, name, schema='public'):
 
 # ===[ HELPER ]===================
 
-def todict(o, fully_qualified=False, fmap=None, excludes=None, dict_class=dict):
-    """Transmogrifies data of record object into dict.
+def todict(o, fully_qualified=False, fmap=None, excludes=None, includes=None,
+           dict_class=collections.OrderedDict) -> dict:
+    """Transmogrifies data object into dict.
 
     Inspired by
     http://blog.mitechie.com/2010/04/01/hacking-the-sqlalchemy-base-class/
-    Converts only physical table columns. Columns created by e.g.
-    relationship() must be handled otherwise.
+    Converts only physical table columns.
 
-    :param o: Data to transmogrify
-    :param fully_qualified: Whether dict keys should be fully qualified (schema
-        + '.' + table + '.' + column) or not (just column name). *CAVEAT* Full
-        qualification is only possible if ``o`` has attribute ``__table__``.
-        E.g. a KeyedTuple does not.
-    :param fmap: Mapping of field names to functions. Each function is called to
-        build the value for this field.
-    :param excludes: Optional list of column names to exclude
-    :rtype: dict
+    By default, the created dict is a :class:`~collections.OrderedDict` which
+    has column ``id`` as the first, and the other columns of :class:`PymMixin`
+    at the end.
+
+    :param o: Data object to transmogrify.
+    :type o: sqlalchemy.util.KeyedTuple |
+        sqlalchemy.ext.declarative.api.DeclarativeMeta
+    :param fully_qualified: Whether the keys of returned dict are fully
+        qualified column names or not. N.b. that full column names are only
+        available if ``o`` has attribute ``__table__``, which e.g. for
+        KeyedTuples is not the case.
+    :type fully_qualified: bool
+    :param fmap: Mapping of column names to functions. Each function is called
+        to build the value for this column. May be a lambda expression.
+    :type fmap: dict
+    :param excludes: List of column names to exclude.
+    :type excludes: NoneType | list
+    :param includes: List of column names to include. If None, all columns are
+        included
+    :type includes: NoneType | list
+    :param dict_class: Class of the dict to build. Defaults to
+        :class:`collections.OrderedDict`.
+    :type dict_class: type
     """
+
     def convert_datetime(v):
         try:
             return v.strftime("%Y-%m-%d %H:%M:%S")
@@ -415,14 +438,42 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None, dict_class=dict):
             # 'NoneType' object has no attribute 'strftime'
             return None
 
-    d = dict_class()
-    if excludes is None:
-        excludes = []
-    if isinstance(o, sa.util.KeyedTuple):
-        d = o._asdict()
-    else:
+    def keyed_tuple_to_dict():
+        kk = o.keys()
+        try:
+            d[special_cols[0]] = getattr(o, special_cols[0])
+        except AttributeError:
+            pass
+        for k in kk:
+            if k in excludes:
+                continue
+            if includes is not None and k not in includes:
+                continue
+            if k in special_cols:
+                continue
+            d[k] = getattr(o, k)
+        if fmap:
+            for k, func in fmap.items():
+                d[k] = func(o)
+        for k in special_cols[1:]:
+            try:
+                d[k] = getattr(o, k)
+            except AttributeError:
+                pass
+
+    def entity_to_dict():
+        pref = o.__table__.schema + '.' + o.__table__.name + '.' \
+            if fully_qualified else ''
+        try:
+            d[special_cols[0]] = getattr(o, special_cols[0])
+        except KeyError:
+            pass
         for c in o.__table__.columns:
             if c.name in excludes:
+                continue
+            if includes is not None and c.name not in includes:
+                continue
+            if c.name in special_cols:
                 continue
             if isinstance(c.type, DateTime):
                 value = convert_datetime(getattr(o, c.name))
@@ -430,37 +481,68 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None, dict_class=dict):
                 value = list(c)
             else:
                 value = getattr(o, c.name)
-            if fully_qualified:
-                k = o.__table__.schema + '.' + o.__table__.name + '.' + c.name
-            else:
-                k = c.name
-            d[k] = value
+            d[pref + c.name] = value
+        if fmap:
+            for k, func in fmap.items():
+                d[pref + k] = func(o)
+        for k in special_cols[1:]:
+            try:
+                d[pref + k] = getattr(o, k)
+            except AttributeError:
+                pass
 
-    if fmap:
-        for k, func in fmap.items():
-            d[k] = func(o)
+    d = dict_class()
+    if excludes is None:
+        excludes = []
+    special_cols = ['id', 'owner_id', 'ctime', 'editor_id', 'mtime',
+        'deleter_id', 'dtime', 'deletion_reason']
+
+    if isinstance(o, sa.util.KeyedTuple):
+        keyed_tuple_to_dict()
+    else:
+        entity_to_dict()
     return d
 
 
-def todata(rs, fully_qualified=False, fmap=None):
-    """Transmogrifies a result set into a list of dicts.
+def todata(rs, fully_qualified=False, fmap=None, excludes=None, includes=None,
+           dict_class=collections.OrderedDict) -> list:
+    """
+    Transmogrifies a result set into a list of dicts.
 
-    If ``rs`` is a single instance, only a dict is returned. If ``rs`` is a
-    list, a list of dicts is returned.
+    Applies :func:`todict` to each iterated row.
+    For params not explained here, see :func:`todict`.
 
-    :param rs: Data to transmogrify
-    :param fully_qualified: Whether dict keys should be fully qualified (schema
-        + '.' + table + '.' + column) or not (just column name)
-
-    :rtype: Dict or list of dicts
+    :param rs: Data to transmogrify. May be some iterable like a list or a
+        result set from a query. May also be a single ORM entity.
+    :type rs: list | sqlalchemy.orm.query.Query |
+        sqlalchemy.ext.declarative.api.DeclarativeMeta
+    :returns: A list of the transmogrified records.
     """
     if isinstance(rs, (list, sqlalchemy.orm.query.Query)):
         data = []
         for row in rs:
-            data.append(todict(row, fully_qualified=fully_qualified, fmap=fmap))
+            data.append(
+                todict(
+                    row,
+                    fully_qualified=fully_qualified,
+                    fmap=fmap,
+                    excludes=excludes,
+                    includes=includes,
+                    dict_class=dict_class
+                )
+            )
         return data
     else:
-        return todict(rs, fully_qualified=fully_qualified, fmap=fmap)
+        return [
+            todict(
+                rs,
+                fully_qualified=fully_qualified,
+                fmap=fmap,
+                excludes=excludes,
+                includes=includes,
+                dict_class=dict_class
+            )
+        ]
 
 
 def attribute_names(cls, kind="all"):

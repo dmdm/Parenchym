@@ -11,6 +11,7 @@ import pyramid.request
 import json
 import os
 from prettytable import PrettyTable
+import sqlalchemy as sa
 
 from pym.rc import Rc
 import pym.models
@@ -109,6 +110,13 @@ class Cli(object):
         Initialises Pyramid application.
 
         Loads config settings. Initialises SQLAlchemy and a session.
+
+        :param args: Namespace of parsed CLI arguments
+        :param lgg: Inject a logger, or keep the default module logger
+        :param rc: Inject a RC instance, or keep the loaded one.
+        :param rc_key: *obsolete*
+        :param setup_logging: Whether or not to setup logging as configured in
+            rc. Default is True.
         """
         self.args = args
         fn_config = os.path.abspath(args.config)
@@ -162,6 +170,12 @@ class Cli(object):
         pym.configure_cache_regions(rc)
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
+        """
+        Initialises the full web application.
+
+        Calls :meth:`init_app` and additionally initialises the WSGI environment
+        and sets up a request and the resource tree.
+        """
         self.init_app(args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
 
@@ -189,57 +203,6 @@ class Cli(object):
         self.request.user.impersonate(ut)
         self.unit_tester = ut
 
-    # noinspection PyUnresolvedReferences
-    @staticmethod
-    def _db_data_to_list(rs, fkmaps=None):
-        """
-        Transmogrifies db data into list including relationships.
-
-        We use :func:`~.pym.models.todict` to turn an entity into a dict,
-        which will only catch regular field, not foreign keys (relationships).
-        Parameter ``fkmaps`` is a dict that maps relationship names to
-        functions.  The function must have one input parameter which obtains a
-        reference to the processed foreign entity. The function then returns
-        the computed value.
-
-        E.g.::
-
-            class Principal(DbBase):
-                roles = relationship(Role)
-
-        If accessed, member ``roles`` is a list of associated roles. For each
-        role the mapped function is called and the current role given::
-
-            for attr, func in fkmaps.items():
-                r[attr] = [func(it) for it in getattr(obj, attr)]
-
-        And the function is defined like this::
-
-            fkmaps=dict(roles=lambda it: it.name)
-
-        :param rs: Db resultset, like a list of entities
-        :param fkmaps: Dict with foreign key mappings
-        """
-        rr = []
-        for obj in rs:
-            it = pym.models.todict(obj)
-            r = OrderedDict()
-            r['id'] = it['id']
-            for k in sorted(it.keys()):
-                if k in ['id', 'owner', 'ctime', 'editor', 'mtime']:
-                    continue
-                r[k] = it[k]
-            for k in ['owner', 'ctime', 'editor', 'mtime']:
-                try:
-                    r[k] = it[k]
-                except KeyError:
-                    pass
-            if fkmaps:
-                for attr, func in fkmaps.items():
-                    r[attr] = [func(it) for it in getattr(obj, attr)]
-            rr.append(r)
-        return rr
-
     def _print(self, data):
         fmt = self.args.format.lower()
         if fmt == 'json':
@@ -247,7 +210,10 @@ class Cli(object):
         elif fmt == 'tsv':
             self._print_tsv(data)
         elif fmt == 'txt':
-            self._print_txt(data)
+            if data:
+                self._print_txt(data)
+            else:
+                print('No data')
         else:
             self._print_yaml(data)
 
@@ -338,8 +304,7 @@ class Cli(object):
 
         The session is created from the web app's default settings and therefore
         is in most cases a scoped session with transaction extension. If you need
-        a different session, caller may create one itself and set this property
-
+        a different session, caller may create one itself and set this property.
         """
         return self._sess
 

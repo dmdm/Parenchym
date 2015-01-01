@@ -19,7 +19,7 @@ def _setup_resources(sess):
     n_sys_auth.add_child(
         sess=sess, owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_TENANT_MGR, title='Tenant Manager',
-        iface='pym.auth.models.ITenantMgrNode')
+        iface='pym.tenants.models.ITenantMgrNode')
 
 
 def _setup_tenants(sess):

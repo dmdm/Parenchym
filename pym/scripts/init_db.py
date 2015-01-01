@@ -21,6 +21,7 @@ import pym.sys.setup
 import pym.auth.setup
 import pym.tenants.setup
 import pym.me.setup
+import pym.fs.setup
 import pym.journals.setup
 
 
@@ -50,6 +51,7 @@ class Runner(pym.cli.Cli):
             # pym.auth.setup.create_schema(sess, rc=self.rc)
             # pym.tenants.setup.create_schema(sess, rc=self.rc)
             # pym.me.setup.create_schema(sess, rc=self.rc)
+            pym.fs.setup.create_schema(sess, rc=self.rc)
             # pym.journals.setup.create_schema(sess, rc=self.rc)
             mark_changed(sess)
         with transaction.manager:
@@ -69,6 +71,8 @@ class Runner(pym.cli.Cli):
                 # sess.flush()  # Need ID
                 # pym.me.setup.setup(sess, rc=self.rc)
                 # sess.flush()  # Need ID
+                pym.fs.setup.setup(sess, rc=self.rc)
+                sess.flush()  # Need ID
                 # pym.journals.setup.setup(sess, rc=self.rc)
                 # sess.flush()  # Need ID
 

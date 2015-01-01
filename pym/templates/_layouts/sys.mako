@@ -26,10 +26,10 @@
         <%block name="require_config">
             ## List the minimal libs that require has to load
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'ui-select'];
+            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'ng-ui-bs', 'ui-select'];
             ## List the minimal libs that anular has to inject.
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_INJECTS = ['ui.select'];
+            var PYM_APP_INJECTS = ['ui.bootstrap', 'ui.select'];
             var require = {
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
@@ -50,12 +50,12 @@
                     , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
                     , 'ng-grid':         'static-pym/vendor/angular-grid/build/ng-grid.min'
                     , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
-##                    , 'ui-grid':         'http://localhost:9002/dist/release/ui-grid'
                     , 'ui-select':       'static-pym/vendor/ui-select/select.min'
                     , 'ng-ui':           'static-pym/vendor/angular-ui/build/angular-ui.min'
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
                     , 'ng-ui-router':    'static-pym/vendor/angular-ui-router/release/angular-ui-router.min'
+                    , 'ng-fup':          'static-pym/vendor/angular-file-upload'
                     , 'pym':             'static-pym/app'
                     , 'pym-v':           'static-pym/vendor'
                     , 'ccg':             'static-ccg/app'
@@ -84,6 +84,7 @@
         </script>
         <%block name="scripts">
             <script src="${request.static_url('pym:static/vendor/requirejs/require.min.js')}"></script>
+##          PYM can and must be initialised even before the page is complete
             <script>
             require(['pym/pym'], function(PYM) {
                 PYM.init({
@@ -111,8 +112,9 @@
 
         <%include file="pym:templates/_layouts/page_footer.mako" />
         <script>
-        require(['requirejs/domReady!', 'jquery', 'pym/pym', 'ng',    'pym/app'],
-        function( doc,                   $,        PYM,       angular, PymApp) {
+        require(['requirejs/domReady!', 'ng',     'pym/pym', 'pym/app'],
+        function( doc,                   angular,  PYM,       PymApp) {
+            ## This needs PYM!
             ${pym.growl_flash()}
 
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
@@ -120,7 +122,6 @@
             function ($scope,   $http) {
                 $scope.model = {};
                 $scope.model.items = {};
-                $scope.model.active_item = null;
 
                 function load_menu_items()
                 {
@@ -131,6 +132,7 @@
                 }
                 load_menu_items();
             }]);
+            return MainMenuCtrl;
         });
         </script>
     </body>

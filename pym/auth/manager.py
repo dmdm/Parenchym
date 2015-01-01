@@ -5,7 +5,7 @@ from sqlalchemy.sql import and_
 
 from pym.exc import AuthError
 import pym.security
-from .models import (User, Group, GroupMember)
+from .models import (User, Group, GroupMember, Ace)
 
 
 PASSWORD_SCHEME = 'pbkdf2_sha512'
@@ -157,7 +157,14 @@ def create_group(sess, owner, name, **kwargs):
     """
     owner_id = User.find(sess, owner).id
     try:
-        g = sess.query(Group).filter(Group.name == name).one()
+        tenant_id = kwargs['tenant_id']
+    except KeyError:
+        tenant_id = None
+    try:
+        g = sess.query(Group).filter(
+            Group.name == name,
+            Group.tenant_id == tenant_id
+        ).one()
         raise pym.exc.ItemExistsError("Group '{}' already exists".format(name),
             item=g)
     except NoResultFound:
@@ -167,6 +174,8 @@ def create_group(sess, owner, name, **kwargs):
         gr.name = name
         for k, v in kwargs.items():
             setattr(gr, k, v)
+        if not gr.kind:
+            gr.kind = 'system'
         sess.flush()
         return gr
 
@@ -209,6 +218,8 @@ def delete_group(sess, group, deleter, delete_from_db=False):
     else:
         gr.deleter_id = User.find(sess, deleter).id
         gr.dtime = datetime.datetime.now()
+        gr.editor_id = gr.deleter_id
+        gr.mtime = gr.dtime
         # TODO Replace content of unique fields
     sess.flush()
     return gr
@@ -273,3 +284,33 @@ def delete_group_member(sess, group_member):
     gm = GroupMember.find(sess, group_member)
     sess.delete(gm)
     sess.flush()
+
+
+def delete_ace(sess, ace_id, deleter, delete_from_db=False, deletion_reason=None):
+    """
+    Deletes an ACE.
+
+    :param sess: A DB session instance.
+    :param ace_id: ID of an ACE.
+    :param deleter: ID, ``principal``, or instance of a user.
+    :param delete_from_db: Optional. Defaults to just tag as deleted (False),
+        set True to physically delete record from DB.
+    :param deletion_reason: Optional. Reason for deletion.
+    :return: None if really deleted, else instance of tagged ACE, None if not
+        found.
+    """
+    ace = sess.query(Ace).get(ace_id)
+    if not ace:
+        return False
+    if delete_from_db:
+        sess.delete(ace)
+        ace = None
+    else:
+        ace.deleter_id = User.find(sess, deleter).id
+        ace.dtime = datetime.datetime.now()
+        ace.deletion_reason = deletion_reason
+        ace.editor_id = ace.deleter_id
+        ace.mtime = ace.dtime
+        # TODO Replace content of unique fields
+    sess.flush()
+    return ace
