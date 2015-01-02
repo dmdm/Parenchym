@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import getpass
 import textwrap
+import sqlparse
 
 import transaction
 import time
@@ -13,6 +14,7 @@ import datetime
 import redis
 import sqlalchemy as sa
 import sqlalchemy.sql.expression
+import sqlalchemy.orm
 import sqlalchemy.orm.exc
 import alembic.command
 import alembic.config
@@ -121,9 +123,34 @@ class Runner(pym.cli.Cli):
 
     def _cmd_ls_group_members(self):
         e = self.__class__.ENTITIES[self.args.entity]
-        qry = self.sess.query(e)
+        member_group = sa.orm.aliased(pam.Group)
+        qry = self.sess.query(
+            e,
+            pam.Group.name.label('group_name'),
+            pam.User.principal,
+            member_group.name
+        ).join(
+            pam.Group, pam.Group.id == e.group_id
+        ).outerjoin(
+            pam.User, pam.User.id == e.member_user_id
+        ).outerjoin(
+            member_group, member_group.id == e.member_group_id
+        )
         qry = self._build_query(qry, e)
-        data = todata(qry)
+        data = []
+        for r in qry:
+            e, gr_name, mu_principal, mg_name = r
+            de = todict(e)
+            d = OrderedDict()
+            for k, v in de.items():
+                d[k] = v
+                if k == 'group_id':
+                    d['group'] = gr_name
+                elif k == 'member_user_id':
+                    d['member_user'] = mu_principal
+                elif k == 'member_group_id':
+                    d['member_group'] = mg_name
+            data.append(d)
         self._print(data)
 
     def _cmd_ls_tenants(self):
@@ -317,14 +344,19 @@ class Runner(pym.cli.Cli):
             if not n:
                 raise sa.orm.exc.NoResultFound("Failed to find resource with ID {}".format(resource_id))
             ace = n.allow(self.sess, self._actor, perm, **w)
-        self.lgg.info('ACE created with ID {}'.format(ace.id))
+            self.sess.flush()
+            self.lgg.info('ACE created with ID {}'.format(ace.id))
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
             qry = qry.filter(entity.dtime == None)
+        if hasattr(self.args, 'filter') and self.args.filter:
+            qry = qry.filter(str(self.args.filter))
         qry = qry.order_by(
             entity.id
         )
+        if self.args.show_sql:
+            print(sqlparse.format(str(qry), reindent=True, keyword_case='upper'))
         return qry
 
     def cmd_permission_tree(self):
@@ -429,6 +461,11 @@ def parse_args(app):
         action='store_true'
     )
     parser.add_argument(
+        '--show-sql',
+        help="If given, shows SQL query",
+        action='store_true'
+    )
+    parser.add_argument(
         '--actor',
         help="Principal or ID of user who performs this command. Will be OWNER"
              "on creates, EDITOR on updates and, DELETER on deletes. If omitted,"
@@ -452,6 +489,10 @@ def parse_args(app):
         '--with-deleted',
         help='Show also deleted records',
         action='store_true'
+    )
+    p_ls.add_argument(
+        '--filter',
+        help='String to use as WHERE clause'
     )
 
     # Parser cmd permission-tree

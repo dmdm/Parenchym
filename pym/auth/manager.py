@@ -1,7 +1,7 @@
 import datetime
 import sqlalchemy as sa
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import and_
+import sqlalchemy.sql
 
 from pym.exc import AuthError
 import pym.security
@@ -70,7 +70,7 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
             # Try to load the specified group
             try:
                 g = sess.query(Group).filter(
-                    and_(
+                    sqlalchemy.sql.and_(
                         Group.tenant_id == None,  # must be system group
                         Group.name == name
                     )

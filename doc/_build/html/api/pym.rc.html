@@ -1,0 +1,407 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.rc module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.renderer_globals module" href="pym.renderer_globals.html"/>
+        <link rel="prev" title="pym.menu module" href="pym.menu.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.rc module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.rc.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.rc">
+<span id="pym-rc-module"></span><h1>pym.rc module<a class="headerlink" href="#module-pym.rc" title="Permalink to this headline">¶</a></h1>
+<dl class="exception">
+<dt id="pym.rc.RcError">
+<em class="property">exception </em><tt class="descclassname">pym.rc.</tt><tt class="descname">RcError</tt><a class="headerlink" href="#pym.rc.RcError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.Exception</span></tt></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.rc.Rc">
+<em class="property">class </em><tt class="descclassname">pym.rc.</tt><tt class="descname">Rc</tt><big>(</big><em>environment</em>, <em>root_dir=None</em>, <em>etc_dir=None</em><big>)</big><a class="headerlink" href="#pym.rc.Rc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Class to manage configuration (rc) data in YAML.</p>
+<ol class="arabic simple">
+<li>Put global rc data into <tt class="docutils literal"><span class="pre">etc/rc.yaml</span></tt>.</li>
+<li>(Optional) Put host specific rc data into <tt class="docutils literal"><span class="pre">etc/%HOSTNAME%/rc.yaml</span></tt>.</li>
+<li>(Optional) Put environment specific rc data into
+<tt class="docutils literal"><span class="pre">etc/%HOSTNAME%/%ENVIRONMENT%/rc.yaml</span></tt>.</li>
+</ol>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Put secrets like passwords into separate file <tt class="docutils literal"><span class="pre">rcsecrets.yaml</span></tt> and
+mention them in your <tt class="docutils literal"><span class="pre">.gitignore</span></tt> file. So they won&#8217;t be published
+e.g. on github.
+Sample <tt class="docutils literal"><span class="pre">.gitignore</span></tt>:</p>
+<div class="last highlight-python"><div class="highlight"><pre>etc/*secrets.yaml
+etc/**/*secrets.yaml
+</pre></div>
+</div>
+</div>
+<p>Nodes should not contain deeper levels, they are hard to override in
+host&#8217;s rc file.</p>
+<p>A Node may reference a bunch of other nodes like so:</p>
+<div class="highlight-python"><div class="highlight"><pre>E.g.
+
+    # Resource
+    gmail.imap.user: foo
+    gmail.imap.pwd: bar
+    ^^^^^^^^^^ ^^^
+     \          \_ ref_suffix
+      \___________ ref_prefix as given in referring node
+    # Module
+    infobox.rc_ref_imap: gmail.imap
+    ^^^^^^^        ^^^^  ^^^^^^^^^^
+     \              \     \_ ref_prefix
+      \              \______ infix
+       \____________________ prefix
+
+Reading these will also create nodes:
+
+    infobox.imap.user
+    infobox.imap.pwd
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>root_dir</strong> &#8211; By default <tt class="xref py py-func docutils literal"><span class="pre">os.getcwd()</span></tt></li>
+<li><strong>etc_dir</strong> &#8211; Files are loaded from this directory and below. Defaults
+to <tt class="docutils literal"><span class="pre">root_dir/etc/</span></tt></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Other attributes:</p>
+<dl class="docutils">
+<dt>data</dt>
+<dd>The loaded rc data</dd>
+<dt>debug</dt>
+<dd>Flag for debug mode</dd>
+</dl>
+<p>Lazy TODO:</p>
+<p>Logger config is not yet implemented. Use logger config from paster&#8217;s INI
+files.</p>
+<dl class="method">
+<dt id="pym.rc.Rc.dump">
+<tt class="descname">dump</tt><big>(</big><em>prettyprinter=None</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pym.rc.Rc.env_from_ini">
+<em class="property">classmethod </em><tt class="descname">env_from_ini</tt><big>(</big><em>fn</em>, <em>sect='app:main'</em>, <em>key='environment'</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.env_from_ini" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads environment setting from INI file.</p>
+<p>This method is convenient for console scripts that need to obtain
+the environment from a paster INI file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fn</strong> &#8211; Filename</li>
+<li><strong>sect</strong> &#8211; Section</li>
+<li><strong>key</strong> &#8211; Key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.expand_these">
+<tt class="descname">expand_these</tt><big>(</big><em>keys=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.expand_these" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expands format variables in values with given data.</p>
+<p>On loading rc data, values that contain <tt class="docutils literal"><span class="pre">{here}</span></tt> and <tt class="docutils literal"><span class="pre">{root_dir}</span></tt>
+are formatted with <tt class="xref py py-attr docutils literal"><span class="pre">root_dir</span></tt>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keys</strong> &#8211; List of keys to expand. If empty, check all keys.</li>
+<li><strong>kw</strong> &#8211; Keywords are passed to Python&#8217;s <tt class="docutils literal"><span class="pre">str.format()</span></tt></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.g">
+<tt class="descname">g</tt><big>(</big><em>key</em>, <em>defval=None</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.g" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns value of given key, or default value.
+If default value is not given and key is not found, raises KeyError</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.get_dir">
+<tt class="descname">get_dir</tt><big>(</big><em>key</em>, <em>defval=None</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.get_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned value expands &#8216;{here}&#8217; to root dir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.get_these">
+<tt class="descname">get_these</tt><big>(</big><em>prefix</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.get_these" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all rc nodes which start with prefix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.load">
+<tt class="descname">load</tt><big>(</big><em>fn=None</em>, <em>key=None</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads rc data from file.</p>
+<p>Rc data is obtained from the given file (<tt class="docutils literal"><span class="pre">rc.yaml</span></tt> by default) and
+loaded into the given key (no key by default). This method collects
+rc files from <tt class="xref py py-attr docutils literal"><span class="pre">etc_dir</span></tt>, the host directory and the environment
+directory.</p>
+<p>E.g. if you are on host &#8216;foo-host&#8217; in environment &#8216;bar-env&#8217; and want to
+load &#8216;rcbaz.yaml&#8217;, this method collects:</p>
+<ol class="arabic simple">
+<li>etc/rcbaz.yaml</li>
+<li>etc/rcbazsecrets.yaml (if exists)</li>
+<li>etc/foo-host/rcbaz.yaml (if exists)</li>
+<li>etc/foo-host/rcbazsecrets.yaml (if exists)</li>
+<li>etc/foo-host/bar-env/rcbaz.yaml (if exists)</li>
+<li>etc/foo-host/bar-env/rcbazsecrets.yaml (if exists)</li>
+</ol>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fn</strong> &#8211; Name of rc file without path, but including extension.</li>
+<li><strong>key</strong> &#8211; Loaded data is stored with this key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.load_file">
+<tt class="descname">load_file</tt><big>(</big><em>fn</em>, <em>key</em>, <em>allow_empty=False</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.load_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads given file and its corresponding secrets file</p>
+<p>A missing file throws an IOError
+A missing secrets file is silently ignored.
+Name of secrets file is given name appended with &#8216;secrets&#8217;, e.g.
+rc.yaml       -&gt; rcsecrets.yaml
+myconfig.yaml -&gt; myconfigsecrets.yaml</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fn</strong> &#8211; Full name of rc file (path, name and extension).</li>
+<li><strong>key</strong> &#8211; Loaded data is stored with this key</li>
+<li><strong>allow_empty</strong> &#8211; Existing rc file may be empty</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.logger_rc_filename">
+<tt class="descname">logger_rc_filename</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.rc.Rc.logger_rc_filename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.resolve_references">
+<tt class="descname">resolve_references</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.rc.Rc.resolve_references" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.rc.Rc.s">
+<tt class="descname">s</tt><big>(</big><em>key</em>, <em>v</em><big>)</big><a class="headerlink" href="#pym.rc.Rc.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets value for given key
+If key was already present, returns old value, else returns None.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.rc.Rc.ENVIRONMENTS">
+<tt class="descname">ENVIRONMENTS</tt><em class="property"> = ['production', 'staging', 'testing', 'development']</em><a class="headerlink" href="#pym.rc.Rc.ENVIRONMENTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>These environments are allowed.</p>
+<p>You may override these prior to instantiating Rc.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.rc.Rc.NO_ENVIRONMENT">
+<tt class="descname">NO_ENVIRONMENT</tt><em class="property"> = '__NO_ENVIRONMENT__'</em><a class="headerlink" href="#pym.rc.Rc.NO_ENVIRONMENT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init Rc with this environment to skip loading environment settings.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.renderer_globals.html" class="btn btn-neutral float-right" title="pym.renderer_globals module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.menu.html" class="btn btn-neutral" title="pym.menu module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

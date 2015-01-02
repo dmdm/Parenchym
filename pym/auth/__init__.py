@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import and_
+import sqlalchemy.sql
 
 from pym.exc import AuthError
 import pym.security
@@ -76,7 +76,7 @@ class AuthProvider():
         filter_.append(self.user_class.is_enabled == True)
         filter_.append(self.user_class.is_blocked == False)
         try:
-            u = self.sess.query(self.user_class).filter(and_(*filter_)).one()
+            u = self.sess.query(self.user_class).filter(sqlalchemy.sql.and_(*filter_)).one()
         except NoResultFound:
             raise AuthError('User not found')
         # We have found the requested user, now broadcast this info so that

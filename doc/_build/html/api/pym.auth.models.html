@@ -1,0 +1,1704 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.auth.models module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym.auth package" href="pym.auth.html"/>
+        <link rel="next" title="pym.auth.setup module" href="pym.auth.setup.html"/>
+        <link rel="prev" title="pym.auth.manager module" href="pym.auth.manager.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+          <li><a href="pym.auth.html">pym.auth package</a> &raquo;</li>
+      
+    <li>pym.auth.models module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.auth.models.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.auth.models">
+<span id="pym-auth-models-module"></span><h1>pym.auth.models module<a class="headerlink" href="#module-pym.auth.models" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pym.auth.models.Ace">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">Ace</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.Ace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>Access Control Entry.</p>
+<p>We define access control by granting or denying a group or a user a
+named permission on a resource.</p>
+<dl class="method">
+<dt id="pym.auth.models.Ace.to_pyramid_ace">
+<tt class="descname">to_pyramid_ace</tt><big>(</big><em>perms</em><big>)</big><a class="headerlink" href="#pym.auth.models.Ace.to_pyramid_ace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.allow">
+<tt class="descname">allow</tt><a class="headerlink" href="#pym.auth.models.Ace.allow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow if TRUE, deny if FALSE.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.Ace.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.auth.models.Ace.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.auth.models.Ace.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.auth.models.Ace.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional description.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.auth.models.Ace.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.auth.models.Ace.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.group_id">
+<tt class="descname">group_id</tt><a class="headerlink" href="#pym.auth.models.Ace.group_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference to a group. Mandatory if user is not set.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.Ace.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.auth.models.Ace.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.auth.models.Ace.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.permission_id">
+<tt class="descname">permission_id</tt><a class="headerlink" href="#pym.auth.models.Ace.permission_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference to a permission.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.resource_id">
+<tt class="descname">resource_id</tt><a class="headerlink" href="#pym.auth.models.Ace.resource_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference to a resource node.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.sortix">
+<tt class="descname">sortix</tt><a class="headerlink" href="#pym.auth.models.Ace.sortix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort index; if equal, sort by ID.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Pyramid&#8217;s authorization policy lets the first match win, so it is
+important to setup <tt class="docutils literal"><span class="pre">sortix</span></tt> properly!</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Ace.user_id">
+<tt class="descname">user_id</tt><a class="headerlink" href="#pym.auth.models.Ace.user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference to a user. Mandatory if group is not set.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.ActivityLog">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">ActivityLog</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.ActivityLog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt></p>
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.client_addr">
+<tt class="descname">client_addr</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.client_addr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.ctime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp, creation time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.header_authorization">
+<tt class="descname">header_authorization</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.header_authorization" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.headers">
+<tt class="descname">headers</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.headers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Primary key of table.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.method">
+<tt class="descname">method</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.method" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.principal">
+<tt class="descname">principal</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.principal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.remote_addr">
+<tt class="descname">remote_addr</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.remote_addr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.remote_user">
+<tt class="descname">remote_user</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.remote_user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.ActivityLog.url">
+<tt class="descname">url</tt><a class="headerlink" href="#pym.auth.models.ActivityLog.url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.CurrentUser">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">CurrentUser</tt><big>(</big><em>sess</em>, <em>request</em>, <em>user_class</em><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.impersonate">
+<tt class="descname">impersonate</tt><big>(</big><em>principal</em><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.impersonate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a different user into current session.</p>
+<p>Keep in mind that all session data apart from the user data will not
+change.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>principal</strong> &#8211; Principal or instance of new user</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Instance of new user</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.init_from_user">
+<tt class="descname">init_from_user</tt><big>(</big><em>u</em><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.init_from_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialises authenticated user.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.init_nobody">
+<tt class="descname">init_nobody</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.init_nobody" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.is_auth">
+<tt class="descname">is_auth</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.is_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells whether user is authenticated, i.e. is not nobody</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.is_impersonated">
+<tt class="descname">is_impersonated</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.is_impersonated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.is_wheel">
+<tt class="descname">is_wheel</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.is_wheel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.load_by_principal">
+<tt class="descname">load_by_principal</tt><big>(</big><em>principal</em><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.load_by_principal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.login">
+<tt class="descname">login</tt><big>(</big><em>login</em>, <em>pwd</em>, <em>remote_addr</em><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Login by principal/email and password.</p>
+<p>Returns True on success, else False.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.logout">
+<tt class="descname">logout</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.logout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logout, resets metadata back to nobody.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.CurrentUser.repersonate">
+<tt class="descname">repersonate</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.CurrentUser.repersonate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads previous user back into session.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Instance of new user (which is the previous one) or None if
+no previous user was set</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.CurrentUser.SESSION_KEY">
+<tt class="descname">SESSION_KEY</tt><em class="property"> = 'auth:current_user'</em><a class="headerlink" href="#pym.auth.models.CurrentUser.SESSION_KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.CurrentUser.groups">
+<tt class="descname">groups</tt><a class="headerlink" href="#pym.auth.models.CurrentUser.groups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.CurrentUser.preferred_locale">
+<tt class="descname">preferred_locale</tt><a class="headerlink" href="#pym.auth.models.CurrentUser.preferred_locale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.GenderEnum">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">GenderEnum</tt><a class="headerlink" href="#pym.auth.models.GenderEnum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pym.lib.html#pym.lib.Enum" title="pym.lib.Enum"><tt class="xref py py-class docutils literal"><span class="pre">pym.lib.Enum</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.GplusProfile">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">GplusProfile</tt><big>(</big><em>user</em><big>)</big><a class="headerlink" href="#pym.auth.models.GplusProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<dl class="attribute">
+<dt id="pym.auth.models.GplusProfile.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.GplusProfile.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GplusProfile.picture_url">
+<tt class="descname">picture_url</tt><a class="headerlink" href="#pym.auth.models.GplusProfile.picture_url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GplusProfile.profile_url">
+<tt class="descname">profile_url</tt><a class="headerlink" href="#pym.auth.models.GplusProfile.profile_url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.Group">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">Group</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.Group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>A group.</p>
+<p>A group groups users or other groups. Groups may be global to the system,
+or belong to a specific tenant. In the former case, group&#8217;s <tt class="docutils literal"><span class="pre">name</span></tt> must
+be globally unique, in the latter case only within that tenant.</p>
+<p>A group may only belong to one tenant.</p>
+<dl class="attribute">
+<dt id="pym.auth.models.Group.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.Group.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.auth.models.Group.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.auth.models.Group.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.auth.models.Group.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional description.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.auth.models.Group.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.auth.models.Group.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.group_memberships">
+<tt class="descname">group_memberships</tt><a class="headerlink" href="#pym.auth.models.Group.group_memberships" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of memberships in which we are the container.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.Group.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.kind">
+<tt class="descname">kind</tt><a class="headerlink" href="#pym.auth.models.Group.kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>An optional classifier to bundle groups together.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.member_groups">
+<tt class="descname">member_groups</tt><a class="headerlink" href="#pym.auth.models.Group.member_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of groups that are our members.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.member_users">
+<tt class="descname">member_users</tt><a class="headerlink" href="#pym.auth.models.Group.member_users" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of users that are our members.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.auth.models.Group.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.name">
+<tt class="descname">name</tt><a class="headerlink" href="#pym.auth.models.Group.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the group. Must be unique within a tenant.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.auth.models.Group.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Group.tenant_id">
+<tt class="descname">tenant_id</tt><a class="headerlink" href="#pym.auth.models.Group.tenant_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reference to the tenant to which this group belongs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.GroupMember">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">GroupMember</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.GroupMember" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>Group member.</p>
+<p>A group member is either a user or another group.</p>
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.IDENTITY_COL">
+<tt class="descname">IDENTITY_COL</tt><em class="property"> = None</em><a class="headerlink" href="#pym.auth.models.GroupMember.IDENTITY_COL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.GroupMember.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.auth.models.GroupMember.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.auth.models.GroupMember.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional description.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.auth.models.GroupMember.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.group">
+<tt class="descname">group</tt><a class="headerlink" href="#pym.auth.models.GroupMember.group" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.group_id">
+<tt class="descname">group_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.group_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This group is the container.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.member_group">
+<tt class="descname">member_group</tt><a class="headerlink" href="#pym.auth.models.GroupMember.member_group" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.member_group_id">
+<tt class="descname">member_group_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.member_group_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This group is the member.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.member_user">
+<tt class="descname">member_user</tt><a class="headerlink" href="#pym.auth.models.GroupMember.member_user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.member_user_id">
+<tt class="descname">member_user_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.member_user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This user is the member.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.auth.models.GroupMember.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.GroupMember.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.auth.models.GroupMember.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.Permission">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">Permission</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.Permission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>Permission.</p>
+<p>A permission has a <tt class="docutils literal"><span class="pre">name</span></tt>, a string that is used in code e.g. as:</p>
+<div class="highlight-python"><div class="highlight"><pre>@view_defaults(permission=&#39;manage_auth&#39;)
+</pre></div>
+</div>
+<p>Permissions may be hierarchical.</p>
+<p>If you grant a permission, automatically all of its parents are also
+granted. E.g. if <tt class="docutils literal"><span class="pre">read</span></tt> is a parent of <tt class="docutils literal"><span class="pre">write</span></tt> and you grant <tt class="docutils literal"><span class="pre">write</span></tt>,
+<tt class="docutils literal"><span class="pre">read</span></tt> is also granted.</p>
+<p>If you deny a permission, automatically all of its children are also denied.
+E.g. if with above settings you deny <tt class="docutils literal"><span class="pre">read</span></tt>, <tt class="docutils literal"><span class="pre">write</span></tt> is also denied.</p>
+<dl class="method">
+<dt id="pym.auth.models.Permission.add_child">
+<tt class="descname">add_child</tt><big>(</big><em>perm</em><big>)</big><a class="headerlink" href="#pym.auth.models.Permission.add_child" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a permission to my children.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>perm</strong> &#8211; Instance of a permission</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.Permission.load_all">
+<tt class="descname">load_all</tt><big>(</big><em>sess</em><big>)</big><a class="headerlink" href="#pym.auth.models.Permission.load_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns detailed info about permissions.</p>
+<p>Returned is a dict which keys are the permission names as well as their
+IDs. Each element is another dict with keys <tt class="docutils literal"><span class="pre">id</span></tt>, <tt class="docutils literal"><span class="pre">name</span></tt>,
+<tt class="docutils literal"><span class="pre">parents</span></tt>, and <tt class="docutils literal"><span class="pre">children</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">parents</span></tt> and <tt class="docutils literal"><span class="pre">children</span></tt> are lists of 2-tuples with [0] := ID and
+[1] := name.</p>
+<p>The list of parents comprises only parents in the direct path to the
+topmost permission, where-as the list of children comprises the whole
+tree of child permissions. Given this tree:</p>
+<div class="highlight-python"><div class="highlight"><pre>visit
+ |
+ +-- read
+ |    +-- write
+ +-- delete
+ |
+ +-- admin
+      +-- admin_auth
+      +-- admin_res
+</pre></div>
+</div>
+<p>Element &#8216;admin_auth&#8217; has as parents [&#8216;admin&#8217;, &#8216;visit&#8217;] and None children.</p>
+<p>Element &#8216;visit&#8217; has None parents and all other permissions as children
+[&#8216;read&#8217;, &#8216;delete&#8217;, &#8216;admin&#8217;, &#8216;write&#8217;, &#8216;admin_auth&#8217;, &#8216;admin_res&#8217;].</p>
+<dl class="docutils">
+<dt>E.g.::</dt>
+<dd><dl class="first docutils">
+<dt>{</dt>
+<dd><dl class="first docutils">
+<dt>8: {</dt>
+<dd>&#8216;children&#8217;: None,
+&#8216;id&#8217;: 8,
+&#8216;name&#8217;: &#8216;admin_res&#8217;,
+&#8216;parents&#8217;: [(2, &#8216;visit&#8217;), (4, &#8216;admin&#8217;)]</dd>
+</dl>
+<p>},
+&#8216;read&#8217;: {</p>
+<blockquote>
+<div>&#8216;children&#8217;: [(6, &#8216;write&#8217;)],
+&#8216;id&#8217;: 3,
+&#8216;name&#8217;: &#8216;read&#8217;,
+&#8216;parents&#8217;: [(2, &#8216;visit&#8217;)]</div></blockquote>
+<p class="last">},</p>
+</dd>
+</dl>
+<p class="last">}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.children">
+<tt class="descname">children</tt><a class="headerlink" href="#pym.auth.models.Permission.children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Children of this permission.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.Permission.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.auth.models.Permission.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.auth.models.Permission.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.auth.models.Permission.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional description.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.auth.models.Permission.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.auth.models.Permission.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.Permission.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.auth.models.Permission.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.name">
+<tt class="descname">name</tt><a class="headerlink" href="#pym.auth.models.Permission.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the permission as used in code.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.auth.models.Permission.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.Permission.parent_id">
+<tt class="descname">parent_id</tt><a class="headerlink" href="#pym.auth.models.Permission.parent_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.Permissions">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">Permissions</tt><a class="headerlink" href="#pym.auth.models.Permissions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pym.lib.html#pym.lib.Enum" title="pym.lib.Enum"><tt class="xref py py-class docutils literal"><span class="pre">pym.lib.Enum</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.User">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">User</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.auth.models.User" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>A user account.</p>
+<p>Attribute <tt class="docutils literal"><span class="pre">principal</span></tt> is the login name which must be unique. We store the
+string as-is, but treat it as lowercase: &#8216;FOO&#8217; == &#8216;foo&#8217; &#8211;&gt; True.</p>
+<p>We treat <tt class="docutils literal"><span class="pre">email</span></tt> and <tt class="docutils literal"><span class="pre">display_name</span></tt> the same.</p>
+<p>Each user has a <tt class="docutils literal"><span class="pre">display_name</span></tt> by which she is identified in the UI.
+Therefore this also must be unique. Be creative, if the default,
+<tt class="docutils literal"><span class="pre">first_name</span></tt> and <tt class="docutils literal"><span class="pre">last_name</span></tt> is not sufficient.</p>
+<p>Users are global to the system, i.e. a person has only one user account,
+regardless how many tenants he belongs to.</p>
+<dl class="method">
+<dt id="pym.auth.models.User.init_on_load">
+<tt class="descname">init_on_load</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.User.init_on_load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.auth.models.User.load_all_groups">
+<tt class="descname">load_all_groups</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.User.load_all_groups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.IDENTITY_COL">
+<tt class="descname">IDENTITY_COL</tt><em class="property"> = 'principal'</em><a class="headerlink" href="#pym.auth.models.User.IDENTITY_COL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.access_time">
+<tt class="descname">access_time</tt><a class="headerlink" href="#pym.auth.models.User.access_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when site was last accessed. Used to expire session.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.block_reason">
+<tt class="descname">block_reason</tt><a class="headerlink" href="#pym.auth.models.User.block_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reason why block was established.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.blocked_since">
+<tt class="descname">blocked_since</tt><a class="headerlink" href="#pym.auth.models.User.blocked_since" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when block was established.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.blocked_until">
+<tt class="descname">blocked_until</tt><a class="headerlink" href="#pym.auth.models.User.blocked_until" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when block will automatically be released. NULL=never.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.auth.models.User.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.auth.models.User.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.auth.models.User.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.auth.models.User.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional description.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.disable_reason">
+<tt class="descname">disable_reason</tt><a class="headerlink" href="#pym.auth.models.User.disable_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reason why admin disabled this account.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.display_name">
+<tt class="descname">display_name</tt><a class="headerlink" href="#pym.auth.models.User.display_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>User is displayed like this. Usually &#8216;first_name last_name&#8217; or
+&#8216;principal&#8217;.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.auth.models.User.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.auth.models.User.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.email">
+<tt class="descname">email</tt><a class="headerlink" href="#pym.auth.models.User.email" title="Permalink to this definition">¶</a></dt>
+<dd><p>Email address. Always lower cased.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.first_name">
+<tt class="descname">first_name</tt><a class="headerlink" href="#pym.auth.models.User.first_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s first name.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.gplus_id">
+<tt class="descname">gplus_id</tt><a class="headerlink" href="#pym.auth.models.User.gplus_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for login by Google+ (OpenID Connect).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.group_memberships">
+<tt class="descname">group_memberships</tt><a class="headerlink" href="#pym.auth.models.User.group_memberships" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of our direct group memberships.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.groups">
+<tt class="descname">groups</tt><a class="headerlink" href="#pym.auth.models.User.groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of groups we are directly member of. Call <a class="reference internal" href="#pym.auth.models.User.load_all_groups" title="pym.auth.models.User.load_all_groups"><tt class="xref py py-meth docutils literal"><span class="pre">load_all_groups()</span></tt></a> to
+get all.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.auth.models.User.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.identity_url">
+<tt class="descname">identity_url</tt><a class="headerlink" href="#pym.auth.models.User.identity_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for login by OpenID.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.is_blocked">
+<tt class="descname">is_blocked</tt><a class="headerlink" href="#pym.auth.models.User.is_blocked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells whether or not some automated process has en/disabled this
+account.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.is_enabled">
+<tt class="descname">is_enabled</tt><a class="headerlink" href="#pym.auth.models.User.is_enabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells whether or not a (human) admin has en/disabled this account.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.kick_reason">
+<tt class="descname">kick_reason</tt><a class="headerlink" href="#pym.auth.models.User.kick_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display this message to kicked user.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.kick_session">
+<tt class="descname">kick_session</tt><a class="headerlink" href="#pym.auth.models.User.kick_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells whether user&#8217;s session is automatically terminated on next
+access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.last_name">
+<tt class="descname">last_name</tt><a class="headerlink" href="#pym.auth.models.User.last_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s last name.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.login_ip">
+<tt class="descname">login_ip</tt><a class="headerlink" href="#pym.auth.models.User.login_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>IP address of logged in client.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.login_time">
+<tt class="descname">login_time</tt><a class="headerlink" href="#pym.auth.models.User.login_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp of current login.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.logout_time">
+<tt class="descname">logout_time</tt><a class="headerlink" href="#pym.auth.models.User.logout_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp of logout.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.auth.models.User.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.auth.models.User.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.principal">
+<tt class="descname">principal</tt><a class="headerlink" href="#pym.auth.models.User.principal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Principal or user name.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.pwd">
+<tt class="descname">pwd</tt><a class="headerlink" href="#pym.auth.models.User.pwd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Password. NULL means blocked for login, e.g. for system accounts.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.pwd_expires">
+<tt class="descname">pwd_expires</tt><a class="headerlink" href="#pym.auth.models.User.pwd_expires" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when current pwd expires. NULL==never.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.User.sessionrc">
+<tt class="descname">sessionrc</tt><a class="headerlink" href="#pym.auth.models.User.sessionrc" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s session</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.UserProfile">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">UserProfile</tt><big>(</big><em>user</em>, <em>gplus_class=&lt;class 'pym.auth.models.GplusProfile'&gt;</em><big>)</big><a class="headerlink" href="#pym.auth.models.UserProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<dl class="method">
+<dt id="pym.auth.models.UserProfile.get_all">
+<tt class="descname">get_all</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.UserProfile.get_all" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.UserProfile.gender">
+<tt class="descname">gender</tt><a class="headerlink" href="#pym.auth.models.UserProfile.gender" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.UserProfile.gplus">
+<tt class="descname">gplus</tt><a class="headerlink" href="#pym.auth.models.UserProfile.gplus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.auth.models.UserProfile.locale_name">
+<tt class="descname">locale_name</tt><a class="headerlink" href="#pym.auth.models.UserProfile.locale_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.auth.models.UserRc">
+<em class="property">class </em><tt class="descclassname">pym.auth.models.</tt><tt class="descname">UserRc</tt><big>(</big><em>user</em><big>)</big><a class="headerlink" href="#pym.auth.models.UserRc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.auth.models.get_current_user">
+<tt class="descclassname">pym.auth.models.</tt><tt class="descname">get_current_user</tt><big>(</big><em>request</em><big>)</big><a class="headerlink" href="#pym.auth.models.get_current_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is used as a request method to reify a user object
+to the request object as property <tt class="docutils literal"><span class="pre">user</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.auth.models.get_vw_group_browse">
+<tt class="descclassname">pym.auth.models.</tt><tt class="descname">get_vw_group_browse</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.get_vw_group_browse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.auth.models.get_vw_group_member_browse">
+<tt class="descclassname">pym.auth.models.</tt><tt class="descname">get_vw_group_member_browse</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.get_vw_group_member_browse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.auth.models.get_vw_user_browse">
+<tt class="descclassname">pym.auth.models.</tt><tt class="descname">get_vw_user_browse</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.auth.models.get_vw_user_browse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.auth.models.relationship">
+<tt class="descclassname">pym.auth.models.</tt><tt class="descname">relationship</tt><big>(</big><em>argument</em>, <em>secondary=None</em>, <em>primaryjoin=None</em>, <em>secondaryjoin=None</em>, <em>foreign_keys=None</em>, <em>uselist=None</em>, <em>order_by=False</em>, <em>backref=None</em>, <em>back_populates=None</em>, <em>post_update=False</em>, <em>cascade=False</em>, <em>extension=None</em>, <em>viewonly=False</em>, <em>lazy=True</em>, <em>collection_class=None</em>, <em>passive_deletes=False</em>, <em>passive_updates=True</em>, <em>remote_side=None</em>, <em>enable_typechecks=True</em>, <em>join_depth=None</em>, <em>comparator_factory=None</em>, <em>single_parent=False</em>, <em>innerjoin=False</em>, <em>distinct_target_key=None</em>, <em>doc=None</em>, <em>active_history=False</em>, <em>cascade_backrefs=True</em>, <em>load_on_pending=False</em>, <em>strategy_class=None</em>, <em>_local_remote_pairs=None</em>, <em>query_class=None</em>, <em>info=None</em><big>)</big><a class="headerlink" href="#pym.auth.models.relationship" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a relationship between two mapped classes.</p>
+<p>This corresponds to a parent-child or associative table relationship.
+The constructed class is an instance of
+<tt class="xref py py-class docutils literal"><span class="pre">RelationshipProperty</span></tt>.</p>
+<p>A typical <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>, used in a classical mapping:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">mapper</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+  <span class="s">&#39;children&#39;</span><span class="p">:</span> <span class="n">relationship</span><span class="p">(</span><span class="n">Child</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>Some arguments accepted by <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> optionally accept a
+callable function, which when called produces the desired value.
+The callable is invoked by the parent <tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt> at &#8220;mapper
+initialization&#8221; time, which happens only when mappers are first used,
+and is assumed to be after all mappings have been constructed.  This
+can be used to resolve order-of-declaration and other dependency
+issues, such as if <tt class="docutils literal"><span class="pre">Child</span></tt> is declared below <tt class="docutils literal"><span class="pre">Parent</span></tt> in the same
+file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">mapper</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+    <span class="s">&quot;children&quot;</span><span class="p">:</span><span class="n">relationship</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Child</span><span class="p">,</span>
+                        <span class="n">order_by</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Child</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>When using the <em class="xref std std-ref">declarative_toplevel</em> extension, the Declarative
+initializer allows string arguments to be passed to
+<a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>.  These string arguments are converted into
+callables that evaluate the string as Python code, using the
+Declarative class-registry as a namespace.  This allows the lookup of
+related classes to be automatic via their string name, and removes the
+need to import related classes at all into the local module space:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.ext.declarative</span> <span class="kn">import</span> <span class="n">declarative_base</span>
+
+<span class="n">Base</span> <span class="o">=</span> <span class="n">declarative_base</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">Parent</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s">&#39;parent&#39;</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s">&quot;Child&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s">&quot;Child.id&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">relationship_config_toplevel</em> - Full introductory and
+reference documentation for <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>.</p>
+<p class="last"><em class="xref std std-ref">orm_tutorial_relationship</em> - ORM tutorial introduction.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>argument</strong> &#8211; <p>a mapped class, or actual <tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt> instance, representing
+the target of the relationship.</p>
+<p><a href="#id1"><span class="problematic" id="id2">:paramref:`~.relationship.argument`</span></a> may also be passed as a callable
+function which is evaluated at mapper initialization time, and may
+be passed as a Python-evaluable string when using Declarative.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">declarative_configuring_relationships</em> - further detail
+on relationship configuration when using Declarative.</p>
+</div>
+</li>
+<li><strong>secondary</strong> &#8211; <p>for a many-to-many relationship, specifies the intermediary
+table, and is typically an instance of <tt class="xref py py-class docutils literal"><span class="pre">Table</span></tt>.
+In less common circumstances, the argument may also be specified
+as an <tt class="xref py py-class docutils literal"><span class="pre">Alias</span></tt> construct, or even a <tt class="xref py py-class docutils literal"><span class="pre">Join</span></tt> construct.</p>
+<p><a href="#id3"><span class="problematic" id="id4">:paramref:`~.relationship.secondary`</span></a> may
+also be passed as a callable function which is evaluated at
+mapper initialization time.  When using Declarative, it may also
+be a string argument noting the name of a <tt class="xref py py-class docutils literal"><span class="pre">Table</span></tt> that is
+present in the <tt class="xref py py-class docutils literal"><span class="pre">MetaData</span></tt> collection associated with the
+parent-mapped <tt class="xref py py-class docutils literal"><span class="pre">Table</span></tt>.</p>
+<p>The <a href="#id5"><span class="problematic" id="id6">:paramref:`~.relationship.secondary`</span></a> keyword argument is
+typically applied in the case where the intermediary <tt class="xref py py-class docutils literal"><span class="pre">Table</span></tt>
+is not otherwise exprssed in any direct class mapping. If the
+&#8220;secondary&#8221; table is also explicitly mapped elsewhere (e.g. as in
+<em class="xref std std-ref">association_pattern</em>), one should consider applying the
+<a href="#id7"><span class="problematic" id="id8">:paramref:`~.relationship.viewonly`</span></a> flag so that this
+<a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> is not used for persistence operations which
+may conflict with those of the association object pattern.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">relationships_many_to_many</em> - Reference example of &#8220;many
+to many&#8221;.</p>
+<p><em class="xref std std-ref">orm_tutorial_many_to_many</em> - ORM tutorial introduction to
+many-to-many relationships.</p>
+<p><em class="xref std std-ref">self_referential_many_to_many</em> - Specifics on using
+many-to-many in a self-referential case.</p>
+<p><em class="xref std std-ref">declarative_many_to_many</em> - Additional options when using
+Declarative.</p>
+<p><em class="xref std std-ref">association_pattern</em> - an alternative to
+<a href="#id9"><span class="problematic" id="id10">:paramref:`~.relationship.secondary`</span></a> when composing association
+table relationships, allowing additional attributes to be
+specified on the association table.</p>
+<p class="last"><em class="xref std std-ref">composite_secondary_join</em> - a lesser-used pattern which
+in some cases can enable complex <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> SQL
+conditions to be used.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.9.2: </span><a href="#id11"><span class="problematic" id="id12">:paramref:`~.relationship.secondary`</span></a> works
+more effectively when referring to a <tt class="xref py py-class docutils literal"><span class="pre">Join</span></tt> instance.</p>
+</div>
+</li>
+<li><strong>active_history=False</strong> &#8211; When <tt class="docutils literal"><span class="pre">True</span></tt>, indicates that the &#8220;previous&#8221; value for a
+many-to-one reference should be loaded when replaced, if
+not already loaded. Normally, history tracking logic for
+simple many-to-ones only needs to be aware of the &#8220;new&#8221;
+value in order to perform a flush. This flag is available
+for applications that make use of
+<tt class="xref py py-func docutils literal"><span class="pre">attributes.get_history()</span></tt> which also need to know
+the &#8220;previous&#8221; value of the attribute.</li>
+<li><strong>backref</strong> &#8211; <p>indicates the string name of a property to be placed on the related
+mapper&#8217;s class that will handle this relationship in the other
+direction. The other property will be created automatically
+when the mappers are configured.  Can also be passed as a
+<tt class="xref py py-func docutils literal"><span class="pre">backref()</span></tt> object to control the configuration of the
+new relationship.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">relationships_backref</em> - Introductory documentation and
+examples.</p>
+<p><a href="#id13"><span class="problematic" id="id14">:paramref:`~.relationship.back_populates`</span></a> - alternative form
+of backref specification.</p>
+<p class="last"><tt class="xref py py-func docutils literal"><span class="pre">backref()</span></tt> - allows control over <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>
+configuration when using <a href="#id15"><span class="problematic" id="id16">:paramref:`~.relationship.backref`</span></a>.</p>
+</div>
+</li>
+<li><strong>back_populates</strong> &#8211; <p>Takes a string name and has the same meaning as
+<a href="#id17"><span class="problematic" id="id18">:paramref:`~.relationship.backref`</span></a>, except the complementing
+property is <strong>not</strong> created automatically, and instead must be
+configured explicitly on the other mapper.  The complementing
+property should also indicate
+<a href="#id19"><span class="problematic" id="id20">:paramref:`~.relationship.back_populates`</span></a> to this relationship to
+ensure proper functioning.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">relationships_backref</em> - Introductory documentation and
+examples.</p>
+<p class="last"><a href="#id21"><span class="problematic" id="id22">:paramref:`~.relationship.backref`</span></a> - alternative form
+of backref specification.</p>
+</div>
+</li>
+<li><strong>cascade</strong> &#8211; <p>a comma-separated list of cascade rules which determines how
+Session operations should be &#8220;cascaded&#8221; from parent to child.
+This defaults to <tt class="docutils literal"><span class="pre">False</span></tt>, which means the default cascade
+should be used - this default cascade is <tt class="docutils literal"><span class="pre">&quot;save-update,</span> <span class="pre">merge&quot;</span></tt>.</p>
+<p>The available cascades are <tt class="docutils literal"><span class="pre">save-update</span></tt>, <tt class="docutils literal"><span class="pre">merge</span></tt>,
+<tt class="docutils literal"><span class="pre">expunge</span></tt>, <tt class="docutils literal"><span class="pre">delete</span></tt>, <tt class="docutils literal"><span class="pre">delete-orphan</span></tt>, and <tt class="docutils literal"><span class="pre">refresh-expire</span></tt>.
+An additional option, <tt class="docutils literal"><span class="pre">all</span></tt> indicates shorthand for
+<tt class="docutils literal"><span class="pre">&quot;save-update,</span> <span class="pre">merge,</span> <span class="pre">refresh-expire,</span>
+<span class="pre">expunge,</span> <span class="pre">delete&quot;</span></tt>, and is often used as in <tt class="docutils literal"><span class="pre">&quot;all,</span> <span class="pre">delete-orphan&quot;</span></tt>
+to indicate that related objects should follow along with the
+parent object in all cases, and be deleted when de-associated.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">unitofwork_cascades</em> - Full detail on each of the available
+cascade options.</p>
+<p class="last"><em class="xref std std-ref">tutorial_delete_cascade</em> - Tutorial example describing
+a delete cascade.</p>
+</div>
+</li>
+<li><strong>cascade_backrefs=True</strong> &#8211; <p>a boolean value indicating if the <tt class="docutils literal"><span class="pre">save-update</span></tt> cascade should
+operate along an assignment event intercepted by a backref.
+When set to <tt class="docutils literal"><span class="pre">False</span></tt>, the attribute managed by this relationship
+will not cascade an incoming transient object into the session of a
+persistent parent, if the event is received via backref.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">backref_cascade</em> - Full discussion and examples on how
+the <a href="#id23"><span class="problematic" id="id24">:paramref:`~.relationship.cascade_backrefs`</span></a> option is used.</p>
+</div>
+</li>
+<li><strong>collection_class</strong> &#8211; <p>a class or callable that returns a new list-holding object. will
+be used in place of a plain list for storing elements.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">custom_collections</em> - Introductory documentation and
+examples.</p>
+</div>
+</li>
+<li><strong>comparator_factory</strong> &#8211; <p>a class which extends <tt class="xref py py-class docutils literal"><span class="pre">RelationshipProperty.Comparator</span></tt>
+which provides custom SQL clause generation for comparison
+operations.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><tt class="xref py py-class docutils literal"><span class="pre">PropComparator</span></tt> - some detail on redefining comparators
+at this level.</p>
+<p class="last"><em class="xref std std-ref">custom_comparators</em> - Brief intro to this feature.</p>
+</div>
+</li>
+<li><strong>distinct_target_key=None</strong> &#8211; <p>Indicate if a &#8220;subquery&#8221; eager load should apply the DISTINCT
+keyword to the innermost SELECT statement.  When left as <tt class="docutils literal"><span class="pre">None</span></tt>,
+the DISTINCT keyword will be applied in those cases when the target
+columns do not comprise the full primary key of the target table.
+When set to <tt class="docutils literal"><span class="pre">True</span></tt>, the DISTINCT keyword is applied to the
+innermost SELECT unconditionally.</p>
+<p>It may be desirable to set this flag to False when the DISTINCT is
+reducing performance of the innermost subquery beyond that of what
+duplicate innermost rows may be causing.</p>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.8.3: </span>-
+<a href="#id25"><span class="problematic" id="id26">:paramref:`~.relationship.distinct_target_key`</span></a> allows the
+subquery eager loader to apply a DISTINCT modifier to the
+innermost SELECT.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified">Changed in version 0.9.0: </span>-
+<a href="#id27"><span class="problematic" id="id28">:paramref:`~.relationship.distinct_target_key`</span></a> now defaults to
+<tt class="docutils literal"><span class="pre">None</span></tt>, so that the feature enables itself automatically for
+those cases where the innermost query targets a non-unique
+key.</p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">loading_toplevel</em> - includes an introduction to subquery
+eager loading.</p>
+</div>
+</li>
+<li><strong>doc</strong> &#8211; docstring which will be applied to the resulting descriptor.</li>
+<li><strong>extension</strong> &#8211; <p>an <tt class="xref py py-class docutils literal"><span class="pre">AttributeExtension</span></tt> instance, or list of extensions,
+which will be prepended to the list of attribute listeners for
+the resulting descriptor placed on the class.</p>
+<div class="deprecated">
+<p><span class="versionmodified">Deprecated since version 0.7: </span>Please see <tt class="xref py py-class docutils literal"><span class="pre">AttributeEvents</span></tt>.</p>
+</div>
+</li>
+<li><strong>foreign_keys</strong> &#8211; <p>a list of columns which are to be used as &#8220;foreign key&#8221;
+columns, or columns which refer to the value in a remote
+column, within the context of this <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>
+object&#8217;s <a href="#id29"><span class="problematic" id="id30">:paramref:`~.relationship.primaryjoin`</span></a> condition.
+That is, if the <a href="#id31"><span class="problematic" id="id32">:paramref:`~.relationship.primaryjoin`</span></a>
+condition of this <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> is <tt class="docutils literal"><span class="pre">a.id</span> <span class="pre">==</span>
+<span class="pre">b.a_id</span></tt>, and the values in <tt class="docutils literal"><span class="pre">b.a_id</span></tt> are required to be
+present in <tt class="docutils literal"><span class="pre">a.id</span></tt>, then the &#8220;foreign key&#8221; column of this
+<a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> is <tt class="docutils literal"><span class="pre">b.a_id</span></tt>.</p>
+<p>In normal cases, the <a href="#id33"><span class="problematic" id="id34">:paramref:`~.relationship.foreign_keys`</span></a>
+parameter is <strong>not required.</strong> <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> will
+automatically determine which columns in the
+<a href="#id35"><span class="problematic" id="id36">:paramref:`~.relationship.primaryjoin`</span></a> conditition are to be
+considered &#8220;foreign key&#8221; columns based on those
+<tt class="xref py py-class docutils literal"><span class="pre">Column</span></tt> objects that specify <tt class="xref py py-class docutils literal"><span class="pre">ForeignKey</span></tt>,
+or are otherwise listed as referencing columns in a
+<tt class="xref py py-class docutils literal"><span class="pre">ForeignKeyConstraint</span></tt> construct.
+<a href="#id37"><span class="problematic" id="id38">:paramref:`~.relationship.foreign_keys`</span></a> is only needed when:</p>
+<blockquote>
+<div><ol class="arabic">
+<li>There is more than one way to construct a join from the local
+table to the remote table, as there are multiple foreign key
+references present.  Setting <tt class="docutils literal"><span class="pre">foreign_keys</span></tt> will limit the
+<a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> to consider just those columns specified
+here as &#8220;foreign&#8221;.<div class="versionchanged">
+<p><span class="versionmodified">Changed in version 0.8: </span>A multiple-foreign key join ambiguity can be resolved by
+setting the <a href="#id39"><span class="problematic" id="id40">:paramref:`~.relationship.foreign_keys`</span></a>
+parameter alone, without the need to explicitly set
+<a href="#id41"><span class="problematic" id="id42">:paramref:`~.relationship.primaryjoin`</span></a> as well.</p>
+</div>
+</li>
+<li>The <tt class="xref py py-class docutils literal"><span class="pre">Table</span></tt> being mapped does not actually have
+<tt class="xref py py-class docutils literal"><span class="pre">ForeignKey</span></tt> or <tt class="xref py py-class docutils literal"><span class="pre">ForeignKeyConstraint</span></tt>
+constructs present, often because the table
+was reflected from a database that does not support foreign key
+reflection (MySQL MyISAM).</li>
+<li>The <a href="#id43"><span class="problematic" id="id44">:paramref:`~.relationship.primaryjoin`</span></a> argument is used to
+construct a non-standard join condition, which makes use of
+columns or expressions that do not normally refer to their
+&#8220;parent&#8221; column, such as a join condition expressed by a
+complex comparison using a SQL function.</li>
+</ol>
+</div></blockquote>
+<p>The <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> construct will raise informative
+error messages that suggest the use of the
+<a href="#id45"><span class="problematic" id="id46">:paramref:`~.relationship.foreign_keys`</span></a> parameter when
+presented with an ambiguous condition.   In typical cases,
+if <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> doesn&#8217;t raise any exceptions, the
+<a href="#id47"><span class="problematic" id="id48">:paramref:`~.relationship.foreign_keys`</span></a> parameter is usually
+not needed.</p>
+<p><a href="#id49"><span class="problematic" id="id50">:paramref:`~.relationship.foreign_keys`</span></a> may also be passed as a
+callable function which is evaluated at mapper initialization time,
+and may be passed as a Python-evaluable string when using
+Declarative.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">relationship_foreign_keys</em></p>
+<p><em class="xref std std-ref">relationship_custom_foreign</em></p>
+<p class="last"><tt class="xref py py-func docutils literal"><span class="pre">foreign()</span></tt> - allows direct annotation of the &#8220;foreign&#8221;
+columns within a <a href="#id51"><span class="problematic" id="id52">:paramref:`~.relationship.primaryjoin`</span></a> condition.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.8: </span>The <tt class="xref py py-func docutils literal"><span class="pre">foreign()</span></tt> annotation can also be applied
+directly to the <a href="#id53"><span class="problematic" id="id54">:paramref:`~.relationship.primaryjoin`</span></a>
+expression, which is an alternate, more specific system of
+describing which columns in a particular
+<a href="#id55"><span class="problematic" id="id56">:paramref:`~.relationship.primaryjoin`</span></a> should be considered
+&#8220;foreign&#8221;.</p>
+</div>
+</li>
+<li><strong>info</strong> &#8211; <p>Optional data dictionary which will be populated into the
+<tt class="xref py py-attr docutils literal"><span class="pre">MapperProperty.info</span></tt> attribute of this object.</p>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.8.</span></p>
+</div>
+</li>
+<li><strong>innerjoin=False</strong> &#8211; <p>when <tt class="docutils literal"><span class="pre">True</span></tt>, joined eager loads will use an inner join to join
+against related tables instead of an outer join.  The purpose
+of this option is generally one of performance, as inner joins
+generally perform better than outer joins.</p>
+<p>This flag can be set to <tt class="docutils literal"><span class="pre">True</span></tt> when the relationship references an
+object via many-to-one using local foreign keys that are not
+nullable, or when the reference is one-to-one or a collection that
+is guaranteed to have one or at least one entry.</p>
+<p>If the joined-eager load is chained onto an existing LEFT OUTER
+JOIN, <tt class="docutils literal"><span class="pre">innerjoin=True</span></tt> will be bypassed and the join will continue
+to chain as LEFT OUTER JOIN so that the results don&#8217;t change.  As an
+alternative, specify the value <tt class="docutils literal"><span class="pre">&quot;nested&quot;</span></tt>.  This will instead nest
+the join on the right side, e.g. using the form &#8220;a LEFT OUTER JOIN
+(b JOIN c)&#8221;.</p>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.9.4: </span>Added <tt class="docutils literal"><span class="pre">innerjoin=&quot;nested&quot;</span></tt> option to
+support nesting of eager &#8220;inner&#8221; joins.</p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">what_kind_of_loading</em> - Discussion of some details of
+various loader options.</p>
+<p class="last"><a href="#id57"><span class="problematic" id="id58">:paramref:`.joinedload.innerjoin`</span></a> - loader option version</p>
+</div>
+</li>
+<li><strong>join_depth</strong> &#8211; <p>when non-<tt class="docutils literal"><span class="pre">None</span></tt>, an integer value indicating how many levels
+deep &#8220;eager&#8221; loaders should join on a self-referring or cyclical
+relationship.  The number counts how many times the same Mapper
+shall be present in the loading condition along a particular join
+branch.  When left at its default of <tt class="docutils literal"><span class="pre">None</span></tt>, eager loaders
+will stop chaining when they encounter a the same target mapper
+which is already higher up in the chain.  This option applies
+both to joined- and subquery- eager loaders.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">self_referential_eager_loading</em> - Introductory documentation
+and examples.</p>
+</div>
+</li>
+<li><strong>lazy=&#8217;select&#8217;</strong> &#8211; <p>specifies
+how the related items should be loaded.  Default value is
+<tt class="docutils literal"><span class="pre">select</span></tt>.  Values include:</p>
+<ul>
+<li><tt class="docutils literal"><span class="pre">select</span></tt> - items should be loaded lazily when the property is
+first accessed, using a separate SELECT statement, or identity map
+fetch for simple many-to-one references.</li>
+<li><tt class="docutils literal"><span class="pre">immediate</span></tt> - items should be loaded as the parents are loaded,
+using a separate SELECT statement, or identity map fetch for
+simple many-to-one references.</li>
+<li><tt class="docutils literal"><span class="pre">joined</span></tt> - items should be loaded &#8220;eagerly&#8221; in the same query as
+that of the parent, using a JOIN or LEFT OUTER JOIN.  Whether
+the join is &#8220;outer&#8221; or not is determined by the
+<a href="#id59"><span class="problematic" id="id60">:paramref:`~.relationship.innerjoin`</span></a> parameter.</li>
+<li><tt class="docutils literal"><span class="pre">subquery</span></tt> - items should be loaded &#8220;eagerly&#8221; as the parents are
+loaded, using one additional SQL statement, which issues a JOIN to
+a subquery of the original statement, for each collection
+requested.</li>
+<li><tt class="docutils literal"><span class="pre">noload</span></tt> - no loading should occur at any time.  This is to
+support &#8220;write-only&#8221; attributes, or attributes which are
+populated in some manner specific to the application.</li>
+<li><tt class="docutils literal"><span class="pre">dynamic</span></tt> - the attribute will return a pre-configured
+<tt class="xref py py-class docutils literal"><span class="pre">Query</span></tt> object for all read
+operations, onto which further filtering operations can be
+applied before iterating the results.  See
+the section <em class="xref std std-ref">dynamic_relationship</em> for more details.</li>
+<li>True - a synonym for &#8216;select&#8217;</li>
+<li>False - a synonym for &#8216;joined&#8217;</li>
+<li>None - a synonym for &#8216;noload&#8217;</li>
+</ul>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><tt class="xref doc docutils literal"><span class="pre">/orm/loading</span></tt> - Full documentation on relationship loader
+configuration.</p>
+<p class="last"><em class="xref std std-ref">dynamic_relationship</em> - detail on the <tt class="docutils literal"><span class="pre">dynamic</span></tt> option.</p>
+</div>
+</li>
+<li><strong>load_on_pending=False</strong> &#8211; <p>Indicates loading behavior for transient or pending parent objects.</p>
+<p>When set to <tt class="docutils literal"><span class="pre">True</span></tt>, causes the lazy-loader to
+issue a query for a parent object that is not persistent, meaning it
+has never been flushed.  This may take effect for a pending object
+when autoflush is disabled, or for a transient object that has been
+&#8220;attached&#8221; to a <tt class="xref py py-class docutils literal"><span class="pre">Session</span></tt> but is not part of its pending
+collection.</p>
+<p>The <a href="#id61"><span class="problematic" id="id62">:paramref:`~.relationship.load_on_pending`</span></a> flag does not improve
+behavior when the ORM is used normally - object references should be
+constructed at the object level, not at the foreign key level, so
+that they are present in an ordinary way before a flush proceeds.
+This flag is not not intended for general use.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><tt class="xref py py-meth docutils literal"><span class="pre">Session.enable_relationship_loading()</span></tt> - this method
+establishes &#8220;load on pending&#8221; behavior for the whole object, and
+also allows loading on objects that remain transient or
+detached.</p>
+</div>
+</li>
+<li><strong>order_by</strong> &#8211; <p>indicates the ordering that should be applied when loading these
+items.  <a href="#id63"><span class="problematic" id="id64">:paramref:`~.relationship.order_by`</span></a> is expected to refer to
+one of the <tt class="xref py py-class docutils literal"><span class="pre">Column</span></tt> objects to which the target class is
+mapped, or the attribute itself bound to the target class which
+refers to the column.</p>
+<p><a href="#id65"><span class="problematic" id="id66">:paramref:`~.relationship.order_by`</span></a> may also be passed as a callable
+function which is evaluated at mapper initialization time, and may
+be passed as a Python-evaluable string when using Declarative.</p>
+</li>
+<li><strong>passive_deletes=False</strong> &#8211; <p>Indicates loading behavior during delete operations.</p>
+<p>A value of True indicates that unloaded child items should not
+be loaded during a delete operation on the parent.  Normally,
+when a parent item is deleted, all child items are loaded so
+that they can either be marked as deleted, or have their
+foreign key to the parent set to NULL.  Marking this flag as
+True usually implies an ON DELETE &lt;CASCADE|SET NULL&gt; rule is in
+place which will handle updating/deleting child rows on the
+database side.</p>
+<p>Additionally, setting the flag to the string value &#8216;all&#8217; will
+disable the &#8220;nulling out&#8221; of the child foreign keys, when there
+is no delete or delete-orphan cascade enabled.  This is
+typically used when a triggering or error raise scenario is in
+place on the database side.  Note that the foreign key
+attributes on in-session child objects will not be changed
+after a flush occurs so this is a very special use-case
+setting.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">passive_deletes</em> - Introductory documentation
+and examples.</p>
+</div>
+</li>
+<li><strong>passive_updates=True</strong> &#8211; <p>Indicates loading and INSERT/UPDATE/DELETE behavior when the
+source of a foreign key value changes (i.e. an &#8220;on update&#8221;
+cascade), which are typically the primary key columns of the
+source row.</p>
+<p>When True, it is assumed that ON UPDATE CASCADE is configured on
+the foreign key in the database, and that the database will
+handle propagation of an UPDATE from a source column to
+dependent rows.  Note that with databases which enforce
+referential integrity (i.e. PostgreSQL, MySQL with InnoDB tables),
+ON UPDATE CASCADE is required for this operation.  The
+relationship() will update the value of the attribute on related
+items which are locally present in the session during a flush.</p>
+<p>When False, it is assumed that the database does not enforce
+referential integrity and will not be issuing its own CASCADE
+operation for an update.  The relationship() will issue the
+appropriate UPDATE statements to the database in response to the
+change of a referenced key, and items locally present in the
+session during a flush will also be refreshed.</p>
+<p>This flag should probably be set to False if primary key changes
+are expected and the database in use doesn&#8217;t support CASCADE
+(i.e. SQLite, MySQL MyISAM tables).</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">passive_updates</em> - Introductory documentation and
+examples.</p>
+<p class="last"><a href="#id67"><span class="problematic" id="id68">:paramref:`.mapper.passive_updates`</span></a> - a similar flag which
+takes effect for joined-table inheritance mappings.</p>
+</div>
+</li>
+<li><strong>post_update</strong> &#8211; <p>this indicates that the relationship should be handled by a
+second UPDATE statement after an INSERT or before a
+DELETE. Currently, it also will issue an UPDATE after the
+instance was UPDATEd as well, although this technically should
+be improved. This flag is used to handle saving bi-directional
+dependencies between two individual rows (i.e. each row
+references the other), where it would otherwise be impossible to
+INSERT or DELETE both rows fully since one row exists before the
+other. Use this flag when a particular mapping arrangement will
+incur two rows that are dependent on each other, such as a table
+that has a one-to-many relationship to a set of child rows, and
+also has a column that references a single child row within that
+list (i.e. both tables contain a foreign key to each other). If
+a flush operation returns an error that a &#8220;cyclical
+dependency&#8221; was detected, this is a cue that you might want to
+use <a href="#id69"><span class="problematic" id="id70">:paramref:`~.relationship.post_update`</span></a> to &#8220;break&#8221; the cycle.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">post_update</em> - Introductory documentation and examples.</p>
+</div>
+</li>
+<li><strong>primaryjoin</strong> &#8211; <p>a SQL expression that will be used as the primary
+join of this child object against the parent object, or in a
+many-to-many relationship the join of the primary object to the
+association table. By default, this value is computed based on the
+foreign key relationships of the parent and child tables (or
+association table).</p>
+<p><a href="#id71"><span class="problematic" id="id72">:paramref:`~.relationship.primaryjoin`</span></a> may also be passed as a
+callable function which is evaluated at mapper initialization time,
+and may be passed as a Python-evaluable string when using
+Declarative.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">relationship_primaryjoin</em></p>
+</div>
+</li>
+<li><strong>remote_side</strong> &#8211; <p>used for self-referential relationships, indicates the column or
+list of columns that form the &#8220;remote side&#8221; of the relationship.</p>
+<p><a href="#id73"><span class="problematic" id="id74">:paramref:`.relationship.remote_side`</span></a> may also be passed as a
+callable function which is evaluated at mapper initialization time,
+and may be passed as a Python-evaluable string when using
+Declarative.</p>
+<div class="versionchanged">
+<p><span class="versionmodified">Changed in version 0.8: </span>The <tt class="xref py py-func docutils literal"><span class="pre">remote()</span></tt> annotation can also be applied
+directly to the <tt class="docutils literal"><span class="pre">primaryjoin</span></tt> expression, which is an
+alternate, more specific system of describing which columns in a
+particular <tt class="docutils literal"><span class="pre">primaryjoin</span></tt> should be considered &#8220;remote&#8221;.</p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><em class="xref std std-ref">self_referential</em> - in-depth explanation of how
+<a href="#id75"><span class="problematic" id="id76">:paramref:`~.relationship.remote_side`</span></a>
+is used to configure self-referential relationships.</p>
+<p class="last"><tt class="xref py py-func docutils literal"><span class="pre">remote()</span></tt> - an annotation function that accomplishes the
+same purpose as <a href="#id77"><span class="problematic" id="id78">:paramref:`~.relationship.remote_side`</span></a>, typically
+when a custom <a href="#id79"><span class="problematic" id="id80">:paramref:`~.relationship.primaryjoin`</span></a> condition
+is used.</p>
+</div>
+</li>
+<li><strong>query_class</strong> &#8211; <p>a <tt class="xref py py-class docutils literal"><span class="pre">Query</span></tt> subclass that will be used as the base of the
+&#8220;appender query&#8221; returned by a &#8220;dynamic&#8221; relationship, that
+is, a relationship that specifies <tt class="docutils literal"><span class="pre">lazy=&quot;dynamic&quot;</span></tt> or was
+otherwise constructed using the <tt class="xref py py-func docutils literal"><span class="pre">orm.dynamic_loader()</span></tt>
+function.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">dynamic_relationship</em> - Introduction to &#8220;dynamic&#8221;
+relationship loaders.</p>
+</div>
+</li>
+<li><strong>secondaryjoin</strong> &#8211; <p>a SQL expression that will be used as the join of
+an association table to the child object. By default, this value is
+computed based on the foreign key relationships of the association
+and child tables.</p>
+<p><a href="#id81"><span class="problematic" id="id82">:paramref:`~.relationship.secondaryjoin`</span></a> may also be passed as a
+callable function which is evaluated at mapper initialization time,
+and may be passed as a Python-evaluable string when using
+Declarative.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">relationship_primaryjoin</em></p>
+</div>
+</li>
+<li><strong>single_parent</strong> &#8211; <p>when True, installs a validator which will prevent objects
+from being associated with more than one parent at a time.
+This is used for many-to-one or many-to-many relationships that
+should be treated either as one-to-one or one-to-many.  Its usage
+is optional, except for <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> constructs which
+are many-to-one or many-to-many and also
+specify the <tt class="docutils literal"><span class="pre">delete-orphan</span></tt> cascade option.  The
+<a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> construct itself will raise an error
+instructing when this option is required.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">unitofwork_cascades</em> - includes detail on when the
+<a href="#id83"><span class="problematic" id="id84">:paramref:`~.relationship.single_parent`</span></a> flag may be appropriate.</p>
+</div>
+</li>
+<li><strong>uselist</strong> &#8211; <p>a boolean that indicates if this property should be loaded as a
+list or a scalar. In most cases, this value is determined
+automatically by <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> at mapper configuration
+time, based on the type and direction
+of the relationship - one to many forms a list, many to one
+forms a scalar, many to many is a list. If a scalar is desired
+where normally a list would be present, such as a bi-directional
+one-to-one relationship, set <a href="#id85"><span class="problematic" id="id86">:paramref:`~.relationship.uselist`</span></a> to
+False.</p>
+<p>The <a href="#id87"><span class="problematic" id="id88">:paramref:`~.relationship.uselist`</span></a> flag is also available on an
+existing <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> construct as a read-only attribute,
+which can be used to determine if this <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> deals
+with collections or scalar attributes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">User</span><span class="o">.</span><span class="n">addresses</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">uselist</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><em class="xref std std-ref">relationships_one_to_one</em> - Introduction to the &#8220;one to
+one&#8221; relationship pattern, which is typically when the
+<a href="#id89"><span class="problematic" id="id90">:paramref:`~.relationship.uselist`</span></a> flag is needed.</p>
+</div>
+</li>
+<li><strong>viewonly=False</strong> &#8211; when set to True, the relationship is used only for loading objects,
+and not for any persistence operation.  A <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a>
+which specifies <a href="#id91"><span class="problematic" id="id92">:paramref:`~.relationship.viewonly`</span></a> can work
+with a wider range of SQL operations within the
+<a href="#id93"><span class="problematic" id="id94">:paramref:`~.relationship.primaryjoin`</span></a> condition, including
+operations that feature the use of a variety of comparison operators
+as well as SQL functions such as <tt class="xref py py-func docutils literal"><span class="pre">cast()</span></tt>.  The
+<a href="#id95"><span class="problematic" id="id96">:paramref:`~.relationship.viewonly`</span></a> flag is also of general use when
+defining any kind of <a class="reference internal" href="#pym.auth.models.relationship" title="pym.auth.models.relationship"><tt class="xref py py-func docutils literal"><span class="pre">relationship()</span></tt></a> that doesn&#8217;t represent
+the full set of related objects, to prevent modifications of the
+collection from resulting in persistence operations.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.auth.setup.html" class="btn btn-neutral float-right" title="pym.auth.setup module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.auth.manager.html" class="btn btn-neutral" title="pym.auth.manager module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

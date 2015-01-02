@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parenchym On The Console &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="next" title="pym" href="../api/modules.html"/>
+        <link rel="prev" title="Parenchym’s documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">Parenchym On The Console</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#displaying-information">Displaying Information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#editing-entities">Editing Entities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#some-examples">Some Examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">pym</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Parenchym On The Console</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/narr/cli.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="parenchym-on-the-console">
+<h1>Parenchym On The Console<a class="headerlink" href="#parenchym-on-the-console" title="Permalink to this headline">¶</a></h1>
+<p>Parenchym contains a command-line tool <tt class="docutils literal"><span class="pre">pym</span></tt> (<tt class="docutils literal"><span class="pre">pym/scripts/pym.py</span></tt>).</p>
+<p>It understands various commands to manage the basic entites of Parenchym, like
+users, groups, tenants, resources etc.</p>
+<p>It works like <tt class="docutils literal"><span class="pre">git</span></tt> in that you call <tt class="docutils literal"><span class="pre">pym</span></tt> with sub-commands. There are global options,
+to be written before the sub-command, and options specific to that sub-command.</p>
+<p>Help is available as:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym --help
+pym SUB-COMMAND --help
+</pre></div>
+</div>
+<p>You need to always tell <tt class="docutils literal"><span class="pre">pym</span></tt> which configuration to load.</p>
+<div class="section" id="displaying-information">
+<h2>Displaying Information<a class="headerlink" href="#displaying-information" title="Permalink to this headline">¶</a></h2>
+<p>Parenchym has various entites in a tree structure. For example, display the
+resource-tree:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini resource-tree
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>root (4)
+  default (13)
+    journals (24)
+  __fs__ (29)
+  me (16)
+    profile (28)
+  sys (5)
+    auth_mgr (7)
+      group_member_mgr (10)
+      group_mgr (9)
+      permission_mgr (11)
+      tenant_mgr (12)
+      user_mgr (8)
+    cache_mgmt (6)
+</pre></div>
+</div>
+<p>The number in brackets is the ID in the database, i.e. their primary key.</p>
+<p>To get more information and also show the ACL for each resource, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini  resource-tree -v --with-acl
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>+-----------------------------+------------------------------+-------------------------------------+------+----------------------+----------------------+------------------+
+| Resource                    | ACL                          | Interface                           | Kind | Title                | Short Title          | Slug             |
++-----------------------------+------------------------------+-------------------------------------+------+----------------------+----------------------+------------------+
+| root (4)                    | g:users ALLOW visit (4)      | pym.res.models.IRootNode            | res  | Root                 | Root                 | root             |
+|                             | g:wheel ALLOW * (3)          |                                     |      |                      |                      |                  |
+|   default (13)              |                              | pym.tenants.models.ITenantNode      | res  | Default              | Default              | default          |
+|     journals (24)           | g:users ALLOW read (9)       | pym.journals.models.IJournalsNode   | res  | Journals             | Journals             | journals         |
+|   __fs__ (29)               | g:fs_writer ALLOW write (13) | pym.fs.models.IFsNode               | res  | Filesystem           | Filesystem           | __fs__           |
+|                             | g:wheel ALLOW write (10)     |                                     |      |                      |                      |                  |
+|   me (16)                   | g:users ALLOW write (6)      | pym.me.models.IMeNode               | res  | Me                   | Me                   | me               |
+|     profile (28)            |                              | pym.me.models.IMeProfileNode        | res  | Profile              | Profile              | profile          |
+|   sys (5)                   |                              | pym.sys.models.ISysNode             | res  | Sys                  | Sys                  | sys              |
+|     auth_mgr (7)            |                              | pym.auth.models.IAuthMgrNode        | res  | AuthManager          | AuthManager          | auth_mgr         |
+|       group_member_mgr (10) |                              | pym.auth.models.IGroupMemberMgrNode | res  | Group Member Manager | Group Member Manager | group_member_mgr |
+|       group_mgr (9)         |                              | pym.auth.models.IGroupMgrNode       | res  | Group Manager        | Group Manager        | group_mgr        |
+|       permission_mgr (11)   |                              | pym.auth.models.IPermissionMgrNode  | res  | Permission Manager   | Permission Manager   | permission_mgr   |
+|       tenant_mgr (12)       |                              | pym.tenants.models.ITenantMgrNode   | res  | Tenant Manager       | Tenant Manager       | tenant_mgr       |
+|       user_mgr (8)          |                              | pym.auth.models.IUserMgrNode        | res  | User Manager         | User Manager         | user_mgr         |
+|     cache_mgmt (6)          |                              | pym.sys.models.ISysCacheMgmtNode    | res  | CacheMgmt            | CacheMgmt            | cache_mgmt       |
++-----------------------------+------------------------------+-------------------------------------+------+----------------------+----------------------+------------------+
+</pre></div>
+</div>
+<p>With the sub-command <tt class="docutils literal"><span class="pre">ls</span></tt> you basically dump the contents of the
+corresponding table.  <tt class="docutils literal"><span class="pre">pym</span></tt> can generate the output as YAML, JSON, TSV
+(tab-separated) or, formatted as a table like above (TXT).  For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini --format txt ls group
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>+-----+-----------+---------+--------------+--------+----------------------------------------+----------+----------------------------+-----------+-------+------------+-------+-----------------+
+| id  | tenant_id | tenant  | name         | kind   | descr                                  | owner_id | ctime                      | editor_id | mtime | deleter_id | dtime | deletion_reason |
++-----+-----------+---------+--------------+--------+----------------------------------------+----------+----------------------------+-----------+-------+------------+-------+-----------------+
+| 1   | None      | None    | system       | None   | None                                   | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 2   | None      | None    | wheel        | system | Site Admins                            | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 10  | None      | None    | users        | system | Authenticated Users                    | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 98  | None      | None    | unit testers | system | Unit Testers                           | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 99  | None      | None    | everyone     | system | Everyone (incl. unauthenticated users) | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 101 | None      | None    | default      | tenant | All members of tenant default          | 1        | 2014-12-24 21:01:27.996209 | None      | None  | None       | None  | None            |
+| 106 | 1         | default | fs_writer    | system | Can write files via FS                 | 107      | 2015-01-01 00:54:15.962160 | None      | None  | None       | None  | None            |
++-----+-----------+---------+--------------+--------+----------------------------------------+----------+----------------------------+-----------+-------+------------+-------+-----------------+
+</pre></div>
+</div>
+<p>If you like to get a full list of your user accounts and want them to edit in
+your favourite spreadsheet program, type this:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini --format tsv ls user &gt; /tmp/a.txt &amp;&amp; gnumeric /tmp/a.txt
+</pre></div>
+</div>
+</div>
+<div class="section" id="editing-entities">
+<h2>Editing Entities<a class="headerlink" href="#editing-entities" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">pym</span></tt> can handle the basic CRUD operations, CREATE, UPDATE and DELETE. It performs each
+of these commands on behalf of an user, an actor. By default <tt class="docutils literal"><span class="pre">pym</span></tt> uses the user
+account with which you are currently logged in the console. You <em>must</em> have an
+entry in Parenchym&#8217;s user table with a corresponding principal, then.</p>
+<p>Alternatively, you may specify a different user with the <tt class="docutils literal"><span class="pre">--actor</span></tt> option.</p>
+<p>To create and update an entity, you have to tell <tt class="docutils literal"><span class="pre">pym</span></tt> about the involved data, either
+in YAML format or in JSON, both in in-line style. Quote this string to avoid the shell
+interpreting special characters, and tell <tt class="docutils literal"><span class="pre">pym</span></tt> with the <tt class="docutils literal"><span class="pre">--format</span></tt> option which
+format you use.</p>
+</div>
+<div class="section" id="some-examples">
+<h2>Some Examples<a class="headerlink" href="#some-examples" title="Permalink to this headline">¶</a></h2>
+<p><strong>Create a group</strong></p>
+<p>We create a group that belongs to the default tenant (ID 1):</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini --format yaml --actor 107 create group &#39;{name: fs_writer, descr: Can write files via FS, tenant_id: 1}&#39;
+</pre></div>
+</div>
+<p>107 is the ID of the user record who will become the owner of the group record.</p>
+<p><strong>Create Access Control Entry</strong></p>
+<p>An Access Control Entry (ACE) is attached to a specific resource and tells who
+(group, user) is allowed or denied a specific permission:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini --actor 107 allow 13 write g:106
+</pre></div>
+</div>
+<p>Here we allow group with ID 106 the write permission on resource with ID 13.</p>
+<p>Resources, and groups too, are structured hierachically and their name has
+to be unique only on the same hierarchy level. Therefore they cannot be easily
+uniquely identified by their name, and we must use their ID here.</p>
+<p><strong>Filter Output</strong></p>
+<p>With the <tt class="docutils literal"><span class="pre">--filter</span></tt> option you can define an arbitrary SQL WHERE clause as a string.
+Some table or column names must be quoted to avoid clashing with SQL words.</p>
+<p>Show all members of group &#8220;wheel&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre>pym -c development.ini --format txt --actor 107 --show-sql ls group-member --filter &quot;\&quot;group\&quot;.name = &#39;wheel&#39;&quot;
+</pre></div>
+</div>
+<p>The option <tt class="docutils literal"><span class="pre">--show-sql</span></tt> here prints out the used SQL query. This helps you
+to identify the correct column names, especially for columns of tables that are joined
+with an alias.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../api/modules.html" class="btn btn-neutral float-right" title="pym"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral" title="Parenchym’s documentation"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

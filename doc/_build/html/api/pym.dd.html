@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.dd module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.duh_view module" href="pym.duh_view.html"/>
+        <link rel="prev" title="pym.cli module" href="pym.cli.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.dd module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.dd.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.dd">
+<span id="pym-dd-module"></span><h1>pym.dd module<a class="headerlink" href="#module-pym.dd" title="Permalink to this headline">¶</a></h1>
+<p>This module contains helpers and mixins for data dictionaries.</p>
+<p>Data dictionaries are Python dicts that define the structure of some data, the
+type of their nodes, validation rules and arbitrary other aspects, like title,
+widget, colModel for the grid.</p>
+<p>Data dictionaries are based on Colander, which means that the type of a node is
+given as a colander SchemaNode class. Ditto is the validator an instance of a
+colander validator.</p>
+<p>Each datadictionary has two special keys, whose value must be the same as in
+their SQLAlchemy declarative counterparts: <tt class="docutils literal"><span class="pre">__tablename__</span></tt> and <tt class="docutils literal"><span class="pre">__schema__</span></tt>
+(which may be given in SA&#8217;s table_args).</p>
+<p>Typically, the keys of a data dictionary correspond to the column names. In
+cases where it is necessary to have fully qualified column names, <tt class="docutils literal"><span class="pre">__schema__</span></tt>
+and <tt class="docutils literal"><span class="pre">__tablename__</span></tt> are used to build the prefix. Such a case is e.g. if
+you build a query that joins two or more entities. SA uses fully qualified
+column names to avoid clashing if any tables have the same column names.</p>
+<dl class="function">
+<dt id="pym.dd.apply_mixin">
+<tt class="descclassname">pym.dd.</tt><tt class="descname">apply_mixin</tt><big>(</big><em>dd</em>, <em>*mixins</em><big>)</big><a class="headerlink" href="#pym.dd.apply_mixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inserts mixins into given data dictionary.</p>
+<p>The data dictionary is modified in-place, so there is no return value.</p>
+<p>Determines automatically whether the column names of the data dictionary
+are fully qualified, i.e. start with schema or table name, or not. The
+mixed-in keys are prefixed likewise.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dd</strong> &#8211; The data dictionary</li>
+<li><strong>*mixins</strong> &#8211; <p>One or more mixins</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.dd.build_schema">
+<tt class="descclassname">pym.dd.</tt><tt class="descname">build_schema</tt><big>(</big><em>schema_type</em>, <em>*dds</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#pym.dd.build_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a Colander schema by given datadicts.</p>
+<p>If a field name starts with <tt class="docutils literal"><span class="pre">__</span></tt> (double underscore), it is left
+out in the schema.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>schema_type</strong> &#8211; A class of a colander schema</li>
+<li><strong>*dds</strong> &#8211; <p>List of dicts with data dictionaries.</p>
+</li>
+<li><strong>**kw</strong> &#8211; <p>Additional keyword params. If <tt class="docutils literal"><span class="pre">fieldlist</span></tt> is given,
+only those fields are taken into the schema.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Instance of the given colander schema.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.dd.deserialize">
+<tt class="descclassname">pym.dd.</tt><tt class="descname">deserialize</tt><big>(</big><em>schema</em>, <em>in_data0</em><big>)</big><a class="headerlink" href="#pym.dd.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserializes given data with given schema and replaces <tt class="docutils literal"><span class="pre">Colander.null</span></tt>
+with None.</p>
+<p>Use this when you want to transform data sent back from the grid into
+a Python data structure.</p>
+<p>Lets any errors bubble up to caller.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.dd.fully_qualify">
+<tt class="descclassname">pym.dd.</tt><tt class="descname">fully_qualify</tt><big>(</big><em>*dds</em><big>)</big><a class="headerlink" href="#pym.dd.fully_qualify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns dict that contains fully qualified fields of all given data dicts.</p>
+<p>Fully qualified fields are fields that are prefixes with their tablename
+and schema.</p>
+<p>If in a given data dictionary a field begins with &#8216;&#8211;&#8217;, it is not prefixed.
+&#8216;&#8211;&#8217; means, this field in the data dictionary maps not to a physical field
+in the underlying table, but this definition is declared in anticipation
+that it will be used later. For example, the
+<tt class="xref py py-attr docutils literal"><span class="pre">pym.models.DefaultMixinDd</span></tt> has the fields
+<tt class="docutils literal"><span class="pre">--owner.display_name</span></tt> and <tt class="docutils literal"><span class="pre">--editor.display_name</span></tt>. We anticipate that
+they will be used by each browse query. A browse query then must create an
+alias of <tt class="xref py py-class docutils literal"><span class="pre">pym.auth.Principal</span></tt> with the name <tt class="docutils literal"><span class="pre">owner</span></tt> and
+another alias of it with the name <tt class="docutils literal"><span class="pre">editor</span></tt>.</p>
+<p>The fields of the given data dictionaries are deepcopied, so that the
+returned dict can be modified by the caller without disturbing the original
+data dictionaries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.dd.list_titles">
+<tt class="descclassname">pym.dd.</tt><tt class="descname">list_titles</tt><big>(</big><em>dd</em>, <em>fieldlist=None</em><big>)</big><a class="headerlink" href="#pym.dd.list_titles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns list of titles of given datadict.</p>
+<p>Fields with names starting with <tt class="docutils literal"><span class="pre">__</span></tt> (double under) are left out.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dd</strong> &#8211; The data dictionary, either a dict or a class or instance of
+<tt class="xref py py-class docutils literal"><span class="pre">colander.SchemaNode</span></tt>.</li>
+<li><strong>fieldlist</strong> &#8211; Optional. Tuple with wanted fields.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of titles</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Raises TypeError:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><p class="first last">If <tt class="docutils literal"><span class="pre">dd</span></tt> is neither a dict nor instance or class of
+<tt class="xref py py-class docutils literal"><span class="pre">colander.SchemaNode</span></tt>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.duh_view.html" class="btn btn-neutral float-right" title="pym.duh_view module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.cli.html" class="btn btn-neutral" title="pym.cli module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
