@@ -98,7 +98,7 @@ class Runner(pym.cli.Cli):
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
         data = todata(qry, excludes=['rc', 'profile'])
-        self._print(data)
+        self.print(data)
 
     def _cmd_ls_groups(self):
         e = self.__class__.ENTITIES[self.args.entity]
@@ -119,7 +119,7 @@ class Runner(pym.cli.Cli):
                 if k == 'tenant_id':
                     d['tenant'] = ten.name if ten else None
             data.append(d)
-        self._print(data)
+        self.print(data)
 
     def _cmd_ls_group_members(self):
         e = self.__class__.ENTITIES[self.args.entity]
@@ -151,7 +151,7 @@ class Runner(pym.cli.Cli):
                 elif k == 'member_group_id':
                     d['member_group'] = mg_name
             data.append(d)
-        self._print(data)
+        self.print(data)
 
     def _cmd_ls_tenants(self):
 
@@ -166,25 +166,25 @@ class Runner(pym.cli.Cli):
             'assoc_group': _my_group
         }
         data = todata(qry, fmap=fmap)
-        self._print(data)
+        self.print(data)
 
     def _cmd_ls_permissions(self):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
         data = todata(qry)
-        self._print(data)
+        self.print(data)
 
     def _cmd_ls_resources(self):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
         data = todata(qry)
-        self._print(data)
+        self.print(data)
 
     def cmd_create(self):
         ent = self.args.entity
-        data = self._parse(self.args.data)
+        data = self.parse(self.args.data)
         if 'owner_id' in data:
             del data['owner_id']
         data['owner'] = self._actor
@@ -226,7 +226,7 @@ class Runner(pym.cli.Cli):
     def cmd_update(self):
         ent = self.args.entity
         id_ = self.args.id
-        data = self._parse(self.args.data)
+        data = self.parse(self.args.data)
         if 'editor_id' in data:
             del data['editor_id']
         data['editor'] = self._actor
@@ -440,10 +440,10 @@ class Runner(pym.cli.Cli):
         pp = _list_to_tree(todata(rs))
         prn(pp, 0)
         if out:
-            self._print_txt(out)
+            self.print_txt(out)
 
 
-def parse_args(app):
+def parse_args(app, argv):
     # Main parser
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -588,7 +588,7 @@ def parse_args(app):
              'group with "g:" and user with "u:"'
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main(argv=None):
@@ -602,7 +602,7 @@ def main(argv=None):
     # noinspection PyBroadException
     try:
         runner = Runner()
-        args = parse_args(runner)
+        args = parse_args(runner, argv[1:])
         runner.init_app(args, lgg=lgg, setup_logging=True)
         if hasattr(args, 'func'):
             args.func()

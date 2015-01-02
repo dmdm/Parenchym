@@ -4,14 +4,12 @@ import logging.config
 import sys
 import redis
 import yaml
-from collections import OrderedDict
 import pyramid.paster
 import pyramid.config
 import pyramid.request
 import json
 import os
 from prettytable import PrettyTable
-import sqlalchemy as sa
 
 from pym.rc import Rc
 import pym.models
@@ -105,11 +103,11 @@ class Cli(object):
                     help="Set format for input and output"
                 )
 
-    def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
+    def base_init(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
-        Initialises Pyramid application.
+        Initialises base for CLI apps: logger, console, rc, Pyramid Configurator
 
-        Loads config settings. Initialises SQLAlchemy and a session.
+        Used by :meth:`init_app` and :meth:`init_web_app`.
 
         :param args: Namespace of parsed CLI arguments
         :param lgg: Inject a logger, or keep the default module logger
@@ -138,7 +136,6 @@ class Cli(object):
         self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
         self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
 
-        #settings = pyramid.paster.get_appsettings(args.config)
         p = configparser.ConfigParser()
         p.read(fn_config)
         settings = dict(p['app:main'])
@@ -162,28 +159,43 @@ class Cli(object):
             settings=settings
         )
 
-        pym.models.init(settings, 'db.pym.sa.')
+    def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
+        """
+        Initialises Pyramid application for command-line use.
+
+        Additional to :meth:`base_init`, initialises SQLAlchemy and a DB
+        session, authentication module and the cache.
+
+        :param args: Namespace of parsed CLI arguments
+        :param lgg: Inject a logger, or keep the default module logger
+        :param rc: Inject a RC instance, or keep the loaded one.
+        :param rc_key: *obsolete*
+        :param setup_logging: Whether or not to setup logging as configured in
+            rc. Default is True.
+        """
+        self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
+                        setup_logging=setup_logging)
+        pym.models.init(self.settings, 'db.pym.sa.')
         self._sess = pym.models.DbSession()
-        pym.init_auth(rc)
+        pym.init_auth(self.rc)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
-        pym.configure_cache_regions(rc)
+        pym.configure_cache_regions(self.rc)
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
         Initialises the full web application.
 
-        Calls :meth:`init_app` and additionally initialises the WSGI environment
-        and sets up a request and the resource tree.
+        Additional to :meth:`base_init`, lets Paster bootstrap a complete
+        WSGI application. Its environment will then be in attribute ``env``,
+        and an initialised request in attribute ``request``.
         """
-        self.init_app(args, lgg=lgg, rc=rc, rc_key=rc_key,
-            setup_logging=setup_logging)
-
-        self._config.include(pym)
-        self._config.include('pyramid_redis')
+        self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
+                        setup_logging=setup_logging)
 
         req = pyramid.request.Request.blank('/',
             base_url='http://localhost:6543')
+        # paster.bootstrap calls the entry point configured in the INI
         self.env = pyramid.paster.bootstrap(
             os.path.join(
                 self.rc.root_dir,
@@ -203,25 +215,45 @@ class Cli(object):
         self.request.user.impersonate(ut)
         self.unit_tester = ut
 
-    def _print(self, data):
+    def print(self, data):
+        """
+        Prints data according to given format.
+
+        Format is specified via command-line argument ``--format`` and may be
+        ``JSON``, ``YAML``, or ``TXT``
+
+        :param data: Some data, e.g. a list of dicts.
+        """
         fmt = self.args.format.lower()
         if fmt == 'json':
-            self._print_json(data)
+            self.print_json(data)
         elif fmt == 'tsv':
-            self._print_tsv(data)
+            self.print_tsv(data)
         elif fmt == 'txt':
             if data:
-                self._print_txt(data)
+                self.print_txt(data)
             else:
                 print('No data')
         else:
-            self._print_yaml(data)
+            self.print_yaml(data)
 
-    def _print_json(self, data):
+    def print_json(self, data):
+        """
+        Prints data as JSON.
+
+        JSON options are given in attribute ``dump_opts_json``.
+        """
         print(json.dumps(data, **self.dump_opts_json))
 
     @staticmethod
-    def _print_tsv(data):
+    def print_tsv(data):
+        """
+        Prints data as TSV text (tab-separated).
+
+        :param data: If data is a list of dicts, uses keys of first row as
+            column headers. If data is just a dict, uses its keys. If data is
+            a list, no column headers are written.
+        """
         try:
             hh = data[0].keys()
             print("\t".join(hh))
@@ -239,7 +271,19 @@ class Cli(object):
                 print("\t".join([str(v) for v in row.values()]))
 
     @staticmethod
-    def _print_txt(data):
+    def print_txt(data):
+        """
+        Prints data as a table.
+
+        Uses ``prettytable``. You may want to use
+        :class:`~collections.OrderedDict` for the dicts in the data to define
+        a consistent sequence of columns.
+
+        :param data: If data is a list of dicts, uses keys of first row as
+            column headers. If data is just a dict, uses its keys. If data is
+            a list, column headers are just the indices.
+        :return:
+        """
         # We need a list of hh for prettytable, otherwise we get
         # TypeError: 'KeysView' object does not support indexing
         try:
@@ -267,34 +311,56 @@ class Cli(object):
                 t.add_row([row[h] for h in hh])
             print(t)
 
-    def _print_yaml(self, data):
+    def print_yaml(self, data):
+        """
+        Prints data as YAML.
+
+        Options are given in attribute ``dump_opts_yaml``.
+        """
         yaml.dump(data, sys.stdout, **self.dump_opts_yaml)
 
-    def _parse(self, data):
+    def parse(self, data):
+        """
+        Parses data according to given format and returns Python data structure.
+
+        Format is specified by command-line argument ``--format``.
+
+        :param data:
+        :return: Parsed data as Python data structure
+        """
         fmt = self.args.format.lower()
         if fmt == 'json':
-            return self._parse_json(data)
+            return self.parse_json(data)
         if fmt == 'tsv':
-            return self._parse_tsv(data)
+            return self.parse_tsv(data)
         if fmt == 'txt':
             raise NotImplementedError("Reading data from pretty ASCII tables"
                 "is not implemented")
         else:
-            return self._parse_yaml(data)
+            return self.parse_yaml(data)
 
     @staticmethod
-    def _parse_json(data):
+    def parse_json(data):
+        """
+        Parses data as JSON.
+        """
         return json.loads(data)
 
     @staticmethod
-    def _parse_tsv(s):
+    def parse_tsv(s):
+        """
+        Parses data as TSV (tab-separated).
+        """
         data = []
         for row in "\n".split(s):
             data.append([x.strip() for x in "\t".split(row)])
         return data
 
     @staticmethod
-    def _parse_yaml(data):
+    def parse_yaml(data):
+        """
+        Parses data as YAML.
+        """
         return yaml.load(data)
 
     @property
