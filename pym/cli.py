@@ -158,6 +158,7 @@ class Cli(object):
         self._config = pyramid.config.Configurator(
             settings=settings
         )
+        self._config.scan('pym')
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """

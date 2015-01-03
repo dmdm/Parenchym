@@ -67,6 +67,7 @@ def xhr_main_menu(context, request):
     # TODO Build different menus for un/authenticated users
     resp = pym.resp.JsonResp()
     resp.data = pym.menu.main_menu(
+        request=request,
         root_node=request.root,
         url_to=request.resource_url,
         tenant=DEFAULT_TENANT_NAME,

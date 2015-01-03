@@ -359,12 +359,10 @@ class User(DbBase, DefaultMixin):
         )
     )
     """User's preferences"""
-    sessionrc = sa.orm.deferred(
-        sa.Column(
-            MutableDict.as_mutable(JSON()),
-            nullable=True,
-            info={'colanderalchemy': {'title': _("SessionRc")}}
-        )
+    sessionrc = sa.Column(
+        MutableDict.as_mutable(JSON()),
+        nullable=True,
+        info={'colanderalchemy': {'title': _("SessionRc")}}
     )
     """User's session"""
 
@@ -797,19 +795,17 @@ class CurrentUser(object):
         self.uid = None
         self.principal = None
         self.sess = sess
-        self.init_nobody()
         rc = request.registry.settings['rc']
         cls = _dnr.resolve(rc.g('auth.provider'))
         self.auth_provider = cls(self.sess, user_class)
+        self.init_nobody()
 
     def load_by_principal(self, principal):
         u = self.auth_provider.load_by_principal(principal)
         self.init_from_user(u)
 
     def init_nobody(self):
-        u = self.sess.query(User).get(NOBODY_UID)
-        if not u:
-            raise pym.exc.AuthError('User nobody not in database')
+        u = self.auth_provider.load_by_principal(NOBODY_PRINCIPAL)
         self.init_from_user(u)
 
     def init_from_user(self, u):

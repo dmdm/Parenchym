@@ -12,6 +12,7 @@ from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
                             NODE_NAME_SYS_AUTH_PERMISSION_MGR)
+from pym.tenants.manager import find_tenant_node
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 
@@ -42,10 +43,11 @@ _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 #     return menu
 
 
-def fs_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+def fs_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         translate=lambda s: s):
+    ten = find_tenant_node(request.context)
     # Me
-    node_fs = root_node[NODE_NAME_FS]
+    node_fs = ten[NODE_NAME_FS]
     id_ = resource_path(node_fs)
     menu_fs = {
         'id': id_,
@@ -166,13 +168,13 @@ def sys_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
     return menu_sys
 
 
-def main_menu(root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+def main_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         translate=lambda s: s):
     menu = [
         me_menu(root_node, url_to, tenant, translate),
         journals_menu(root_node, url_to, tenant, translate),
         sys_menu(root_node, url_to, tenant, translate),
-        fs_menu(root_node, url_to, tenant, translate)
+        fs_menu(request, root_node, url_to, tenant, translate)
     ]
     return menu
 

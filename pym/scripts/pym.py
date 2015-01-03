@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import getpass
 import textwrap
+from sqlalchemy.engine import reflection
 import sqlparse
 
 import transaction
@@ -27,7 +28,7 @@ import pym.auth.manager as authmgr
 import pym.res.models as prm
 import pym.tenants.models as ptm
 from pprint import pprint
-from pym.models import todata, todict
+from pym.models import dictate_iter, dictate, DbEngine
 
 
 def _list_to_tree(data, id_field='id', parent_field='parent_id', name_field='name'):
@@ -35,7 +36,12 @@ def _list_to_tree(data, id_field='id', parent_field='parent_id', name_field='nam
         ('root', {id_field: 0, parent_field: 0, name_field: "Root node", 'children': []})
     ])
     for p in data:
-        pid = p[parent_field] or 'root'
+        try:
+            pid = p[parent_field]
+        except KeyError:
+            pid = 'root'
+        if not pid:
+            pid = 'root'
         out.setdefault(pid, {'children': []})
         out.setdefault(p[id_field], {'children': []})
         out[p[id_field]].update(p)
@@ -97,7 +103,7 @@ class Runner(pym.cli.Cli):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
-        data = todata(qry, excludes=['rc', 'profile'])
+        data = dictate_iter(qry, excludes=['rc', 'profile'])
         self.print(data)
 
     def _cmd_ls_groups(self):
@@ -112,7 +118,7 @@ class Runner(pym.cli.Cli):
         data = []
         for r in qry:
             e, ten = r
-            de = todict(e)
+            de = dictate(e)
             d = OrderedDict()
             for k, v in de.items():
                 d[k] = v
@@ -140,7 +146,7 @@ class Runner(pym.cli.Cli):
         data = []
         for r in qry:
             e, gr_name, mu_principal, mg_name = r
-            de = todict(e)
+            de = dictate(e)
             d = OrderedDict()
             for k, v in de.items():
                 d[k] = v
@@ -165,21 +171,21 @@ class Runner(pym.cli.Cli):
         fmap = {
             'assoc_group': _my_group
         }
-        data = todata(qry, fmap=fmap)
+        data = dictate_iter(qry, fmap=fmap)
         self.print(data)
 
     def _cmd_ls_permissions(self):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
-        data = todata(qry)
+        data = dictate_iter(qry)
         self.print(data)
 
     def _cmd_ls_resources(self):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
-        data = todata(qry)
+        data = dictate_iter(qry)
         self.print(data)
 
     def cmd_create(self):
@@ -370,7 +376,7 @@ class Runner(pym.cli.Cli):
         rs = self.sess.query(pam.Permission).filter(
             pam.Permission.dtime == None
         ).order_by(pam.Permission.name)
-        pp = _list_to_tree(todata(rs))
+        pp = _list_to_tree(dictate_iter(rs))
         prn(pp, 0)
 
     def cmd_resource_tree(self):
@@ -410,18 +416,18 @@ class Runner(pym.cli.Cli):
             for d in dd:
                 if self.args.verbose:
                     od = OrderedDict()
-                    od['Resource'] = "{ind}{} ({})".format(d['name'], d['id'], ind=ind)
+                    od['Resource'] = "{ind}{} ({})".format(d['_name'], d['id'], ind=ind)
                     if self.args.with_acl:
                         acl = fetch_acl(d['id'])
                         od['ACL'] = "\n".join(acl) if acl else ''
                     od['Interface'] = d['iface']
                     od['Kind'] = d['kind']
-                    od['Title'] = d['title']
-                    od['Short Title'] = d['short_title']
-                    od['Slug'] = d['slug']
+                    od['Title'] = d['_title']
+                    od['Short Title'] = d['_short_title']
+                    od['Slug'] = d['_slug']
                     out.append(od)
                 else:
-                    print("{ind}{} ({})".format(d['name'], d['id'], ind=ind))
+                    print("{ind}{} ({})".format(d['_name'], d['id'], ind=ind))
                     if self.args.with_acl:
                         acl = fetch_acl(d['id'])
                         for ace in acl:
@@ -437,7 +443,8 @@ class Runner(pym.cli.Cli):
             prm.ResourceNode.sortix,
             prm.ResourceNode.name
         )
-        pp = _list_to_tree(todata(rs))
+        data = dictate_iter(rs)
+        pp = _list_to_tree(data)
         prn(pp, 0)
         if out:
             self.print_txt(out)
