@@ -42,7 +42,7 @@ class ResourceNode(DbBase, DefaultMixin):
     __tablename__ = "resource_tree"
     # XXX Cannot use this unique constraint, because we might have child
     # XXX resources that have other unique requirements, e.g.
-    # XXX dbfs.models.FileNode that discriminates by revision.
+    # XXX fs.models.FsNode that discriminates by revision.
     #sa.UniqueConstraint('parent_id', 'name'),
     __table_args__ = (
         {'schema': 'pym'}
@@ -317,8 +317,11 @@ class ResourceNode(DbBase, DefaultMixin):
                 pym.cache.FromCache("auth_long_term",
                 cache_key='resource:{}:None'.format(name))
             ).options(
-                pym.cache.RelationshipCache(cls.children, "auth_long_term",
-                cache_key='resource:{}:None:children'.format(name))
+                # CAVEAT: don't use our own cache_key. It's not specific enough
+                # to discriminate different instances of Res: it would load
+                # children from root's cache key also for children etc.!
+                pym.cache.RelationshipCache(cls.children, "auth_long_term")  # ,
+                #cache_key='resource:{}:None:children'.format(name))
             ).options(
                 # CAVEAT: Program hangs if we use our own cache key here!
                 pym.cache.RelationshipCache(cls.acl, "auth_long_term")  # ,
@@ -375,52 +378,61 @@ class ResourceNode(DbBase, DefaultMixin):
                     acl.append(pyr_ace2)
         return acl
 
-    @classmethod
-    def load_child(cls, sess, id_or_name, parent_id=None, use_cache=True):
-        if isinstance(id_or_name, int):
-            fil = [cls.id == id_or_name]
-        else:
-            fil = [
-                cls.parent_id == parent_id,
-                cls.name == id_or_name,
-            ]
-        if use_cache:
-            return sess.query(
-                cls
-            ).options(
-                pym.cache.FromCache("auth_long_term",
-                    cache_key='resource:{}:{}'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.children, "auth_long_term",
-                    cache_key='resource:{}:{}:children'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.acl, "auth_long_term",
-                    cache_key='resource:{}:{}:acl'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.parent, "auth_long_term")#,
-                    #cache_key='presource:{}:{}:parent'.format(
-                    #    id_or_name, parent_id))
-            ).filter(
-                sa.and_(*fil)
-            ).one()
-        else:
-            return sess.query(
-                cls
-            ).filter(
-                sa.and_(*fil)
-            ).one()
+    # def load_child(self, sess, id_or_name, use_cache=True):
+    #     cls = self.__class__
+    #     if isinstance(id_or_name, int):
+    #         fil = [cls.id == id_or_name]
+    #     else:
+    #         fil = [
+    #             cls.parent_id == self.id,
+    #             cls.name == id_or_name,
+    #         ]
+    #     print('Res load child filter:', fil)
+    #     if use_cache:
+    #         return sess.query(
+    #             cls
+    #         ).options(
+    #             pym.cache.FromCache("auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.children, "auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}:children'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.acl, "auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}:acl'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.parent, "auth_long_term")  # ,
+    #                 #cache_key='presource:{}:{}:parent'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).filter(
+    #             sa.and_(*fil)
+    #         ).one()
+    #     else:
+    #         return sess.query(
+    #             cls
+    #         ).filter(
+    #             sa.and_(*fil)
+    #         ).one()
 
     def __getitem__(self, item):
-        cls = self.__class__
-        sess = sa.inspect(self).session
+        return self.children[item]
+        # sess = sa.inspect(self).session
+        # try:
+        #     child = self.load_child(sess, id_or_name=item,
+        #                            use_cache=True)
+        # except sa.orm.exc.NoResultFound as exc:
+        #     raise KeyError("Child resource not found: '{}'".format(item))
+        # return child
+
+    def __contains__(self, item):
         try:
-            child = cls.load_child(sess, item, self.id, use_cache=True)
-        except sa.orm.exc.NoResultFound as exc:
-            raise KeyError("Child resource not found: '{}'".format(item))
-        return child
+            self.children[item]
+            return True
+        except KeyError:
+            return False
 
     def __repr__(self):
         return "<{cls}(id={0}, parent_id='{1}', name='{2}', kind='{3}')>".format(
