@@ -23,6 +23,7 @@ import pym.auth.models as pam
 import pym.auth.manager
 import pym.tenants
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
+from pym.tenants.manager import find_tenant
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
@@ -248,7 +249,7 @@ class LoginOutView(object):
             # into the current tenant's group.
             groups = [
                 # FIXME Do not use current context, which always is root, but context of referrer. Then we get tenant of the place the user came from.
-                pym.tenants.find_tenant(self.sess, self.context).load_my_group()
+                find_tenant(self.sess, self.context).load_my_group()
             ]
             self.lgg.info("About to create account for principal '{principal}',"
                 " email '{email}', display name '{display_name}'".format(

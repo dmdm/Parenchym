@@ -210,7 +210,7 @@ class DefaultMixin(object):
         pprint(todict(self))
 
     @classmethod
-    def find(cls, sess, obj):
+    def find(cls, sess, obj, **filter_args):
         """
         Finds given object and returns its instance.
 
@@ -230,15 +230,22 @@ class DefaultMixin(object):
         elif isinstance(obj, cls):
             return obj
         else:
-            if not cls.IDENTITY_COL:
-                raise TypeError('{} has no IDENTITY_COL'.format(cls.__name__))
-            fil = {cls.IDENTITY_COL: obj}
+            if not cls.IDENTITY_COL and not filter_args:
+                raise TypeError('{} has no IDENTITY_COL and no filter args'
+                                ' given'.format(cls.__name__))
+            if cls.IDENTITY_COL and obj:
+                filter_args[cls.IDENTITY_COL] = obj
             try:
-                return sess.query(cls).filter_by(**fil).one()
+                return sess.query(cls).filter_by(**filter_args).one()
             except sa.orm.exc.NoResultFound:
-                raise sa.orm.exc.NoResultFound(
-                    "Failed to find {} by identity value '{}' in column {}".format(
-                        cls.__name__, obj, cls.IDENTITY_COL))
+                if cls.IDENTITY_COL and obj:
+                    m = "Failed to find {} by identity value '{}' in column {}" \
+                        " and filter {}".format(cls.__name__, obj,
+                        cls.IDENTITY_COL, filter_args)
+                else:
+                    m = "Failed to find {} by filter {}".format(cls.__name__,
+                        cls.IDENTITY_COL, filter_args)
+                raise sa.orm.exc.NoResultFound(m)
 
     def is_deleted(self):
         return self.deleter_id is not None

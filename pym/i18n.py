@@ -9,6 +9,8 @@ DOMAIN = 'Parenchym'
 """Translation Domain for ``request.translate``."""
 
 _ = pyramid.i18n.TranslationStringFactory(DOMAIN)
+"""Translation function, configured for domain ``DOMAIN``.
+   Import it in your modules to use."""
 
 
 def translate_choices(translate_func, choices):
@@ -156,6 +158,10 @@ def fetch_translated(request, data):
 
     The requested language is determined from user's preferred locale
     setting and the current request's language setting.
+
+    If neither of these locales have en entry in ``data`` we return entry ``*``.
+    Should this one also be amiss, we return the first entry of ``data``
+    (which, if ``data`` is just a standard dict, might be arbitrary).
 
     :param request: Current request
     :param data: Dict with translated strings

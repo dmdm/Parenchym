@@ -5,7 +5,7 @@ from pym.res.const import NODE_NAME_ROOT
 from pym.sys.const import NODE_NAME_SYS
 from pym.auth.const import SYSTEM_UID, NODE_NAME_SYS_AUTH_MGR
 from .const import NODE_NAME_TENANT_MGR, DEFAULT_TENANT_NAME, DEFAULT_TENANT_TITLE
-from . import manager as tmgr
+from . import manager as mgr
 
 
 def _create_views(sess):
@@ -24,8 +24,8 @@ def _setup_resources(sess):
 
 def _setup_tenants(sess):
     # Create tenant. Cascade also creates a resource and a group
-    ten = tmgr.create_tenant(sess, SYSTEM_UID, name=DEFAULT_TENANT_NAME,
-        title=DEFAULT_TENANT_TITLE, cascade=True)
+    ten = mgr.create_tenant(sess, SYSTEM_UID, name=DEFAULT_TENANT_NAME,
+        title=DEFAULT_TENANT_TITLE, descr="The default tenant")
     # Put all so far existing users into our group
     g = ten.load_my_group()
     uu = sess.query(User)

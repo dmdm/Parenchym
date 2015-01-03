@@ -1,4 +1,5 @@
 import datetime
+from pyramid.location import lineage
 import sqlalchemy as sa
 import pyramid.location
 from pym.auth.models import User, Group, GroupMember
@@ -7,40 +8,33 @@ from pym.auth.const import SYSTEM_UID, GROUP_KIND_TENANT
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from .models import Tenant
+from .const import DEFAULT_TENANT_NAME
+import pym.exc
 
 
-def create_tenant(sess, owner, name, cascade, **kwargs):
+def create_tenant(sess, owner, name, **kwargs):
     """
     Creates a new tenant record.
 
     :param sess: A DB session instance.
     :param owner: ID, ``principal``, or instance of a user.
     :param name: Name.
-    :param cascade: True to also create a group and resource for this tenant.
     :param kwargs: See :class:`~pym.auth.models.Tenant`.
     :return: Instance of created tenant.
     """
-    ten = Tenant()
-    ten.owner_id = User.find(sess, owner).id
-    ten.name = name
-    for k, v in kwargs.items():
-        setattr(ten, k, v)
-    sess.add(ten)
-    sess.flush()  # need ID
+    owner_id = User.find(sess, owner).id
+    if 'title' not in kwargs:
+        kwargs['title'] = name.title()
 
-    if cascade:
-        # Create tenant's group
-        create_group(sess, owner, name, kind=GROUP_KIND_TENANT,
-            descr="All members of tenant " + name)
-        n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
+    n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
+    if name in n_root.children:
+        raise pym.exc.ItemExistsError("Tenant already exists: '{}'".format(name))
+    ten = Tenant(owner_id, name, **kwargs)
+    n_root.children[name] = ten
 
-        try:
-            title = kwargs['title']
-        except KeyError:
-            title = name.title()
-        n_root.add_child(sess=sess, owner=SYSTEM_UID, kind="res",
-            name=name, title=title,
-            iface='pym.tenants.models.ITenantNode')
+    # Create tenant's group
+    create_group(sess, owner, name, kind=GROUP_KIND_TENANT,
+        descr="All members of tenant " + name)
 
     sess.flush()
     return ten
@@ -135,3 +129,36 @@ def add_user(sess, tenant, user, owner, **kwargs):
     g_ten = ten.load_my_group()
     create_group_member(sess, owner, g_ten, member_user=user, **kwargs)
     sess.flush()
+
+
+def find_tenant_node(resource):
+    """
+    Finds the tenant node in the resource path to which ``resource``
+    belongs. The tenant node is the immediate child of root.
+
+    :param resource: A resource, e.g. the context of a view.
+    :returns: :class:`pym.res.models.ResourceNode` The node of the default
+        tenant if ``resource`` is root, else the tenant node (which may be
+        identical to ``resource``).
+    """
+    lin = list(lineage(resource))
+    try:
+        # Root is last element (lin[-1]), tenant is 2nd last.
+        return lin[-2]
+    except IndexError:
+        # Given resource is root, so use default tenant
+        return resource[DEFAULT_TENANT_NAME]
+
+
+def find_tenant(sess, resource):
+    """
+    Finds the tenant in the resource path to which ``resource`` belongs.
+
+    :param sess: DB session
+    :param resource: A resource, e.g. the context of a view.
+    :returns: :class:`pym.tenants.models.Tenant` Instance of a tenant loaded
+        from DB.
+    """
+    tenant_node = find_tenant_node(resource)
+    tenant = sess.query(Tenant).filter(Tenant.name == tenant_node.name).one()
+    return tenant

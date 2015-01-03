@@ -1,4 +1,5 @@
 import logging
+from sqlalchemy.orm.exc import NoResultFound
 from pym.auth.const import SYSTEM_UID, USERS_RID
 from pym.auth.models import Permissions
 from pym.res.models import ResourceNode
@@ -17,9 +18,10 @@ def _setup_resources(sess):
     n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
 
     # Check that these resource nodes are not already present
-    n_me = ResourceNode.find(sess, parent=n_root,
-        name=NODE_NAME_ME)
-    if not n_me:
+    try:
+        n_me = ResourceNode.find(sess, None, parent_id=n_root.id,
+            name=NODE_NAME_ME)
+    except NoResultFound:
         n_me = n_root.add_child(sess=sess, owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_ME, title='Me',
@@ -27,9 +29,10 @@ def _setup_resources(sess):
     # Grant group 'users' permission 'write' on resource 'me'.
     n_me.allow(sess, SYSTEM_UID, Permissions.write.value, group=USERS_RID)
 
-    n = ResourceNode.find(sess, parent=n_me,
-        name=NODE_NAME_ME_PROFILE)
-    if not n:
+    try:
+        n = ResourceNode.find(sess, None, parent_id=n_me.id,
+            name=NODE_NAME_ME_PROFILE)
+    except NoResultFound:
         n_me.add_child(sess=sess, owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_ME_PROFILE, title='Profile',

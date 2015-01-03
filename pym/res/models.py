@@ -52,6 +52,8 @@ class ResourceNode(DbBase, DefaultMixin):
         'polymorphic_identity': 'res'
     }
 
+    IDENTITY_COL = None
+
     # Root resource has parent_id NULL
     parent_id = sa.Column(
         sa.Integer(),
@@ -257,19 +259,18 @@ class ResourceNode(DbBase, DefaultMixin):
         n = ResourceNode(owner_id=owner_id, kind=kind, name=name, **kwargs)
         n.parent = self
         return n
-
-    @classmethod
-    def find(cls, sess, parent, **kwargs):
-        """
-        Finds a resource node with given attributes.
-
-        :returns: Instance of node if it exists, False otherwise.
-        """
-        parent_id = parent if isinstance(parent, int) else parent.id
-        try:
-            return sess.query(cls).filter_by(parent_id=parent_id, **kwargs).one()
-        except sa.orm.exc.NoResultFound:
-            return False
+    #
+    # @classmethod
+    # def find(cls, sess, parent, **kwargs):
+    #     """
+    #     Finds a resource node with given attributes.
+    #
+    #     :returns: Instance of found node.
+    #
+    #     :raises sqlalchemy.orm.exc.NoResultFound: If node was not found.
+    #     """
+    #     parent_id = parent if isinstance(parent, int) else parent.id
+    #     super().find(sess, None, parent_id=parent_id, **kwargs)
 
     @classmethod
     def create_root(cls, sess, owner, name, kind, **kwargs):

@@ -42,22 +42,6 @@ CREATE OR REPLACE VIEW pym.vw_user_browse AS
     LEFT JOIN pym."user" AS e ON pym."user".editor_id = e.id
 );"""
 
-SQL_VW_TENANT_BROWSE = """
-CREATE OR REPLACE VIEW pym.vw_tenant_browse AS
-(
-    SELECT tenant.id                     AS id,
-           tenant.name                   AS name,
-           tenant.descr                  AS descr,
-           tenant.mtime                  AS mtime,
-           tenant.editor_id              AS editor_id,
-           e.display_name                AS editor_display_name,
-           tenant.ctime                  AS ctime,
-           tenant.owner_id                  AS owner_id,
-           o.display_name                AS owner_display_name
-    FROM      pym.tenant
-    JOIN      pym."user" AS o ON pym.tenant.owner_id = o.id
-    LEFT JOIN pym."user" AS e ON pym.tenant.editor_id = e.id
-);"""
 
 SQL_VW_GROUP_BROWSE = """
 CREATE OR REPLACE VIEW pym.vw_group_browse AS
@@ -77,7 +61,7 @@ CREATE OR REPLACE VIEW pym.vw_group_browse AS
     FROM      pym."group"
     JOIN      pym."user" AS o ON pym."group".owner_id = o.id
     LEFT JOIN pym."user" AS e ON pym."group".editor_id = e.id
-    LEFT JOIN pym.tenant AS t ON pym."group".tenant_id = t.id
+    LEFT JOIN pym.resource_tree AS t ON pym."group".tenant_id = t.id AND t.kind='tenant'
 );"""
 
 SQL_VW_GROUP_MEMBER_BROWSE = """
@@ -85,8 +69,8 @@ CREATE OR REPLACE VIEW pym.vw_group_member_browse AS
 (
     SELECT gm.id                        AS id,
            gr.id                        AS group_id,
-           tenant.id                    AS tenant_id,
-           tenant.name                  AS tenant_name,
+           t.id                         AS tenant_id,
+           t.name                       AS tenant_name,
            gr.name                      AS group_name,
            mu.id                        AS member_user_id,
            mu.principal                 AS member_user_principal,
@@ -102,7 +86,7 @@ CREATE OR REPLACE VIEW pym.vw_group_member_browse AS
     JOIN      pym."group" AS gr     ON gm.group_id        = gr.id
     LEFT JOIN pym."user"  AS mu     ON gm.member_user_id  = mu.id
     LEFT JOIN pym."group" AS mgr    ON gm.member_group_id = mgr.id
-    LEFT JOIN pym.tenant            ON gr.tenant_id       = tenant.id
+    LEFT JOIN pym.resource_tree t   ON gr.tenant_id       = t.id AND t.kind='tenant'
 );"""
 
 # -- List all permissions with their respective parent path.
@@ -208,7 +192,6 @@ CREATE OR REPLACE VIEW pym.vw_permissions_with_children AS
 
 def _create_views(sess, rc):
     sess.execute(SQL_VW_USER_BROWSE)
-    sess.execute(SQL_VW_TENANT_BROWSE)
     sess.execute(SQL_VW_GROUP_BROWSE)
     sess.execute(SQL_VW_GROUP_MEMBER_BROWSE)
     sess.execute(SQL_VW_PERMISSIONS_WITH_PARENTS)

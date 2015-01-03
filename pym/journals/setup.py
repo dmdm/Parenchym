@@ -1,10 +1,11 @@
 import logging
+from sqlalchemy.orm.exc import NoResultFound
 from pym.auth.const import SYSTEM_UID, USERS_RID
 from pym.auth.models import Permissions
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from .const import *
-from pym.tenants import DEFAULT_TENANT_NAME
+from pym.tenants.const import DEFAULT_TENANT_NAME
 
 
 mlgg = logging.getLogger(__name__)
@@ -20,9 +21,10 @@ def _setup_resources(sess):
     n_tenant = n_root[DEFAULT_TENANT_NAME]
 
     # Check that these resource nodes are not already present
-    n_journals = ResourceNode.find(sess, parent=n_tenant,
-        name=NODE_NAME_JOURNALS)
-    if not n_journals:
+    try:
+        n_journals = ResourceNode.find(sess, None,
+            parent_id=n_tenant.id, name=NODE_NAME_JOURNALS)
+    except NoResultFound:
         n_journals = n_tenant.add_child(sess=sess, owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_JOURNALS, title='Journals',

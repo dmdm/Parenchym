@@ -1,3 +1,3 @@
 
 
-NODE_NAME_FS = '__fs__'
+NODE_NAME_FS = 'fs'
