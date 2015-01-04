@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm.interfaces
 import sqlalchemy.orm.query as saqry
 import sqlalchemy.orm.session
+from hashlib import md5
 
 # noinspection PyPackageRequirements
 from dogpile.cache import make_region
@@ -13,6 +14,14 @@ def _stringify(s):
     if isinstance(s, sa.orm.session.Session):
         return 'sess'
     return str(s)
+
+
+def md5_key_mangler(key):
+    """Receive cache keys as long concatenated strings;
+    distill them into an md5 hash.
+
+    """
+    return md5(key.encode('ascii')).hexdigest()
 
 
 # noinspection PyUnusedLocal
@@ -113,9 +122,12 @@ class CachingQuery(saqry.Query):
 
         dogpile_region = self.cache_regions[self._cache_region.region]
         if self._cache_region.cache_key:
-            key = self._cache_region.cache_key
+            if callable(self._cache_region.cache_key):
+                key = self._cache_region.cache_key(self)
+            else:
+                key = self._cache_region.cache_key
         else:
-            key = _key_from_query(self)
+            key = key_from_query(self)
         return dogpile_region, key
 
     def invalidate(self):
@@ -171,7 +183,7 @@ def query_callable(regions, query_cls=CachingQuery):
 
 
 # noinspection PyUnusedLocal
-def _key_from_query(query, qualifier=None):
+def key_from_query(query):
     """Given a Query, create a cache key.
 
     There are many approaches to this; here we use the simplest,
@@ -181,16 +193,13 @@ def _key_from_query(query, qualifier=None):
     compiling out "query.statement" here; other approaches include
     setting up an explicit cache key with a particular Query,
     then combining that with the bound parameter values.
-
     """
-
     stmt = query.with_labels().statement
     compiled = stmt.compile()
     params = compiled.params
-
-    # here we return the key as a long string.  our "key mangler"
-    # set up with the region will boil it down to an md5.
-    return " ".join([str(compiled)] + [str(params[k]) for k in sorted(params)])
+    a = md5_key_mangler(str(compiled))
+    return " ".join([a] + [str(params[k]) for k in sorted(params)])
+    # return " ".join([str(compiled)] + [str(params[k]) for k in sorted(params)])
 
 
 class FromCache(sa.orm.interfaces.MapperOption):

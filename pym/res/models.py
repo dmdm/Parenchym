@@ -298,6 +298,10 @@ class ResourceNode(DbBase, DefaultMixin):
         return r
 
     @classmethod
+    def children_key(cls, query):
+        return '{}:children:{}'.format(cls.__name__, pym.cache.key_from_query(query))
+
+    @classmethod
     def load_root(cls, sess, name='root', use_cache=True):
         """
         Loads root resource of resource tree.
@@ -309,6 +313,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param name: Name of the wanted root node
         :return: Instance of the root node or, None if not found
         """
+
         # CAVEAT: Setup fails if we use cache here!
         if use_cache:
             r = sess.query(
@@ -320,7 +325,8 @@ class ResourceNode(DbBase, DefaultMixin):
                 # CAVEAT: don't use our own cache_key. It's not specific enough
                 # to discriminate different instances of Res: it would load
                 # children from root's cache key also for children etc.!
-                pym.cache.RelationshipCache(cls.children, "auth_long_term")  # ,
+                pym.cache.RelationshipCache(cls.children, "auth_long_term",
+                cache_key=cls.children_key)
                 #cache_key='resource:{}:None:children'.format(name))
             ).options(
                 # CAVEAT: Program hangs if we use our own cache key here!
