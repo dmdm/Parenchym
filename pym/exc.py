@@ -41,3 +41,7 @@ class ItemExistsError(PymError):
         """
         super().__init__(*args, **kwargs)
         self.item = item
+
+
+class UploadDeniedError(PymError):
+    pass

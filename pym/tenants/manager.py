@@ -3,7 +3,7 @@ from pyramid.location import lineage
 import sqlalchemy as sa
 import pyramid.location
 from pym.auth.models import User, Group, GroupMember
-from pym.auth.manager import create_group, create_group_member
+from pym.auth.manager import create_group, create_group_member, delete_group
 from pym.auth.const import SYSTEM_UID, GROUP_KIND_TENANT
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
@@ -51,41 +51,44 @@ def update_tenant(sess, tenant, editor, **kwargs):
     :param editor: ID, ``principal``, or instance of a user.
     :return: Instance of updated tenant.
     """
-
-    # TODO Rename tenant's resource
-    # TODO Rename tenant's group
-
     ten = Tenant.find(sess, tenant)
     ten.editor_id = User.find(sess, editor).id
     ten.mtime = datetime.datetime.now()
+    # If tenant is to be renamed, rename its group too.
+    if 'name' in kwargs and ten.name != kwargs['name']:
+        gr = ten.load_my_group()
+        gr.name = kwargs['name']
     for k, v in kwargs.items():
         setattr(ten, k, v)
     sess.flush()
     return ten
 
 
-def delete_tenant(sess, tenant, deleter, delete_from_db=False):
+def delete_tenant(sess, tenant, deleter, deletion_reason=None,
+                  delete_from_db=False):
     """
     Deletes a tenant.
 
     :param sess: A DB session instance.
     :param tenant: ID, ``name``, or instance of a tenant.
     :param deleter: ID, ``principal``, or instance of a user.
+    :param deletion_reason: Reason for deletion.
     :param delete_from_db: Optional. Defaults to just tag as deleted (False),
         set True to physically delete record from DB.
     :return: None if really deleted, else instance of tagged tenant.
     """
-
-    # TODO Delete tenant's resource
-    # TODO Delete tenant's group
-
     ten = Tenant.find(sess, tenant)
+    gr = ten.load_my_group()
+    delete_group(sess, gr, deleter, deletion_reason, delete_from_db)
     if delete_from_db:
         sess.delete(ten)
         ten = None
     else:
         ten.deleter_id = User.find(sess, deleter).id
         ten.dtime = datetime.datetime.now()
+        ten.deletion_reason = delete_from_db
+        ten.editor_id = ten.deleter_id
+        ten.mtime = ten.dtime
         # TODO Replace content of unique fields
     sess.flush()
     return ten

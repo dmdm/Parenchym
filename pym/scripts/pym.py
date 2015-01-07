@@ -103,7 +103,7 @@ class Runner(pym.cli.Cli):
         e = self.__class__.ENTITIES[self.args.entity]
         qry = self.sess.query(e)
         qry = self._build_query(qry, e)
-        data = dictate_iter(qry, excludes=['rc', 'profile'])
+        data = dictate_iter(qry, excludes=['_rc', '_profile', 'pwd', 'sessionrc'])
         self.print(data)
 
     def _cmd_ls_groups(self):
@@ -133,6 +133,7 @@ class Runner(pym.cli.Cli):
         qry = self.sess.query(
             e,
             pam.Group.name.label('group_name'),
+            pam.Group.kind.label('group_kind'),
             pam.User.principal,
             member_group.name
         ).join(
@@ -145,13 +146,14 @@ class Runner(pym.cli.Cli):
         qry = self._build_query(qry, e)
         data = []
         for r in qry:
-            e, gr_name, mu_principal, mg_name = r
+            e, gr_name, gr_kind, mu_principal, mg_name = r
             de = dictate(e)
             d = OrderedDict()
             for k, v in de.items():
                 d[k] = v
                 if k == 'group_id':
                     d['group'] = gr_name
+                    d['group_kind'] = gr_kind
                 elif k == 'member_user_id':
                     d['member_user'] = mu_principal
                 elif k == 'member_group_id':
@@ -196,11 +198,11 @@ class Runner(pym.cli.Cli):
         data['owner'] = self._actor
         with transaction.manager:
             if ent == 'user':
-                self._cmd_create_user()
+                e = authmgr.create_user(sess=self.sess, **data)
             elif ent == 'group':
                 e = authmgr.create_group(sess=self.sess, **data)
             elif ent == 'group-member':
-                self._cmd_create_group_members()
+                e = authmgr.create_group_member(sess=self.sess, **data)
             elif ent == 'tenant':
                 self._cmd_create_tenant()
             elif ent == 'permission':
@@ -215,9 +217,6 @@ class Runner(pym.cli.Cli):
         raise NotImplementedError('TODO')
 
     def _cmd_create_group(self):
-        raise NotImplementedError('TODO')
-
-    def _cmd_create_group_members(self):
         raise NotImplementedError('TODO')
 
     def _cmd_create_tenant(self):
@@ -284,16 +283,26 @@ class Runner(pym.cli.Cli):
         if answer == 'y':
             with transaction.manager:
                 if ent == 'user':
-                    self._cmd_delete_user()
+                    authmgr.delete_user(
+                        sess=self.sess,
+                        user=id_,
+                        deleter=self._actor,
+                        deletion_reason=self.args.deletion_reason,
+                        delete_from_db=self.args.delete_from_db
+                    )
                 elif ent == 'group':
                     authmgr.delete_group(
                         sess=self.sess,
                         group=id_,
                         deleter=self._actor,
+                        deletion_reason=self.args.deletion_reason,
                         delete_from_db=self.args.delete_from_db
                     )
                 elif ent == 'group-member':
-                    self._cmd_delete_group_members()
+                    authmgr.delete_group_member(
+                        sess=self.sess,
+                        group_member=id_
+                    )
                 elif ent == 'tenant':
                     self._cmd_delete_tenant()
                 elif ent == 'permission':
@@ -356,11 +365,11 @@ class Runner(pym.cli.Cli):
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
             qry = qry.filter(entity.dtime == None)
-        if hasattr(self.args, 'filter') and self.args.filter:
-            qry = qry.filter(str(self.args.filter))
         qry = qry.order_by(
             entity.id
         )
+        if hasattr(self.args, 'filter') and self.args.filter:
+            qry = qry.filter(str(self.args.filter))
         if self.args.show_sql:
             print(sqlparse.format(str(qry), reindent=True, keyword_case='upper'))
         return qry
@@ -524,7 +533,17 @@ def parse_args(app, argv):
 
     # Parser cmd create
     p_create = subparsers.add_parser('create',
-        help="Create an entity")
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        help="Create an entity",
+        description=textwrap.dedent('''\
+        Examples of data:
+
+        user: '{is_enabled: bool, principal: str, pwd: str, email: str, display_name: str, groups: [group-names|IDs]}'
+        group: '{name: str, tenant_id: None|ID, kind=None|str, descr: str}'
+        group-member: '{group: ID|name, member_user|member_group: ID|principal|name}'
+
+        ''')
+    )
     p_create.set_defaults(func=app.cmd_create)
     p_create.add_argument(
         'entity',
@@ -565,6 +584,11 @@ def parse_args(app, argv):
         default=False,
         help='If given, entities are deleted from database, else only marked as'
              ' deleted'
+    )
+    p_delete.add_argument(
+        '--deletion-reason',
+        help='Reason for the deletion',
+        default=None
     )
     ee = sorted(list(Runner.ENTITIES.keys()) + ['ace'])
     p_delete.add_argument(

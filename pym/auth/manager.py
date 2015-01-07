@@ -22,7 +22,7 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     :param principal: Principal string for new user.
     :param pwd: User's password. We will encrypt it.
     :param email: User's email address.
-    :param group_names: List of groups this user shall be member of. User is at least
+    :param groups: List of groups this user shall be member of. User is at least
         member of group ``users``. If a group does not exist, it is created.
         Set to False to skip groups altogether.
     :param kwargs: See :class:`~pym.auth.models.User`.
@@ -56,39 +56,25 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     # Principal and email must be unique too, but a violation of their uniqueness
     # is better handled by the caller: we let the exception bubble up.
     sess.flush()  # to get ID of user
-
     # Load/create the groups and memberships
-    if groups:
-        group_names = [Group.find(sess, g).name for g in groups]
-        # Determine groups this user will be member of.
-        # Always at least 'users'.
-        if group_names:
-            group_names = set(group_names + ['users'])
-        else:
-            group_names = {'users'}
-        for name in group_names:
-            # Try to load the specified group
-            try:
-                g = sess.query(Group).filter(
-                    sqlalchemy.sql.and_(
-                        Group.tenant_id == None,  # must be system group
-                        Group.name == name
-                    )
-                ).one()
-            # If group does not exist, create one and define membership
-            except NoResultFound:
-                g = create_group(sess, owner, name)
-                create_group_member(sess, owner, g, u)
-            else:
-                # Group did exist, maybe membership also?
-                try:
-                    sess.query(GroupMember).filter(sa.and_(
-                        GroupMember.group_id == g.id,
-                        GroupMember.member_user_id == u.id
-                    )).one()
-                # Nope. Create membership.
-                except NoResultFound:
-                    create_group_member(sess, owner, g, u)
+    # User is always at least member of group 'users'
+    if groups is None:
+        groups = []
+    groups = set(groups + ['users'])
+    # Load existing groups
+    existing_groups = []
+    new_group_names = []
+    for g in groups:
+        try:
+            existing_groups.append(Group.find(sess, g))
+        except sa.orm.exc.NoResultFound:
+            new_group_names.append(g)
+    # Create the new groups
+    for name in new_group_names:
+        existing_groups.append(create_group(sess, owner, name))
+    # Create group memberships
+    for g in existing_groups:
+        create_group_member(sess, owner, group=g, member_user=u)
     return u
 
 
@@ -121,13 +107,14 @@ def update_user(sess, user, editor, **kwargs):
     return u
 
 
-def delete_user(sess, user, deleter, delete_from_db=False):
+def delete_user(sess, user, deleter, deletion_reason=None, delete_from_db=False):
     """
     Deletes a user.
 
     :param sess: A DB session instance.
     :param user: ID, ``name``, or instance of a user.
     :param deleter: ID, ``principal``, or instance of a user.
+    :param deletion_reason: Reason for deletion.
     :param delete_from_db: Optional. Defaults to just tag as deleted (False),
         set True to physically delete record from DB.
     :return: None if really deleted, else instance of tagged user.
@@ -139,6 +126,10 @@ def delete_user(sess, user, deleter, delete_from_db=False):
     else:
         usr.deleter_id = User.find(sess, deleter).id
         usr.dtime = datetime.datetime.now()
+        usr.deletion_reason = deletion_reason
+        if not usr.editor_id:
+            usr.editor_id = usr.deleter_id
+            usr.mtime = usr.dtime
     sess.flush()
     return usr
 
@@ -200,13 +191,15 @@ def update_group(sess, group, editor, **kwargs):
     return gr
 
 
-def delete_group(sess, group, deleter, delete_from_db=False):
+def delete_group(sess, group, deleter, deletion_reason=None,
+                 delete_from_db=False):
     """
     Deletes a group.
 
     :param sess: A DB session instance.
     :param group: ID, ``name``, or instance of a group.
     :param deleter: ID, ``principal``, or instance of a user.
+    :param deletion_reason: Reason for deletion.
     :param delete_from_db: Optional. Defaults to just tag as deleted (False),
         set True to physically delete record from DB.
     :return: None if really deleted, else instance of tagged group.
@@ -218,6 +211,7 @@ def delete_group(sess, group, deleter, delete_from_db=False):
     else:
         gr.deleter_id = User.find(sess, deleter).id
         gr.dtime = datetime.datetime.now()
+        gr.deletion_reason = deletion_reason
         gr.editor_id = gr.deleter_id
         gr.mtime = gr.dtime
         # TODO Replace content of unique fields
@@ -233,12 +227,13 @@ def create_group_member(sess, owner, group, member_user=None,
     For details about ``**kwargs``, see :class:`~pym.auth.models.GroupMember`.
 
     :return: Instance of created group_member
-    :raise: :class:`~pym.exc.ItemExistsError` if group mmber already exists
+    :raise: :class:`~pym.exc.ItemExistsError` if group member already exists
     """
     if not member_user and not member_group:
         raise pym.exc.PymError("Either member_user or member_group must be set")
     if member_user and member_group:
-        raise pym.exc.PymError("Cannot set both member_user and member_group")
+        raise pym.exc.PymError("Cannot set member_user and member_group"
+                               " simultaneously. Use separate groups.")
     owner_id = User.find(sess, owner).id
     gr = Group.find(sess, group)
     fil = [
@@ -286,31 +281,15 @@ def delete_group_member(sess, group_member):
     sess.flush()
 
 
-def delete_ace(sess, ace_id, deleter, delete_from_db=False, deletion_reason=None):
+def delete_ace(sess, ace_id):
     """
     Deletes an ACE.
 
+    We always delete an ACE physically, there is no tagging as deleted.
+
     :param sess: A DB session instance.
     :param ace_id: ID of an ACE.
-    :param deleter: ID, ``principal``, or instance of a user.
-    :param delete_from_db: Optional. Defaults to just tag as deleted (False),
-        set True to physically delete record from DB.
-    :param deletion_reason: Optional. Reason for deletion.
-    :return: None if really deleted, else instance of tagged ACE, None if not
-        found.
     """
     ace = sess.query(Ace).get(ace_id)
-    if not ace:
-        return False
-    if delete_from_db:
-        sess.delete(ace)
-        ace = None
-    else:
-        ace.deleter_id = User.find(sess, deleter).id
-        ace.dtime = datetime.datetime.now()
-        ace.deletion_reason = deletion_reason
-        ace.editor_id = ace.deleter_id
-        ace.mtime = ace.dtime
-        # TODO Replace content of unique fields
+    sess.delete(ace)
     sess.flush()
-    return ace

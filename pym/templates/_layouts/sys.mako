@@ -55,7 +55,7 @@
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
                     , 'ng-ui-router':    'static-pym/vendor/angular-ui-router/release/angular-ui-router.min'
-                    , 'ng-fup':          'static-pym/vendor/angular-file-upload'
+                    , 'ng-fup':          'static-pym/vendor/angular-file-upload/angular-file-upload-all.min'
                     , 'pym':             'static-pym/app'
                     , 'pym-v':           'static-pym/vendor'
                     , 'ccg':             'static-ccg/app'
@@ -76,6 +76,7 @@
                     , 'ng-ui-select2':                        ['ng', 'select2']
                     , 'ng-ui-bs':                             ['ng']
                     , 'ng-ui-router':                         ['ng']
+                    , 'ng-fup':                               ['ng']
                     , 'google-client':                        ['ng']
                 }
                 , waitSeconds: 15

@@ -367,6 +367,10 @@ class User(DbBase, DefaultMixin):
     """User's session"""
 
     group_memberships = relationship('GroupMember',
+        # cascade deletions
+        cascade="all, delete-orphan",
+        # Let the DB cascade deletions to children
+        passive_deletes=True,
         foreign_keys='GroupMember.member_user_id')
     """List of our direct group memberships."""
     groups = association_proxy('group_memberships', 'group')
@@ -440,6 +444,10 @@ class Group(DbBase, DefaultMixin):
     """Optional description."""
 
     group_memberships = relationship('GroupMember',
+        # cascade deletions
+        cascade="all, delete-orphan",
+        # Let the DB cascade deletions to children
+        passive_deletes=True,
         foreign_keys='GroupMember.group_id')
     """List of memberships in which we are the container."""
     member_groups = association_proxy('group_memberships', 'member_group')
