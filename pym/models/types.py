@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.types
 
 import pym.lib
+from pym.security import clean_string
 
 
 class CleanUnicode(sa.types.TypeDecorator):
@@ -19,5 +20,5 @@ class CleanUnicode(sa.types.TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        value = pym.lib.clean_string(value)
+        value = clean_string(value)
         return value

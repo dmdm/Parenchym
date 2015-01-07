@@ -12,9 +12,9 @@ import logging
 import subprocess
 import os
 import sys
-# We need system's dist-packages to have uno inside a virtualenv
 import time
 
+# We need system's dist-packages to have uno inside a virtualenv
 sys.path.append('/usr/lib/python3/dist-packages')
 # noinspection PyUnresolvedReferences
 import uno

@@ -211,7 +211,7 @@ def _setup_users(sess, root_pwd):
         first_name='system',
         display_name='System',
         # Groups do not exist yet. Do not auto-create them
-        group_names=False
+        groups=False
     )
 
     # 2// Create groups
@@ -283,19 +283,7 @@ def _setup_users(sess, root_pwd):
         display_name='Root',
         pwd=root_pwd,
         is_enabled=True,
-        group_names=[g_wheel.name, g_users.name]
-    )
-    authmgr.create_group_member(
-        sess,
-        owner=SYSTEM_UID,
-        group=g_users,
-        member_user=u,
-    )
-    authmgr.create_group_member(
-        sess,
-        owner=SYSTEM_UID,
-        group=g_wheel,
-        member_user=u
+        groups=[g_wheel.name, g_users.name]
     )
 
     # nobody
@@ -309,9 +297,8 @@ def _setup_users(sess, root_pwd):
         first_name='Nobody',
         display_name='Nobody',
         is_enabled=False,
-        # This user is not member of any group
         # Not-authenticated users are automatically 'nobody'
-        group_names=False
+        groups=['everyone']
     )
 
     # sample data
@@ -326,7 +313,7 @@ def _setup_users(sess, root_pwd):
         display_name='Sample Data',
         is_enabled=False,
         # This user is not member of any group
-        group_names=False
+        groups=False
     )
 
     # unit_tester
@@ -341,7 +328,7 @@ def _setup_users(sess, root_pwd):
         display_name='Unit-Tester',
         is_enabled=False,
         user_type='System',
-        group_names=[g_unit_testers.name]
+        groups=[g_unit_testers.name]
     )
 
     # 5// Set sequence counter for user-created things

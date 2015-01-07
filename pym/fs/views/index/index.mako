@@ -151,7 +151,7 @@ function( doc,                   angular,  PYM,       PymApp) {
                     for (i=0, imax=deniedFiles.length; i<imax; i++) {
                         m.push('<p>' + deniedFiles[i][0].name + ': ' + deniedFiles[i][1] + '</p>');
                     }
-                    PYM.growl({kind: 'warn', text: m.join()});
+                    PYM.growl({kind: 'warn', text: m.join('')});
                 }
                 console.log('allowed files', allowedFiles);
                 self.uploader = $upload.upload({
@@ -177,7 +177,7 @@ function( doc,                   angular,  PYM,       PymApp) {
                         angular.forEach(data.data, function(v, k) {
                             m.push('<p>' + k + ': ' + v + '</p>');
                         });
-                        PYM.growl({kind: 'success', text: m.join()});
+                        PYM.growl({kind: 'success', text: m.join('')});
                     }
                     else {
                         PYM.growl_ajax_resp(data);

@@ -1,56 +1,18 @@
-import collections
 import datetime
 import enum
 import functools
-import time
 import re
-import os
-import sys
-import locale
-import uuid
-import subprocess
 import json
 import decimal
-import slugify as python_slugify
+
 import sqlalchemy as sa
-import magic
-import colander
 import yaml
+
 import pym.exc
-# Legacy code expects JsonResp to be here
-from .resp import JsonResp
 
 
 ENV_DEVELOPMENT = 'development'
 ENV_PRODUCTION = 'production'
-
-
-RE_NAME_CHARS = re.compile('^[-a-zA-Z0-9_][-a-zA-Z0-9_.]*$')
-"""
-Valid characters for a filename. Filename is disallowed to start with a dot.
-"""
-
-RE_INVALID_FS_CHARS = re.compile(r'[\x00-\x1f\x7f]+')
-"""
-Invalid characters for a filename in OS filesystem, e.g. ext3.
-
-- NULL byte
-- Control characters 0x01..0x1f (01..31)
-- Escape Character 0x7f (127)
-"""
-
-RE_BLANKS = re.compile('\s+')
-RE_LEADING_BLANKS = re.compile('^\s+')
-RE_TRAILING_BLANKS = re.compile('\s+$')
-
-
-_CMD_SASSC = os.path.abspath(os.path.join(os.path.dirname(__file__),
-    '..', 'bin', 'sassc'))
-"""
-Command-line to call sassc.
-"""
-
-_ = lambda s: s
 
 
 RE_INTERVAL_DATETIME = re.compile(
@@ -111,167 +73,19 @@ json_serializer = functools.partial(
 
 json_deserializer = json.loads
 
-
-# Init YAML to dump an OrderedDict like a regular dict, i.e.
-# without creating a specific object tag.
-def _represent_ordereddict(self, data):
-    return self.represent_mapping('tag:yaml.org,2002:map', data.items())
-
-yaml.add_representer(collections.OrderedDict, _represent_ordereddict)
+dump_yaml = functools.partial(
+    yaml.dump,
+    default_flow_style=False,
+    allow_unicode=True
+)
 
 
-def trim_blanks(s):
-    """
-    Removes leading and trailing whitespace from string.
-    """
-    s = RE_LEADING_BLANKS.sub('', s)
-    s = RE_TRAILING_BLANKS.sub('', s)
-    return s
-
-
-def is_string_clean(s):
-    """
-    Checks whether string has leading/trailing whitespace or illegal chars.
-    """
-    if RE_LEADING_BLANKS.search(s):
-        return False
-    if RE_TRAILING_BLANKS.search(s):
-        return False
-    if RE_INVALID_FS_CHARS.search(s):
-        return False
-    return True
-
-
-def clean_string(s):
-    """
-    Cleans string by removing leading and trailing whitespace, illegal chars and
-    folding consecutive whitespace to a single space char.
-    """
-    s = trim_blanks(s)
-    s = RE_BLANKS.sub(' ', s)
-    s = RE_INVALID_FS_CHARS.sub('', s)
-    return s
-
-
-def slugify(s, force_ascii=False, **kw):
-    """
-    Converts string into a 'slug' for use in URLs.
-
-    Since nowadays we can use UTF-8 characters in URLs, we keep those intact,
-    and just replace white space with a dash, except when you force ASCII by
-    setting that parameter.
-
-    If you ``force_ascii``, we use
-    `python-slugify <https://github.com/un33k/python-slugify>`_ to convert the
-    string. Additional keyword arguments are passed.
-
-    We do not encode unicode in UTF-8 here, since most web frameworks do that
-    transparently themselves.
-
-    :param s: The string to slugify.
-    :param force_ascii: If False (default) we allow unicode chars.
-    :param **kw: Additional keyword arguments are passed to python-slugify.
-    :return: The slug, still a unicode string but maybe just containing ASCII
-        chars.
-    """
-    s = clean_string(s)
-    s = RE_BLANKS.sub('-', s)
-    if force_ascii:
-        s = python_slugify.slugify(s, **kw)
-    return s
-
-
-class FileUploadTmpStoreFileSystem(object):
-
-    def __init__(self, rootdir, timeout):
-        """
-        Temporary storage for uploaded files in the filesystem.
-
-        :param rootdir: All files are stored here
-        :param timeout; Seconds after which uploaded files are automatically
-            purged,
-        """
-        self.rootdir = rootdir
-        if not os.path.exists(rootdir):
-            os.mkdir(rootdir)
-        self.timeout = timeout
-        self.chunk_size = 10240
-        self.json_opts = dict(
-            ensure_ascii=False
-        )
-        self.mime = magic.Magic(mime=True)
-
-    def save(self, filename, fh_uploaded):
-        """
-        Saves an uploaded file in temporary store.
-
-        :param filename: The file name
-        :param fh_uploaded: File-like object of the uploaded file; must provide
-            methods like read() etc.
-        :return: Filename of the temporary file
-        """
-        tmpfilename = uuid.uuid4().hex
-        fn_data = os.path.join(self.rootdir, tmpfilename)
-        fn_rc = os.path.join(self.rootdir, tmpfilename) + '.rc'
-        rc = {
-            'filename': filename
-        }
-        with open(fn_data, 'wb') as fh:
-            while True:
-                x = fh_uploaded.read(self.chunk_size)
-                if not x:
-                    break
-                fh.write(x)
-        rc['mime_type'] = self.mime.from_file(fn_data.encode('utf-8')) \
-            .decode('utf-8')
-        rc['size'] = os.path.getsize(fn_data)
-        rc['tmpfilename'] = tmpfilename
-        with open(fn_rc, 'w', encoding='utf-8') as fh:
-            json.dump(rc, fh, **self.json_opts)
-        return rc
-
-    def load(self, tmpfilename):
-        fn_data = os.path.join(self.rootdir, tmpfilename)
-        with open(fn_data, 'rb') as fh:
-            x = fh.read()
-        return x
-
-    def open(self, tmpfilename):
-        """
-        Returns settings and an opened file handle
-
-        DO NOT FORGET TO CLOSE THE FILE HANDLE AFTER USE!
-        """
-        fn_data = os.path.join(self.rootdir, tmpfilename)
-        fn_rc = os.path.join(self.rootdir, tmpfilename) + '.rc'
-        with open(fn_rc, 'r', encoding='utf-8') as fh:
-            rc = json.load(fh)
-        fh = open(fn_data, 'rb')
-        return rc, fh
-
-    def delete(self, tmpfilename):
-        fn_data = os.path.join(self.rootdir, tmpfilename)
-        fn_rc = os.path.join(self.rootdir, tmpfilename) + '.rc'
-        try:
-            os.remove(fn_data)
-        except OSError:
-            pass
-        try:
-            os.remove(fn_rc)
-        except OSError:
-            pass
-
-    def purge(self, timeout=None):
-        if not timeout:
-            timeout = self.timeout
-        now = time.time()
-        ff = os.listdir(self.rootdir)
-        for f in ff:
-            if f.endswith('.rc'):
-                continue
-            fn_data = os.path.join(self.rootdir, f)
-            if now - timeout > os.path.getctime(fn_data):
-                self.delete(f)
+# # Init YAML to dump an OrderedDict like a regular dict, i.e.
+# # without creating a specific object tag.
+# def _represent_ordereddict(self, data):
+#     return self.represent_mapping('tag:yaml.org,2002:map', data.items())
+#
+# yaml.add_representer(collections.OrderedDict, _represent_ordereddict)
 
 
 def interval2timedelta(v):
@@ -301,122 +115,6 @@ def interval2timedelta(v):
     return datetime.timedelta(
         days=days, hours=hours, minutes=minutes, seconds=seconds
     )
-
-
-class EmailValidator(colander.Regex):
-
-    def __init__(self, msg=None):
-        if msg is None:
-            msg = _("Invalid email address")
-        super().__init__(
-            '(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$',
-            msg=msg
-        )
-
-    def __call__(self, node, value):
-        lcv = value.lower()
-        if lcv.endswith('@localhost') or lcv.endswith('@localhost.localdomain'):
-            return
-        super().__call__(node, value)
-
-
-def compile_sass(in_, out):
-    resp = JsonResp()
-    # in_ is string, so we have one input file
-    # Convert it into list
-    if isinstance(in_, str):
-        infiles = [safepath(in_)]
-        # in_ is str and out is string, so treat out as file:
-        # Build list of out filenames.
-        if isinstance(out, str):
-            outfiles = [safepath(out)]
-    else:
-        infiles = [safepath(f) for f in in_]
-        # in_ is list and out is string, so treat out as directory:
-        # Build list of out filenames.
-        if isinstance(out, str):
-            outfiles = []
-            out = safepath(out)
-            for f in in_:
-                bn = os.path.splitext(os.path.basename(f))[0]
-                outfiles.append(os.path.join(out, bn) + '.css')
-        # in_ and out are lists
-        else:
-            outfiles = [safepath(f) for f in out]
-    for i, inf in enumerate(infiles):
-        # noinspection PyUnboundLocalVariable
-        outf = outfiles[i]
-        if not os.path.exists(inf):
-            raise pym.exc.SassError("Sass infile '{0}' does not exist.".format(inf))
-        result = compile_sass_file(inf, outf)
-        if not result is True:
-            resp.error("Sass compilation failed for file '{0}'".format(inf))
-            resp.add_msg(dict(kind="error", title="Sass compilation failed",
-                text=result))
-            continue
-        resp.ok("Sass compiled to outfile '{0}'".format(outf))
-    if not resp.is_ok:
-        raise pym.exc.SassError("Batch compilation failed. See resp.", resp)
-    return resp
-
-
-def compile_sass_file(infile, outfile, output_style='nested'):
-    try:
-        _ = subprocess.check_output([_CMD_SASSC, '-t',
-            output_style, infile, outfile],
-            stderr=subprocess.STDOUT)
-        return True
-    except subprocess.CalledProcessError as exc:
-        raise pym.exc.SassError("Compilation failed: {}".format(
-            exc.output.decode('utf-8')))
-
-
-def safepath(path, sep=os.path.sep):
-    """
-    Returns safe version of path.
-
-    Safe means, path is normalised with func:`normpath`, and all parts are
-    sanitised like this:
-
-    - cannot start with dash ``-``
-    - cannot start with dot ``.``
-    - cannot have control characters: 0x01..0x1F (0..31) and 0x7F (127)
-    - cannot contain null byte 0x00
-    - cannot start or end with whitespace
-    - cannot contain '/', '\', ':' (slash, backslash, colon)
-    - consecutive whitespace are folded to one blank
-
-    See also:
-
-    - http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
-    - http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/file-names.html
-    """
-    path = RE_INVALID_FS_CHARS.sub('', path)
-    path = RE_BLANKS.sub(' ', path)
-    aa = path.split(sep)
-    bb = []
-    for a in aa:
-        if a == '':
-            continue
-        b = a.strip().lstrip('.-').replace('/', '').replace('\\', '').replace(':', '')
-        bb.append(b)
-    res = normpath(sep.join(bb))
-    return res
-
-
-def normpath(path):
-    """
-    Returns normalised version of user defined path.
-
-    Normalised means, relative path segments like '..' are resolved and leading
-    '..' are removed.
-    E.g.::
-        "/../../foo/../../bar"  --> "bar"
-        "/../../foo/bar"        --> "foo/bar"
-        "/foo/bar"              --> "foo/bar"
-    """
-    return os.path.normpath(os.path.join(os.path.sep, path)).lstrip(
-        os.path.sep)
 
 
 # Stolen from Pelican
@@ -552,39 +250,6 @@ class BaseNode(dict):
     @property
     def title(self):
         return self._title if self._title else self.__name__
-
-
-def init_cli_locale(locale_name):
-    """
-    Initialises CLI locale and encoding.
-
-    Sets a certain locale. Ensures that output is correctly encoded, whether
-    it is send directly to a console or piped.
-
-    :param locale_name: A locale name, e.g. "de_DE.utf8".
-    :return: active locale as 2-tuple (lang_code, encoding)
-    """
-    # Set the locale
-    if locale_name:
-        locale.setlocale(locale.LC_ALL, locale_name)
-    else:
-        if sys.stdout.isatty():
-            locale.setlocale(locale.LC_ALL, '')
-        else:
-            locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
-    #lang_code, encoding = locale.getlocale(locale.LC_ALL)
-    lang_code, encoding = locale.getlocale(locale.LC_CTYPE)
-    # If output goes to pipe, detach stdout to allow writing binary data.
-    # See http://docs.python.org/3/library/sys.html#sys.stdout
-    if not sys.stdout.isatty():
-        import codecs
-        sys.stdout = codecs.getwriter(encoding)(sys.stdout.detach())
-    return lang_code, encoding
-
-
-def validate_name(s):
-    if RE_NAME_CHARS.match(s) is None:
-        raise KeyError("Invalid name: '{0}'".format(s))
 
 
 def build_breadcrumbs(request):

@@ -6,7 +6,7 @@ import os
 from pyinotify import WatchManager, Notifier, EventsCodes, ProcessEvent
 import sys
 
-from pym.cli import Cli
+from pym.cli import Cli, compile_sass_file
 from pym.exc import SassError
 from pym.lib import compile_sass_file
 

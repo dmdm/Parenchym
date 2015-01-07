@@ -2,6 +2,7 @@ import logging
 from sqlalchemy.orm.exc import NoResultFound
 from pym.auth.const import SYSTEM_UID, WHEEL_RID
 from pym.auth.models import Permissions
+from pym.auth.manager import create_group, create_group_member
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from .const import *
@@ -27,8 +28,11 @@ def _setup_resources(sess):
     except NoResultFound:
         n_fs = mgr.create_fs_node(sess, SYSTEM_UID, parent_id=n_tenant.id,
             name=NODE_NAME_FS, raise_if_exists=True, title='Filesystem')
-    # Grant group 'wheel' permission 'write' on resource 'fs'.
-    n_fs.allow(sess, SYSTEM_UID, Permissions.write.value, group=WHEEL_RID)
+    # Create group 'fs_writer' with write access to this node
+    g = create_group(sess, SYSTEM_UID, 'fs_writer', tenant_id=n_tenant.id)
+    n_fs.allow(sess, SYSTEM_UID, Permissions.write.value, group=g)
+    # Make group wheel a member of this group
+    create_group_member(sess, SYSTEM_UID, g, member_group=WHEEL_RID)
 
 
 def create_schema(sess, rc):

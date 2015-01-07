@@ -57,14 +57,13 @@ class FsNode(pym.res.models.ResourceNode):
         primary_key=True,
         nullable=False
     )
-    uuid = sa.Column(UUID, nullable=False,
-        server_default=sa.func.uuid_generate_v4())
+    local_filename = sa.Column(sa.Unicode(), nullable=True)
     """
-    UUID of this file. Used e.g. to identify file in cache. Each revision of the
-    same file has its own UUID.
+    Name of the file locally on the server, e.g. in the cache, relative to the
+    cache's root dir.
     """
     rev = sa.Column(sa.Integer(), nullable=False, default=1)
-    """Revision."""
+    """Latest revision."""
     mime_type = sa.Column(sa.Unicode(255), nullable=False,
         server_default=sa.text("'" + MIME_TYPE_DEFAULT + "'"))
     """
@@ -87,10 +86,29 @@ class FsNode(pym.res.models.ResourceNode):
         nullable=False,
         server_default=sa.text('0')
     )
+    """Size of the content of this node in bytes."""
     # Load only if needed
     xattr = sa.orm.deferred(sa.Column(MutableDict.as_mutable(JSON()),
         nullable=True))
     """Extended attributes"""
+    # Load only if needed
+    rc = sa.orm.deferred(sa.Column(MutableDict.as_mutable(JSON()),
+        nullable=True))
+    """Settings
+
+    Expected settings for the :class:`pym.cache.UploadCache` are:
+
+    - ``min_size``: Minimum size of content in bytes, default 1
+    - ``max_size``: Maximum size of content in bytes, default 2 MB
+    - ``max_total_size``: Max size of content plus children in bytes. If not
+      specified, is not checked (default).
+    - ``max_children``: Max number children. If not specified, is not checked
+      (default).
+    - ``allow``: List of mime-types (RegEx pattern) that are allowed. If empty,
+      all mime-types are allowed (default).
+    - ``deny``: List of mime-types (RegEx pattern) that are denied. If empty,
+      no mime-types are denied (default).
+    """
     # Load only if needed
     content_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
     # Load only if needed
@@ -102,8 +120,6 @@ class FsNode(pym.res.models.ResourceNode):
     descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
     """Optional description."""
 
-    # TODO Override children relationship so that only the latest rev appears mapped by the name
-
     def __init__(self, owner_id, name, **kwargs):
         super().__init__(owner_id=owner_id, name=name, kind='fs', **kwargs)
         self.iface = __name__ + '.' + IFsNode.__name__
@@ -112,9 +128,17 @@ class FsNode(pym.res.models.ResourceNode):
         return self.mime_type == self.MIME_TYPE_DIRECTORY
 
     def __repr__(self):
-        return "<{name}(id={id}, parent_id={p}, name='{n}', rev={rev}, uuid='{uuid}'>".format(
-            id=self.id, p=self.parent_id, n=self.name, rev=self.rev, uuid=self.uuid,
+        return "<{name}(id={id}, parent_id={p}, name='{n}', rev={rev}'>".format(
+            id=self.id, p=self.parent_id, n=self.name, rev=self.rev,
             name=self.__class__.__name__)
+
+    @property
+    def total_size(self):
+        """Total size of the content of this node and all children in bytes."""
+        sz = self.size
+        for k, v in self.children.items():
+            sz += v.size
+        return sz
 
 
 # When we load a node from DB attach the stored interface to the instance.

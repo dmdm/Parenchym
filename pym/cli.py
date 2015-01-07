@@ -1,6 +1,8 @@
 import configparser
+import locale
 import logging
 import logging.config
+import subprocess
 import sys
 import redis
 import yaml
@@ -10,14 +12,24 @@ import pyramid.request
 import json
 import os
 from prettytable import PrettyTable
+import pym.exc
+from pym.security import safepath
 
 from pym.rc import Rc
 import pym.models
 import pym.lib
+from pym.resp import JsonResp
 import pym.testing
 
 
 mlgg = logging.getLogger(__name__)
+
+
+CMD_SASSC = os.path.abspath(os.path.join(os.path.dirname(__file__),
+    '..', 'bin', 'sassc'))
+"""
+Command-line to call sassc.
+"""
 
 
 class DummyArgs(object):
@@ -132,7 +144,7 @@ class Cli(object):
         if lgg:
             self.lgg = lgg
 
-        self.lang_code, self.encoding = pym.lib.init_cli_locale(args.locale)
+        self.lang_code, self.encoding = init_cli_locale(args.locale)
         self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
         self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
 
@@ -175,7 +187,7 @@ class Cli(object):
             rc. Default is True.
         """
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
-                        setup_logging=setup_logging)
+            setup_logging=setup_logging)
         pym.models.init(self.settings, 'db.pym.sa.')
         self._sess = pym.models.DbSession()
         pym.init_auth(self.rc)
@@ -192,7 +204,7 @@ class Cli(object):
         and an initialised request in attribute ``request``.
         """
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
-                        setup_logging=setup_logging)
+            setup_logging=setup_logging)
 
         req = pyramid.request.Request.blank('/',
             base_url='http://localhost:6543')
@@ -378,3 +390,82 @@ class Cli(object):
     @sess.setter
     def sess(self, v):
         self._sess = v
+
+
+def compile_sass_file(infile, outfile, output_style='nested'):
+    try:
+        _ = subprocess.check_output([CMD_SASSC, '-t',
+            output_style, infile, outfile],
+            stderr=subprocess.STDOUT)
+        return True
+    except subprocess.CalledProcessError as exc:
+        raise pym.exc.SassError("Compilation failed: {}".format(
+            exc.output.decode('utf-8')))
+
+
+def compile_sass(in_, out):
+    resp = JsonResp()
+    # in_ is string, so we have one input file
+    # Convert it into list
+    if isinstance(in_, str):
+        infiles = [safepath(in_)]
+        # in_ is str and out is string, so treat out as file:
+        # Build list of out filenames.
+        if isinstance(out, str):
+            outfiles = [safepath(out)]
+    else:
+        infiles = [safepath(f) for f in in_]
+        # in_ is list and out is string, so treat out as directory:
+        # Build list of out filenames.
+        if isinstance(out, str):
+            outfiles = []
+            out = safepath(out)
+            for f in in_:
+                bn = os.path.splitext(os.path.basename(f))[0]
+                outfiles.append(os.path.join(out, bn) + '.css')
+        # in_ and out are lists
+        else:
+            outfiles = [safepath(f) for f in out]
+    for i, inf in enumerate(infiles):
+        # noinspection PyUnboundLocalVariable
+        outf = outfiles[i]
+        if not os.path.exists(inf):
+            raise pym.exc.SassError("Sass infile '{0}' does not exist.".format(inf))
+        result = compile_sass_file(inf, outf)
+        if result is not True:
+            resp.error("Sass compilation failed for file '{0}'".format(inf))
+            resp.add_msg(dict(kind="error", title="Sass compilation failed",
+                text=result))
+            continue
+        resp.ok("Sass compiled to outfile '{0}'".format(outf))
+    if not resp.is_ok:
+        raise pym.exc.SassError("Batch compilation failed. See resp.", resp)
+    return resp
+
+
+def init_cli_locale(locale_name):
+    """
+    Initialises CLI locale and encoding.
+
+    Sets a certain locale. Ensures that output is correctly encoded, whether
+    it is send directly to a console or piped.
+
+    :param locale_name: A locale name, e.g. "de_DE.utf8".
+    :return: active locale as 2-tuple (lang_code, encoding)
+    """
+    # Set the locale
+    if locale_name:
+        locale.setlocale(locale.LC_ALL, locale_name)
+    else:
+        if sys.stdout.isatty():
+            locale.setlocale(locale.LC_ALL, '')
+        else:
+            locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
+    # lang_code, encoding = locale.getlocale(locale.LC_ALL)
+    lang_code, encoding = locale.getlocale(locale.LC_CTYPE)
+    # If output goes to pipe, detach stdout to allow writing binary data.
+    # See http://docs.python.org/3/library/sys.html#sys.stdout
+    if not sys.stdout.isatty():
+        import codecs
+        sys.stdout = codecs.getwriter(encoding)(sys.stdout.detach())
+    return lang_code, encoding

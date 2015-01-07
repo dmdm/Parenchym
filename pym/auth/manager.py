@@ -58,23 +58,24 @@ def create_user(sess, owner, is_enabled, principal, pwd, email, groups=None,
     sess.flush()  # to get ID of user
     # Load/create the groups and memberships
     # User is always at least member of group 'users'
-    if groups is None:
-        groups = []
-    groups = set(groups + ['users'])
-    # Load existing groups
-    existing_groups = []
-    new_group_names = []
-    for g in groups:
-        try:
-            existing_groups.append(Group.find(sess, g))
-        except sa.orm.exc.NoResultFound:
-            new_group_names.append(g)
-    # Create the new groups
-    for name in new_group_names:
-        existing_groups.append(create_group(sess, owner, name))
-    # Create group memberships
-    for g in existing_groups:
-        create_group_member(sess, owner, group=g, member_user=u)
+    if groups is not False:
+        if groups is None:
+            groups = []
+        groups = set(groups + ['users'])
+        # Load existing groups
+        existing_groups = []
+        new_group_names = []
+        for g in groups:
+            try:
+                existing_groups.append(Group.find(sess, g))
+            except sa.orm.exc.NoResultFound:
+                new_group_names.append(g)
+        # Create the new groups
+        for name in new_group_names:
+            existing_groups.append(create_group(sess, owner, name))
+        # Create group memberships
+        for g in existing_groups:
+            create_group_member(sess, owner, group=g, member_user=u)
     return u
 
 

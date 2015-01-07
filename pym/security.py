@@ -1,5 +1,7 @@
 import os
+import re
 import logging
+import colander
 
 import passlib.context
 import pyramid.security
@@ -8,14 +10,24 @@ import pyramid.i18n
 from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
 from pyramid.view import forbidden_view_config, notfound_view_config
 from pyramid.events import subscriber, NewRequest, NewResponse
-import pym.i18n
+import slugify as python_slugify
+from pym.i18n import _
 import Crypto
 
 
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
-
-
 mlgg = logging.getLogger(__name__)
+
+RE_INVALID_FS_CHARS = re.compile(r'[\x00-\x1f\x7f]+')
+"""
+Invalid characters for a filename in OS filesystem, e.g. ext3.
+
+- NULL byte
+- Control characters 0x01..0x1f (01..31)
+- Escape Character 0x7f (127)
+"""
+RE_BLANKS = re.compile('\s+')
+RE_LEADING_BLANKS = re.compile('^\s+')
+RE_TRAILING_BLANKS = re.compile('\s+$')
 
 
 class Encryptor(object):
@@ -63,6 +75,132 @@ pwd_context = passlib.context.CryptContext(
     ],
     default='pbkdf2_sha512'
 )
+
+
+class EmailValidator(colander.Regex):
+
+    def __init__(self, msg=None):
+        if msg is None:
+            msg = _("Invalid email address")
+        super().__init__(
+            '(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$',
+            msg=msg
+        )
+
+    def __call__(self, node, value):
+        lcv = value.lower()
+        if lcv.endswith('@localhost') or lcv.endswith('@localhost.localdomain'):
+            return
+        super().__call__(node, value)
+
+
+def normpath(path):
+    """
+    Returns normalised version of user defined path.
+
+    Normalised means, relative path segments like '..' are resolved and leading
+    '..' are removed. Leading '/' is also removed, retuning only relative path.
+    E.g.::
+        "/../../foo/../../bar"  --> "bar"
+        "/../../foo/bar"        --> "foo/bar"
+        "/foo/bar"              --> "foo/bar"
+    """
+    return os.path.normpath(os.path.join(os.path.sep, path)).lstrip(
+        os.path.sep)
+
+
+def safepath(path, sep=os.path.sep):
+    """
+    Returns safe version of path.
+
+    Safe means, path is normalised with func:`normpath`, and all parts are
+    sanitised like this:
+
+    - cannot start with dash ``-``
+    - cannot start with dot ``.``
+    - cannot have control characters: 0x01..0x1F (0..31) and 0x7F (127)
+    - cannot contain null byte 0x00
+    - cannot start or end with whitespace
+    - cannot contain '/', '\', ':' (slash, backslash, colon)
+    - consecutive whitespace are folded to one blank
+
+    See also:
+
+    - http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    - http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/file-names.html
+    """
+    path = RE_INVALID_FS_CHARS.sub('', path)
+    path = RE_BLANKS.sub(' ', path)
+    aa = path.split(sep)
+    bb = []
+    for a in aa:
+        if a == '':
+            continue
+        b = a.strip().lstrip('.-').replace('/', '').replace('\\', '').replace(':', '')
+        bb.append(b)
+    res = normpath(sep.join(bb))
+    return res
+
+
+def trim_blanks(s):
+    """
+    Removes leading and trailing whitespace from string.
+    """
+    s = RE_LEADING_BLANKS.sub('', s)
+    s = RE_TRAILING_BLANKS.sub('', s)
+    return s
+
+
+def is_string_clean(s):
+    """
+    Checks whether string has leading/trailing whitespace or illegal chars.
+    """
+    if RE_LEADING_BLANKS.search(s):
+        return False
+    if RE_TRAILING_BLANKS.search(s):
+        return False
+    if RE_INVALID_FS_CHARS.search(s):
+        return False
+    return True
+
+
+def clean_string(s):
+    """
+    Cleans string by removing leading and trailing whitespace, illegal chars and
+    folding consecutive whitespace to a single space char.
+    """
+    s = trim_blanks(s)
+    s = RE_BLANKS.sub(' ', s)
+    s = RE_INVALID_FS_CHARS.sub('', s)
+    return s
+
+
+def slugify(s, force_ascii=False, **kw):
+    """
+    Converts string into a 'slug' for use in URLs.
+
+    Since nowadays we can use UTF-8 characters in URLs, we keep those intact,
+    and just replace white space with a dash, except when you force ASCII by
+    setting that parameter.
+
+    If you ``force_ascii``, we use
+    `python-slugify <https://github.com/un33k/python-slugify>`_ to convert the
+    string. Additional keyword arguments are passed.
+
+    We do not encode unicode in UTF-8 here, since most web frameworks do that
+    transparently themselves.
+
+    :param s: The string to slugify.
+    :param force_ascii: If False (default) we allow unicode chars.
+    :param **kw: Additional keyword arguments are passed to python-slugify.
+    :return: The slug, still a unicode string but maybe just containing ASCII
+        chars.
+    """
+    s = clean_string(s)
+    s = RE_BLANKS.sub('-', s)
+    if force_ascii:
+        s = python_slugify.slugify(s, **kw)
+    return s
 
 
 # ====================================================
