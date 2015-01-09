@@ -15,19 +15,36 @@ ENV_DEVELOPMENT = 'development'
 ENV_PRODUCTION = 'production'
 
 
-RE_INTERVAL_DATETIME = re.compile(
-    r'P'
-    r'(?:(?P<years>\d+(?:[.]\d+)?)Y)?'
-    r'(?:(?P<months>\d+(?:[.]\d+)?)M)?'
-    r'(?:(?P<weeks>\d+(?:[.]\d+)?)W)?'
-    r'(?:(?P<days>\d+(?:[.]\d+)?)D)?'
-    r'(?:T'
-    r'(?:(?P<hours>\d+(?:[.]\d+)?)H)?'
-    r'(?:(?P<minutes>\d+(?:[.]\d+)?)M)?'
-    r'(?:(?P<seconds>\d+(?:[.]\d+)?)S)?'
-    r')?'
-    r'$'
-)
+def match_mime_types(a, b):
+    """
+    Tells whether at least one mime-type in ``a`` matches one of ``b``.
+
+    :param a: Str or list of str. Mime-types to match.
+    :param b: Str or list of str. Patterns of mime-types to match against.
+    :return: True if at least one mime-type in ``a`` matches at least one
+        pattern in ``b``. False otherwise.
+    """
+    # Compile patterns in b
+    if isinstance(b, str):
+        b = [b]
+    rr = []
+    star = re.compile(r'(?<!\.)\*')
+    for pat in b:
+        # replace '*' with '.*' but don't touch '.*'
+        pat = star.sub('.*', pat)
+        pat = pat.split('/')
+        rr.append((re.compile(pat[0], re.I), re.compile(pat[1], re.I)))
+    # Prepare a
+    if isinstance(a, str):
+        a = [a]
+    for i in range(len(a)):
+        a[i] = a[i].split('/')
+    # Match
+    for r in rr:
+        for x in a:
+            if r[0].search(x[0]) and r[1].search(x[1]):
+                return True
+    return False
 
 
 class Enum(enum.Enum):
@@ -86,6 +103,21 @@ dump_yaml = functools.partial(
 #     return self.represent_mapping('tag:yaml.org,2002:map', data.items())
 #
 # yaml.add_representer(collections.OrderedDict, _represent_ordereddict)
+
+
+RE_INTERVAL_DATETIME = re.compile(
+    r'P'
+    r'(?:(?P<years>\d+(?:[.]\d+)?)Y)?'
+    r'(?:(?P<months>\d+(?:[.]\d+)?)M)?'
+    r'(?:(?P<weeks>\d+(?:[.]\d+)?)W)?'
+    r'(?:(?P<days>\d+(?:[.]\d+)?)D)?'
+    r'(?:T'
+    r'(?:(?P<hours>\d+(?:[.]\d+)?)H)?'
+    r'(?:(?P<minutes>\d+(?:[.]\d+)?)M)?'
+    r'(?:(?P<seconds>\d+(?:[.]\d+)?)S)?'
+    r')?'
+    r'$'
+)
 
 
 def interval2timedelta(v):

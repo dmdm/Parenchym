@@ -52,7 +52,7 @@ def fs_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
     menu_fs = {
         'id': id_,
         'text': translate(_("Filesystem")),
-        'href': url_to(node_fs),
+        'href': url_to(node_fs, '@@_br_'),
         'children': []
     }
     return menu_fs

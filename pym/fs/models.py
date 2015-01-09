@@ -1,3 +1,5 @@
+import collections
+from pyramid.location import lineage
 import pyramid.util
 import pyramid.i18n
 from sqlalchemy.dialects.postgresql import JSON, UUID
@@ -46,6 +48,13 @@ class FsNode(pym.res.models.ResourceNode):
     MIME_TYPE_JSON = 'application/json'
     MIME_TYPE_DEFAULT = 'application/octet-stream'
 
+    RC_KEYS_QUOTA = ('min_size', 'max_size', 'max_total_size', 'max_children',
+        'allow', 'deny')
+    """
+    These keys in attribute ``rc`` define the quota of this node. Used e.g.
+    by :class:`~pym.cache.UploadCache`.
+    """
+
     id = sa.Column(
         sa.Integer(),
         sa.ForeignKey(
@@ -92,23 +101,8 @@ class FsNode(pym.res.models.ResourceNode):
         nullable=True))
     """Extended attributes"""
     # Load only if needed
-    rc = sa.orm.deferred(sa.Column(MutableDict.as_mutable(JSON()),
+    _rc = sa.orm.deferred(sa.Column('rc', MutableDict.as_mutable(JSON()),
         nullable=True))
-    """Settings
-
-    Expected settings for the :class:`pym.cache.UploadCache` are:
-
-    - ``min_size``: Minimum size of content in bytes, default 1
-    - ``max_size``: Maximum size of content in bytes, default 2 MB
-    - ``max_total_size``: Max size of content plus children in bytes. If not
-      specified, is not checked (default).
-    - ``max_children``: Max number children. If not specified, is not checked
-      (default).
-    - ``allow``: List of mime-types (RegEx pattern) that are allowed. If empty,
-      all mime-types are allowed (default).
-    - ``deny``: List of mime-types (RegEx pattern) that are denied. If empty,
-      no mime-types are denied (default).
-    """
     # Load only if needed
     content_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
     # Load only if needed
@@ -126,6 +120,76 @@ class FsNode(pym.res.models.ResourceNode):
 
     def is_dir(self):
         return self.mime_type == self.MIME_TYPE_DIRECTORY
+
+    @property
+    def rc(self):
+        """Settings
+
+        Settings, like ACL, are inherited from ancestors up to the root node of
+        the file system (which in most cases is not identical with the root node of
+        the resource tree).
+
+        Quota settings as used e.g. in :class:`pym.cache.UploadCache`:
+
+        - ``min_size``: Minimum size of content in bytes, default 1
+        - ``max_size``: Maximum size of content in bytes, default 2 MB
+        - ``max_total_size``: Max size of content plus children in bytes. If not
+          specified, is not checked (default).
+        - ``max_children``: Max number children. If not specified, is not checked
+          (default).
+        - ``allow``: List of mime-types (RegEx pattern) that are allowed. To allow
+            all mime-types, set to ``['*/*']``.
+        - ``deny``: List of mime-types (RegEx pattern) that are denied. If empty,
+          no mime-types are denied (default).
+        """
+        # Fetch our rc and rc of ancestors
+        # We need to access protected '_rc' here!
+        maps = [x._rc or {} for x in lineage(self) if isinstance(x, FsNode)]
+        if not maps:
+            maps = []
+        # Append a map with the defaults
+        maps.append(dict(
+            min_size=1,
+            max_size=1024 * 1024 * 2,
+            max_total_size=None,
+            max_children=None,
+            allow=['image/*', 'application/pdf'],
+            deny=[]
+        ))
+        return collections.ChainMap(*maps)
+
+    @property
+    def content_attr(self):
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            return 'content_text'
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            return 'content_json'
+        else:
+            return 'content_bin'
+
+    @property
+    def content(self):
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            return self.content_text
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            return self.content_json
+        else:
+            return self.content_bin
+
+    @content.setter
+    def content(self, v):
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            self.content_text = v
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            self.content_json = v
+        else:
+            self.content_bin = v
 
     def __repr__(self):
         return "<{name}(id={id}, parent_id={p}, name='{n}', rev={rev}'>".format(

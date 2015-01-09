@@ -34,7 +34,6 @@ def create_fs_node(sess, owner, parent_id, name, **kwargs):
     except sa.orm.exc.NoResultFound:
         fsn = FsNode(owner_id, name, **kwargs)
         n_parent.children[name] = fsn
-        sess.flush()
         return fsn
 
 
@@ -47,12 +46,11 @@ def update_fs_node(sess, fs_node, editor, **kwargs):
     :param editor: ID, ``principal``, or instance of a user.
     :return: Instance of updated fs_node.
     """
-    fsn = fs_node.find(sess, fs_node)
+    fsn = FsNode.find(sess, fs_node)
     fsn.editor_id = User.find(sess, editor).id
     fsn.mtime = datetime.datetime.now()
     for k, v in kwargs.items():
         setattr(fsn, k, v)
-    sess.flush()
     return fsn
 
 
@@ -68,7 +66,7 @@ def delete_fs_node(sess, fs_node, deleter, deletion_reason=None, delete_from_db=
         set True to physically delete record from DB.
     :return: None if really deleted, else instance of tagged FsNode.
     """
-    fsn = fs_node.find(sess, fs_node)
+    fsn = FsNode.find(sess, fs_node)
     if delete_from_db:
         sess.delete(fsn)
         fsn = None
@@ -77,5 +75,4 @@ def delete_fs_node(sess, fs_node, deleter, deletion_reason=None, delete_from_db=
         fsn.deletion_reason = deletion_reason
         fsn.dtime = datetime.datetime.now()
         # TODO Replace content of unique fields
-    sess.flush()
     return fsn
