@@ -1,6 +1,7 @@
 import logging
 import functools
-from pyramid.httpexceptions import HTTPNotFound
+import os
+from pyramid.httpexceptions import HTTPNotFound, HTTPForbidden
 from pyramid.location import lineage
 
 from pyramid.view import view_config, view_defaults
@@ -12,6 +13,7 @@ import pym.exc
 import pym.fs.manager
 import pym.security
 import pym.validator
+from pym.i18n import _
 from pym.auth.models import Permissions
 from pym.models import DbSession, dictate_iter
 
@@ -50,22 +52,26 @@ class Validator(pym.validator.Validator):
         v = self.fetch('names', required=True, multiple=True)
         return v
 
+    @property
+    def name(self):
+        v = self.fetch('name', required=True, multiple=False)
+        return pym.security.safepath(v, split=False)
+
 
 class Worker(object):
 
-    def __init__(self, lgg, sess, owner_id, cache, upload_cache=None):
+    def __init__(self, lgg, sess, owner_id, cache, has_permission):
         self.lgg = lgg
         self.sess = sess
         self.owner_id = owner_id
         self.cache = cache
-        self.upload_cache = upload_cache
+        self.has_permission = has_permission
         self.fc_col_map = {
         }
 
     @staticmethod
     def init_upload_cache(root_dir='/tmp/upload_cache'):
         cache = UploadCache(root_dir=root_dir)
-        cache.allow = '*/*'
         return cache
 
     def del_cached_children(self, parent_id):
@@ -73,16 +79,15 @@ class Worker(object):
             self.cache.delete(k)
 
     def upload(self, resp, cur_node, data, overwrite):
-        if not self.upload_cache:
-            self.upload_cache = self.__class__.init_upload_cache()
-        self.upload_cache.fs_node = cur_node
+        upload_cache = self.__class__.init_upload_cache()
+        upload_cache.fs_node = cur_node
 
         # Create instances of UploadedFile which also checks if we accept it or
         # not.
         for name, fieldStorage in data.items():
             if not (hasattr(fieldStorage, 'file') and fieldStorage.file):
                 continue
-            self.upload_cache.create_file(fieldStorage)
+            upload_cache.create_file(fieldStorage)
 
         # Save uploaded data only if needed. To just store it in the DB, it is
         # not needed. On the other hand we need a real file if we want to
@@ -90,12 +95,9 @@ class Worker(object):
         # client.
         # self.cache.save(self.lgg, resp)
 
-        # Load names of existing children
-        existing = {k: v for k, v in cur_node.children.items()}
-
         actor = self.owner_id
         # Store the uploaded data in DB
-        for c in self.upload_cache.files:
+        for c in upload_cache.files:
             if not c.is_ok:
                 resp.error("{}: {}".format(c.client_filename, c.exc))
                 continue
@@ -107,26 +109,31 @@ class Worker(object):
             # 'text/plain', but the client told correctly 'application/json'
             # mime = c.local_mime_type
             mime = c.client_mime_type
-            id_ = existing.get(name)
 
-            if id_:
-                if overwrite:
-                    # TODO only if we have 'delete' permission or are owner or wheel
-                    child_fs_node = pym.fs.manager.update_fs_node(
-                        self.sess,
-                        fs_node=id_,
-                        editor=actor
-                    )
-                else:
-                    resp.warn('{} already exists'.format(name))
-                    continue
-            else:
+            try:
+                child_fs_node = cur_node[name]
+            except KeyError:
                 child_fs_node = pym.fs.manager.create_fs_node(
                     self.sess,
                     owner=actor,
                     parent_id=cur_node.id,
                     name=name
                 )
+            else:
+                if overwrite:
+                    # Need write permission on child to overwrite
+                    if not self.has_permission(Permissions.write.value,
+                            context=child_fs_node):
+                        resp.error(_("Forbidden to overwrite '{}'").format(name))
+                        continue
+                    child_fs_node = pym.fs.manager.update_fs_node(
+                        self.sess,
+                        fs_node=child_fs_node,
+                        editor=actor
+                    )
+                else:
+                    resp.warn(_('{} already exists').format(name))
+                    continue
             child_fs_node.mime_type = mime
             child_fs_node.local_filename = c.local_filename
             child_fs_node.size = c.meta['size']
@@ -145,6 +152,9 @@ class Worker(object):
             self.del_cached_children(cur_node.id)
 
     def ls(self, resp, cur_node):
+        if not self.has_permission(Permissions.read.value, context=cur_node):
+            resp.error("Forbidden to list")
+            return
         rs = self.sess.query(FsNode).filter(FsNode.parent_id == cur_node.id)
         excl = ('content_bin', 'content_text', 'content_json', '_slug',
                 '_title', '_short_title')
@@ -152,13 +162,42 @@ class Worker(object):
 
     def rm(self, resp, cur_node, names):
         for n in names:
-            print('deleting', n)
+            this_node = cur_node[n]
+            if not self.has_permission(Permissions.delete.value, context=this_node):
+                resp.error(_("Forbidden to delete '{}'").format(n))
+                continue
+            pym.fs.manager.delete_fs_node(
+                self.sess,
+                fs_node=this_node,
+                deleter=self.owner_id,
+                delete_from_db=True
+            )
+        # remove cache keys for children of cur_node
+        self.del_cached_children(cur_node.id)
+
+    def create_directory(self, resp, cur_node, name):
+        if not self.has_permission(Permissions.write.value, context=cur_node):
+            resp.error(_("Forbidden to create directory '{}'").format(name))
+            return
+        try:
+            pym.fs.manager.create_fs_node(
+                self.sess,
+                owner=self.owner_id,
+                parent_id=cur_node.id,
+                name=name,
+                mime_type=FsNode.MIME_TYPE_DIRECTORY
+            )
+        except pym.exc.ItemExistsError:
+            resp.error(_("Directory '{}' already exists").format(name))
         # remove cache keys for children of cur_node
         self.del_cached_children(cur_node.id)
 
 
 @view_defaults(
     context=IFsNode,
+    # We can call any Fs method as long as we have read permission.
+    # Whether we are allowed to execute that method on a particular file depends
+    # on the permission we have for that file.
     permission=Permissions.read.name
 )
 class FsView(object):
@@ -181,6 +220,7 @@ class FsView(object):
             sess=self.sess,
             owner_id=request.user.uid,
             cache=request.redis,
+            has_permission=request.has_permission
         )
 
         self.urls = dict(
@@ -188,6 +228,7 @@ class FsView(object):
             upload=request.resource_url(context, '@@_ul_'),
             ls=request.resource_url(context, '@@_ls_'),
             rm=request.resource_url(context, '@@_rm_'),
+            create_directory=request.resource_url(context, '@@_crd_'),
         )
 
     @view_config(
@@ -229,10 +270,10 @@ class FsView(object):
         node_rc = self.context.rc
         for k in FsNode.RC_KEYS_QUOTA:
             rc[k] = node_rc[k]
-        rc['urls'] = self.urls,
-        rc['path'] = path,
+        rc['urls'] = self.urls
+        rc['path'] = path
         return {
-            'rc': rc,
+            'rc': rc
         }
 
     @view_config(
@@ -241,11 +282,9 @@ class FsView(object):
         request_method='POST'
     )
     def upload(self):
-        data = self.request.param,
+        data = self.request.POST
+        self.validator.inp = data
         overwrite = data.get('overwrite', False)
-        if overwrite:
-            # TODO Check if we have permission 'delete', are owner or wheel. If so, allow overwrite, else set overwrite=False
-            pass
         keys = ('cur_node', )
         func = functools.partial(
             self.worker.upload,
@@ -282,15 +321,6 @@ class FsView(object):
         )
         return json_serializer(resp.resp)
 
-        # resp = pym.resp.JsonResp()
-        # # TODO determine parent ID from requested path
-        # parent_id = self.context.id
-        # rs = self.sess.query(FsNode).filter(FsNode.parent_id == parent_id)
-        # excl = ('content_bin', 'content_text', 'content_json', '_slug',
-        #         '_title', '_short_title')
-        # resp.data = {'rows': dictate_iter(rs, excludes=excl)}
-        # return json_serializer(resp.resp)
-
     @view_config(
         name='_rm_',
         renderer='string',
@@ -300,6 +330,27 @@ class FsView(object):
         keys = ('cur_node', 'names')
         func = functools.partial(
             self.worker.rm
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_crd_',
+        renderer='string',
+        request_method='POST'
+    )
+    def create_directory(self):
+        self.validator.inp = self.request.json_body
+        keys = ('cur_node', 'name')
+        func = functools.partial(
+            self.worker.create_directory
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

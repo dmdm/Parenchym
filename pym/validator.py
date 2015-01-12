@@ -411,7 +411,6 @@ class Validator(object):
         except ValueError:
             raise ValidationError("Invalid JSON: '{}'".format(k))
 
-
     def fetch_int(self, k, default=None, required=True, multiple=False):
         """
         Fetches an input parameter as integer.

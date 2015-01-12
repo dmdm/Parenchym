@@ -286,3 +286,23 @@ body > footer {
 .pym-grid-menu-bar {
   margin-bottom: 1ex;
 }
+  // Links within the dropdown menu
+.dropdown-menu > li > .anchor {
+    display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: normal;
+    line-height: $line-height-base;
+    color: $dropdown-link-color;
+    white-space: nowrap; // prevent links from randomly breaking onto new lines
+}
+
+// Hover/Focus state
+.dropdown-menu > li > .anchor {
+  &:hover,
+  &:focus {
+    text-decoration: none;
+    color: $dropdown-link-hover-color;
+    background-color: $dropdown-link-hover-bg;
+  }
+}

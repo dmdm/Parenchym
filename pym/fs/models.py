@@ -153,7 +153,8 @@ class FsNode(pym.res.models.ResourceNode):
             max_size=1024 * 1024 * 2,
             max_total_size=None,
             max_children=None,
-            allow=['image/*', 'application/pdf'],
+            #allow=['image/*', 'application/pdf'],
+            allow=['*/*'],
             deny=[]
         ))
         return collections.ChainMap(*maps)

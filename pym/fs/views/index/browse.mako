@@ -14,19 +14,14 @@ ${parent.styles()}
     height: 76vh;
 }
 .ui-grid-cell { border-right: none; }
-.drop-box {
-	background: #F8F8F8;
-	border: 5px dashed #DDD;
-	width: 200px;
-	text-align: center;
-}
+.drop-box { padding: 0px; border: none; outline: none; height: 76vh; }
 
 .drop-box.dragover {
-	border: 5px dashed blue;
+	outline: 2px dashed blue;
 }
 
 .drop-box.dragover-err {
-	border: 5px dashed red;
+	outline: 2px dashed red;
 }
 </style>
 </%block>
@@ -48,54 +43,59 @@ ${parent.scripts()}
 </%block>
 <%block name="meta_title">${_("Filesystem")}</%block>
 <div ng-controller="FsCtrl" ng-cloak>
-    <div class="row">
-        <div class="col-md-2">
-            <button ng-file-select ng-file-change="FileBrowser.upload()"
+  <div class="row">
+    <div class="col-md-12">
+      <div class="btn-group" dropdown is-open="ToolsMenu.isOpen">
+        <button type="button" class="btn btn-default dropdown-toggle"
+                ng-disabled="ToolsMenu.isDisabled">
+          <i class="fa fa-cog text-primary"></i> <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" role="menu">
+          <li>
+            <div ng-file-select
+                    ng-file-change="FileBrowser.upload()"
                     ng-model="FileBrowser.files"
                     ng-multiple="true"
                     multiple="multiple"
-                    class="btn btn-default form-control"
-            >Select to upload</button>
-        </div>
-        <div class="col-md-2">
-            <div ng-file-drop ng-file-change="FileBrowser.upload()"
-                 ng-model="FileBrowser.files"
-                 ng-rejected-file-model="FileBrowser.rejectedFiles"
-                 ng-multiple="true"
-                 allow-dir="true"
-                 accept="*/*"
-                 class="drop-box form-control"
-                 drag-over-class="{accept:'dragover', reject:'dragover-err', delay:100}"
-            >or drop here</div>
-        </div>
-        <div class="col-md-8">
-            <div class="btn-group" dropdown is-open="ToolsMenu.isOpen">
-              <button type="button" class="btn btn-default dropdown-toggle" ng-disabled="ToolsMenu.isDisabled">
-                <i class="fa fa-cog text-primary"></i> <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu" role="menu">
-                <li><a href="#" ng-click="ToolsMenu.rm()">${_("Delete")}</a></li>
-                <li><a href="#">${_("Do that")}</a></li>
-                <li><a href="#">${_("No rest for the wicked")}</a></li>
-              </ul>
-            </div>
-        </div>
+                    class="anchor"
+                ><i class="fa fa-fw fa-upload"></i> ${_("Upload")}</div>
+          </li>
+          <li ng-class="{'disabled':FileBrowser.cntSelected<1}"><a href="#" ng-click="ToolsMenu.rm()"><i class="fa fa-fw fa-trash-o"></i> ${_("Delete")}</a></li>
+          <li><a href="#" ng-click="ToolsMenu.createDirectory()"><i class="fa fa-fw fa-asterisk"></i> ${_("Create Directory")}</a></li>
+          <li ng-class="{'disabled':FileBrowser.cntSelected<1}"><a href="#" ng-click="ToolsMenu.openNode()"><i class="fa fa-fw fa-folder-open-o"></i> ${_("Open Node")}</a></li>
+          <li class="divider"></li>
+          <li><label class="anchor"><input type="checkbox" name="overwrite" ng-model="FileBrowser.overwrite"> ${_("Allow Overwrite")}</label></li>
+        </ul>
+      </div>
     </div>
-    <div class="outer-gutter" style="margin-top: 1ex;">
-        Path:<span ng-repeat="x in FileBrowser.path"><a href="#"  style="padding: 0 4px 0 4px;;" ng-click="FileBrowser.changePath(x[0])">{{x[1]}}</a><span ng-if="! $last">/</span></span>
+  </div>
+  <div class="outer-gutter" style="margin-top: 1ex;">
+    Path:<span ng-repeat="x in FileBrowser.path">
+      <a href="#" style="padding: 0 4px 0 4px;" ng-click="FileBrowser.changePath(x[0])">{{x[1]}}</a>
+      <span ng-if="! $last">/</span>
+    </span>
+  </div>
+  <div class="outer-gutter" style="margin-top: 1ex;">
+    <div ng-file-drop ng-file-change="FileBrowser.upload()"
+         ng-model="FileBrowser.files"
+         ng-rejected-file-model="FileBrowser.rejectedFiles"
+         ng-multiple="true"
+         allow-dir="true"
+         accept="*/*"
+         class="drop-box form-control"
+         drag-over-class="{accept:'dragover', reject:'dragover-err', delay:100}"
+        >
+      <div ui-grid="FileBrowser.options"
+           ui-grid-selection
+           ui-grid-resize-columns
+           ui-grid-edit
+           ui-grid-row-edit
+           ui-grid-cellNav
+           class="grid"
+          >
+      </div>
     </div>
-    <div class="outer-gutter" style="margin-top: 1ex;">
-            <div ui-grid="FileBrowser.options"
-                 ui-grid-selection
-                 ui-grid-resize-columns
-                 ui-grid-edit
-                 ui-grid-row-edit
-                 ui-grid-cellNav
-                 class="grid"
-            >
-            </div>
-
-    </div>
+  </div>
 </div>
 
 <script>
@@ -104,7 +104,8 @@ function( doc,                   angular,  PYM,       PymApp) {
 
     PymApp.constant('RC', ${h.json_serializer(rc)|n});
     PymApp.constant('T', {
-        confirm_rm_files: '${_("Do you really want to delete the selected files?")}'
+        confirm_rm_files: '${_("Do you really want to delete the selected files and all of their children?")}',
+        prompt_dir_name: '${_("Enter a name for the directory")}'
     });
 
     <%include file="FsCtrl.js" args="parent=self" />

@@ -6,16 +6,19 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
     $scope.FileBrowser = {
         files: [],
+        rejectedFiles: [],
         minSize: RC.min_size,
         maxSize: RC.max_size,
         allow: RC.allow,
         deny: RC.deny,
         path: RC.path,
+        overwrite: false,
         data: [],
         api: null,
+        cntSelected: 0,
         pathToStr: function () {
-            var pp = [];
-            angular.forEach(this.path, function (x) {
+            var self = this, pp = [];
+            angular.forEach(self.path, function (x) {
                 pp.push(x[1]);
             });
             return pp.join('/');
@@ -30,10 +33,10 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             this.ls();
         },
         ls: function () {
+            var self = this;
             var httpConfig = {
                 params: {}
             };
-            var self = this;
             httpConfig.params.path = self.pathToStr();
             self.pym.spinner = true;
             $http.get(RC.urls.ls, httpConfig)
@@ -71,6 +74,33 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 // NOOP
             });
         },
+        createDirectory: function (dirName) {
+            var self = this,
+                httpConfig = {},
+                postData = {
+                    name: dirName,
+                    path: self.pathToStr()
+                };
+            $http.post(RC.urls.create_directory, postData, httpConfig)
+            .then(function (resp) {
+                if (resp.data.ok) {
+                    // NOOP
+                }
+                self.ls();
+                PYM.growl_ajax_resp(resp.data);
+            }, function (result) {
+                // NOOP
+            });
+        },
+        openNode: function () {
+            var self = this, nodes = [];
+            // Collect selected rows
+            angular.forEach(self.api.selection.getSelectedRows(), function (r) {
+                nodes.push([r.id, r._name]);
+            });
+            self.path.push(nodes[0]);
+            self.ls();
+        },
         /**
          * Checks given mime-type against pattern from ``allow`` and ``deny``
          * and returns true if mime-type is allowed, false otherwise.
@@ -85,8 +115,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 pat = self.allow[i];
                 if (pat.search(/\*/) > -1 && pat.search(/\.\*/) == -1) pat = pat.replace(/\*/g, '.*');
                 pat = pat.split('/');
-                console.log('check allow', ty[0], pat[0]);
-                console.log('check allow', ty[1], pat[1]);
                 if (ty[0].search(pat[0]) > -1 && ty[1].search(pat[1]) > -1) {
                     good = true;
                     break;
@@ -98,8 +126,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 pat = self.deny[i];
                 if (pat.search(/\*/) > -1 && pat.search(/\.\*/) == -1) pat = pat.replace(/\*/g, '.*');
                 pat = pat.split('/');
-                console.log('check deny', ty[0], pat[0]);
-                console.log('check deny', ty[1], pat[1]);
                 if (ty[0].search(pat[0]) > -1 || ty[1].search(pat[1]) > -1) {
                     good = false;
                     break;
@@ -134,35 +160,39 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 }
                 PYM.growl({kind: 'warn', text: m.join('')});
             }
-            console.log('allowed files', allowedFiles);
-            self.uploader = $upload.upload({
-                url: RC.urls.upload, // upload.php script, node.js route, or servlet url
-                //method: 'POST' or 'PUT',
-                //headers: {'Authorization': 'xxx'}, // only for html5
-                //withCredentials: true,
-                data: {myObj: $scope.myModelObj},
-                file: allowedFiles // single file or a list of files. list is only for html5
-                //fileName: 'doc.jpg' or ['1.jpg', '2.jpg', ...] // to modify the name of the file(s)
-                //fileFormDataName: myFile, // file formData name ('Content-Disposition'), server side request form name
-                // could be a list of names for multiple files (html5). Default is 'file'
-                //formDataAppender: function(formData, key, val){}  // customize how data is added to the formData.
-                // See #40#issuecomment-28612000 for sample code
+            if (allowedFiles.length) {
+                self.uploader = $upload.upload({
+                    url: RC.urls.upload, // upload.php script, node.js route, or servlet url
+                    //method: 'POST' or 'PUT',
+                    //headers: {'Authorization': 'xxx'}, // only for html5
+                    //withCredentials: true,
+                    data: {
+                        path: self.pathToStr(),
+                        overwrite: self.overwrite
+                    },
+                    file: allowedFiles // single file or a list of files. list is only for html5
+                    //fileName: 'doc.jpg' or ['1.jpg', '2.jpg', ...] // to modify the name of the file(s)
+                    //fileFormDataName: myFile, // file formData name ('Content-Disposition'), server side request form name
+                    // could be a list of names for multiple files (html5). Default is 'file'
+                    //formDataAppender: function(formData, key, val){}  // customize how data is added to the formData.
+                    // See #40#issuecomment-28612000 for sample code
 
-            }).progress(function (evt) {
-                console.log('progress: ' + parseInt(100.0 * evt.loaded / evt.total) + '% file :' + evt.config.file.name);
-            }).success(function (data, status, headers, config) {
-                // file is uploaded successfully
-                console.log('file ' + config.file + ' is uploaded successfully. Response: ' + data);
-                PYM.growl_ajax_resp(data);
-                if (data.ok) {
-                    // TODO
-                }
-                self.ls();
-            });
-            //.error(...)
-            //.then(success, error, progress); // returns a promise that does NOT have progress/abort/xhr functions
-            //.xhr(function(xhr){xhr.upload.addEventListener(...)}) // access or attach event listeners to
-            //the underlying XMLHttpRequest
+                }).progress(function (evt) {
+                    console.log('progress: ' + parseInt(100.0 * evt.loaded / evt.total) + '% file :', evt.config.file);
+                }).success(function (data, status, headers, config) {
+                    // file is uploaded successfully
+                    console.log('file ', config.file, ' is uploaded successfully. Response: ', data);
+                    PYM.growl_ajax_resp(data);
+                    if (data.ok) {
+                        // TODO
+                    }
+                    self.ls();
+                });
+                //.error(...)
+                //.then(success, error, progress); // returns a promise that does NOT have progress/abort/xhr functions
+                //.xhr(function(xhr){xhr.upload.addEventListener(...)}) // access or attach event listeners to
+                //the underlying XMLHttpRequest
+            }
         }
     };
     $scope.FileBrowser.options = {
@@ -199,6 +229,10 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 console.log('edited row id:' + rowEntity.id + ' Column:' + colDef.name + ' newValue:' + newValue + ' oldValue:' + oldValue);
             });
             gridApi.rowEdit.on.saveRow($scope, $scope.FileBrowser.saveRow);
+
+            gridApi.selection.on.rowSelectionChanged($scope, function (row) {
+                $scope.FileBrowser.cntSelected = gridApi.selection.getSelectedRows().length;
+            });
         }
     };
     $scope.FileBrowser.saveRow = function () {
@@ -221,6 +255,17 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             if ($scope.FileBrowser.api.selection.getSelectedRows().length == 0) return;
             if (!confirm(T.confirm_rm_files)) return;
             $scope.FileBrowser.rm();
+        },
+        createDirectory: function () {
+            var dirName;
+            this.isOpen = false;
+            if (! (dirName = prompt(T.prompt_dir_name))) return;
+            $scope.FileBrowser.createDirectory(dirName);
+        },
+        openNode: function () {
+            this.isOpen = false;
+            if ($scope.FileBrowser.api.selection.getSelectedRows().length == 0) return;
+            $scope.FileBrowser.openNode();
         }
     };
 

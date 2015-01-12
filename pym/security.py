@@ -109,7 +109,7 @@ def normpath(path):
         os.path.sep)
 
 
-def safepath(path, sep=os.path.sep):
+def safepath(path, split=True, sep=os.path.sep):
     """
     Returns safe version of path.
 
@@ -128,10 +128,17 @@ def safepath(path, sep=os.path.sep):
 
     - http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
     - http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/file-names.html
+
+    :param path: String with path to make safe
+    :param split: If True (default), we split ``path`` at ``sep``, process each
+        part individually, and then join the parts to a string again. If False,
+        we treat path as having only one part. With this method you ensure that
+        path contains only a basename without leading directories.
+    :param sep: Char as path separator. Defaults to ``os.path.sep``.
     """
     path = RE_INVALID_FS_CHARS.sub('', path)
     path = RE_BLANKS.sub(' ', path)
-    aa = path.split(sep)
+    aa = path.split(sep) if split else [path]
     bb = []
     for a in aa:
         if a == '':

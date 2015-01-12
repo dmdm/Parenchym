@@ -8,7 +8,6 @@ import sys
 
 from pym.cli import Cli, compile_sass_file
 from pym.exc import SassError
-from pym.lib import compile_sass_file
 
 
 class Runner(Cli):
