@@ -682,7 +682,7 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None, includes=None,
             if fully_qualified else ''
         try:
             d[special_cols[0]] = getattr(o, special_cols[0])
-        except KeyError:
+        except AttributeError:
             pass
         for c in o.__table__.columns:
             if c.name in excludes:
