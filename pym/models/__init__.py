@@ -544,7 +544,11 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
                 ok = qual + col if objects_as == 'qualified' and qual else col
                 v = value_getter(col)
                 try:
-                    subqual = v.__class__.__name__
+                    # Use col as subqual, not class name. If query has aliases,
+                    # col is the alias name. If we used class name, all aliases
+                    # of the same class would be stored under that same key.
+                    # subqual = v.__class__.__name__
+                    subqual = col
                     subd = proc_object(v, qual=subqual, lvl=lvl + 1)
                     if objects_as in ('flat', 'qualified'):
                         od.update(subd)
