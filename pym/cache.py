@@ -1,6 +1,9 @@
+import abc
+import collections.abc
 import fcntl
 import os
 from pathlib import PurePath
+import pickle
 import re
 import time
 import uuid
@@ -750,3 +753,225 @@ class UploadedFile():
                 self.f.file.read(1024)).decode('ASCII')
             self.f.file.seek(0)
         return self._local_mime_type
+
+
+class CachedCollection():
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, memory, cache=None, key=None, expire=None):
+        """
+        Abstract base class for cached collections.
+
+        A cached collection, e.g. a list or a dict, has a memory representation,
+        which typically is just a Python standard type, and a cached
+        representation.
+
+        Each child class may implement more methods, appropriate for the
+        respective data type.
+
+        :param memory: The type for in-memory storage, e.g. a list or a dict.
+        :param cache: A connection to a backend cache. Currently this must be a
+            Redis connection.
+        :param key: Key to store this collection in cache. Mind that this is the
+            key for the whole data structure, not for individual keys e.g. of a
+            dict. If None, we use the default key
+            ``"pym:cached_collection:" + uuid.uuid4().hex``.
+        :param expire: Seconds after which the cache key (and the memory
+            representation) expires. If None, expires never.
+        """
+        self.ctime = time.time()
+        self.memory = memory
+        self.cache = cache
+        self.key = key if key else 'pym:cached_collection:' + uuid.uuid4().hex
+        self._expire = expire
+
+    def ttl(self):
+        """
+        Returns time-to-live in seconds.
+        """
+        if self.cache:
+            return self.cache.ttl(self.key)
+        else:
+            return time.time() - self.ctime
+
+    def clear(self):
+        """Clears collection in memory and in cache."""
+        self.memory.clear()
+        self.cache.delete(self.key)
+
+    @abc.abstractmethod
+    def save(self):
+        """
+        Saves data of memory representation to cache.
+
+        Since attribute ``memory`` is a reference to another mutable, that
+        mutable might be populated independent of the cache. Calling ``save()``
+        then stores the complete data in the cache in one go.
+        """
+        pass
+
+    @abc.abstractmethod
+    def load(self):
+        """
+        Loads data from cache into memory representation.
+        """
+        pass
+
+    @property
+    def expire(self):
+        """Returns expire time in seconds"""
+        return self._expire
+
+    @expire.setter
+    def expire(self, secs):
+        """Sets expire time in seconds"""
+        self._expire = secs
+        if self.cache:
+            self.cache.expire(self.key, secs)
+
+
+class CachedSequence(CachedCollection, collections.abc.MutableSequence):
+
+    def save(self):
+        if self.cache and self.memory is not None:
+            self.cache.delete(self.key)
+            for v in self.memory:
+                self.cache.rpush(self.key, pickle.dumps(v))
+
+    def load(self):
+        if self.cache and self.memory is not None:
+            self.memory.clear()
+            y = self.cache.llen(self.key)
+            mm = [pickle.loads(m) for m in self.cache.lrange(self.key, 0, y)]
+            self.memory.extend(mm)
+
+    def load_range(self, x=0, y=None):
+        if self.cache and self.memory is not None:
+            if y is None:
+                y = self.cache.llen(self.key)
+            mm = [pickle.loads(m) for m in self.cache.lrange(self.key, x, y)]
+            self.memory.extend(mm)
+
+    def insert(self, index, value):
+        raise NotImplementedError('TODO')
+
+    def append(self, value):
+        self.memory.append(value)
+        if self.cache:
+            self.cache.rpush(self.key, pickle.dumps(value))
+
+    def __getitem__(self, key):
+        try:
+            if self.ttl() < 1:
+                raise IndexError("Key expired", key)
+            return self.memory[key]
+        except IndexError:
+            if self.cache and key < self.cache.llen(self.key):
+                # Load wanted index from cache
+                v = pickle.loads(self.cache.lindex(self.key, key))
+                # Make sure that memory has enough items to satisfy the same key
+                # next time.
+                # (No need to append v to memory, load_range includes v.)
+                if key >= len(self.memory):
+                    self.load_range(len(self.memory), key)
+                lm = len(self.memory)
+                assert lm == key + 1, 'len memory {} != key+1 {}'.format(lm, key + 1)
+                return v
+            else:
+                raise
+
+    def __setitem__(self, key, value):
+        self.memory[key] = value
+        if self.cache:
+            self.cache.lset(self.key, key, pickle.dumps(value))
+
+    def __len__(self):
+        if self.cache:
+            return self.cache.llen(self.key)
+        else:
+            return len(self.memory)
+
+    def __delitem__(self, key):
+        raise NotImplementedError('TODO')
+
+
+class CachedMapping(CachedCollection, collections.abc.MutableMapping):
+
+    def save(self):
+        self.cache.delete(self.key)
+        for k, v in self.memory.items():
+            self.cache.hset(self.key, k, pickle.dumps(v))
+
+    def load(self):
+        if self.cache and self.memory:
+            self.memory.clear()
+            self.memory.update(self.cache.hgetall(self.key))
+
+    def __getitem__(self, key):
+        try:
+            if self.ttl() < 1:
+                raise KeyError("Key expired", key)
+            return self.memory[key]
+        except KeyError:
+            if self.cache and self.cache.hexists(self.key, key):
+                v = pickle.loads(self.cache.hget(self.key, key))
+                self[key] = v
+                return v
+            else:
+                raise
+
+    def __setitem__(self, key, value):
+        self.memory[key] = value
+        if self.cache:
+            self.cache.hset(self.key, key, pickle.dumps(value))
+
+    def __iter__(self):
+        if self.cache:
+            for k, v in self.cache.hscan_iter(self.key):
+                yield k
+        else:
+            return self.memory.__iter__()
+
+    def __len__(self):
+        if self.cache:
+            return self.cache.hlen(self.key)
+        else:
+            return len(self.memory)
+
+    def __delitem__(self, key):
+        del self.memory[key]
+        if self.cache:
+            self.cache.hdel(self.key)
+
+    def __contains__(self, key):
+        if self.cache:
+            return True if self.cache.hexists(self.key, key) else False
+        else:
+            return key in self.memory
+
+
+class CachedDefaultMapping(CachedMapping):
+
+    def __init__(self, default_factory, memory, cache=None, key='pym:cached_hash', expire=None):
+        super().__init__(memory=memory, cache=cache, key=key, expire=expire)
+        self.default_factory = default_factory
+
+    def __getitem__(self, key):
+        try:
+            if self.ttl() < 1:
+                raise KeyError("Key expired", key)
+            return self.memory[key]
+        except KeyError:
+            if self.cache and self.cache.hexists(self.key, key):
+                v = pickle.loads(self.cache.hget(self.key, key))
+                self[key] = v
+                return v
+            else:
+                return self.__missing__(key)
+
+    def __missing__(self, key):
+        if not self.default_factory:
+            raise KeyError(key)
+        v = self.default_factory(key)
+        self[key] = v
+        return v
