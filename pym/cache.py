@@ -792,7 +792,10 @@ class CachedCollection():
         if self.cache:
             return self.cache.ttl(self.key)
         else:
-            return time.time() - self.ctime
+            if self._expire:
+                return self.ctime + self._expire - time.time()
+            else:
+                return 999999
 
     def clear(self):
         """Clears collection in memory and in cache."""
@@ -827,7 +830,10 @@ class CachedCollection():
         """Sets expire time in seconds"""
         self._expire = secs
         if self.cache:
-            self.cache.expire(self.key, secs)
+            if secs:
+                self.cache.expire(self.key, secs)
+            else:
+                self.cache.persist(self.key)
 
 
 class CachedSequence(CachedCollection, collections.abc.MutableSequence):
