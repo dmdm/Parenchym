@@ -18,6 +18,7 @@ from hashlib import md5
 from dogpile.cache import make_region
 # noinspection PyPackageRequirements
 from dogpile.cache.api import NO_VALUE
+import sys
 import yaml
 import pym.exc
 from pym.i18n import _
@@ -788,19 +789,24 @@ class CachedCollection():
     def ttl(self):
         """
         Returns time-to-live in seconds.
+
+        If no expire time is set, returns None.
         """
         if self.cache:
-            return self.cache.ttl(self.key)
+            v = self.cache.ttl(self.key)
+            if v == -1:
+                return None
         else:
-            if self._expire:
-                return self.ctime + self._expire - time.time()
+            if self._expire is None:
+                return None
             else:
-                return 999999
+                return self.ctime + self._expire - time.time()
 
     def clear(self):
         """Clears collection in memory and in cache."""
         self.memory.clear()
         self.cache.delete(self.key)
+        self.ctime = time.time()
 
     @abc.abstractmethod
     def save(self):
@@ -830,10 +836,10 @@ class CachedCollection():
         """Sets expire time in seconds"""
         self._expire = secs
         if self.cache:
-            if secs:
-                self.cache.expire(self.key, secs)
-            else:
+            if secs is None:
                 self.cache.persist(self.key)
+            else:
+                self.cache.expire(self.key, secs)
 
 
 class CachedSequence(CachedCollection, collections.abc.MutableSequence):
@@ -868,9 +874,10 @@ class CachedSequence(CachedCollection, collections.abc.MutableSequence):
 
     def __getitem__(self, key):
         try:
-            if self.ttl() < 1:
-                raise IndexError("Key expired", key)
-            return self.memory[key]
+            if self.ttl() is None or self.ttl() > 0:
+                return self.memory[key]
+            else:
+                raise KeyError("Key expired", key)
         except IndexError:
             if self.cache and key < self.cache.llen(self.key):
                 # Load wanted index from cache
@@ -915,9 +922,10 @@ class CachedMapping(CachedCollection, collections.abc.MutableMapping):
 
     def __getitem__(self, key):
         try:
-            if self.ttl() < 1:
+            if self.ttl() is None or self.ttl() > 0:
+                return self.memory[key]
+            else:
                 raise KeyError("Key expired", key)
-            return self.memory[key]
         except KeyError:
             if self.cache and self.cache.hexists(self.key, key):
                 v = pickle.loads(self.cache.hget(self.key, key))
@@ -964,9 +972,10 @@ class CachedDefaultMapping(CachedMapping):
 
     def __getitem__(self, key):
         try:
-            if self.ttl() < 1:
+            if self.ttl() is None or self.ttl() > 0:
+                return self.memory[key]
+            else:
                 raise KeyError("Key expired", key)
-            return self.memory[key]
         except KeyError:
             if self.cache and self.cache.hexists(self.key, key):
                 v = pickle.loads(self.cache.hget(self.key, key))
