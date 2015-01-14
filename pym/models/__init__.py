@@ -329,7 +329,7 @@ def init_unscoped(settings, prefix):
     """
     Initializes unscoped SQLAlchemy by rc settings.
 
-    Creates engine, binds a scoped session and declarative base.
+    Creates engine, binds a regular session and declarative base.
     Call this function for global initialization of the WebApp.
 
     Initialises the module globals ``DbEngine``, ``DbSession`` and ``DbBase``.
