@@ -1,9 +1,11 @@
 import datetime
 import enum
 import functools
+from json.decoder import WHITESPACE
 import re
 import json
 import decimal
+import colander
 
 import sqlalchemy as sa
 import yaml
@@ -76,8 +78,22 @@ class JsonEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, datetime.timedelta):
             return str(obj)
+        if isinstance(obj, colander._null):
+            return '<colander.null>'
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
+
+
+class JsonDecoder(json.JSONDecoder):
+
+    def __init__(self):
+        json.JSONDecoder.__init__(self, object_hook=self.dict_to_object)
+
+    def dict_to_object(self, d):
+        for k in d.keys():
+            if d[k] == '<colander.null>':
+                d[k] = colander.null
+        return d
 
 
 json_serializer = functools.partial(
@@ -88,7 +104,11 @@ json_serializer = functools.partial(
     cls=JsonEncoder
 )
 
-json_deserializer = json.loads
+# json_deserializer = json.loads
+json_deserializer = functools.partial(
+    json.loads,
+    cls=JsonDecoder
+)
 
 dump_yaml = functools.partial(
     yaml.dump,
