@@ -143,7 +143,11 @@ def safepath(path, split=True, sep=os.path.sep):
     for a in aa:
         if a == '':
             continue
-        b = a.strip().lstrip('.-').replace('/', '').replace('\\', '').replace(':', '')
+        if a == '.' or a == '..':
+            b = a
+        else:
+            b = a.strip().lstrip('.-').replace('/', '').replace('\\', '') \
+                .replace(':', '')
         bb.append(b)
     res = normpath(sep.join(bb))
     return res
