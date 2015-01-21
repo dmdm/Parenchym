@@ -451,7 +451,7 @@ def exists(sess, name, schema='public'):
 
 
 def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
-           dict_class=collections.OrderedDict, special_cols=None):
+           dict_class=collections.OrderedDict, special_cols=None, qual_sep='_'):
     """
     Transmogrifies input into dict.
 
@@ -534,6 +534,8 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
     :type dict_class: type
     :param special_cols: List of columns that are treated specially, i.e. put
         at the end. If None, these are the columns of :class:`PymMixin`.
+    :param qual_sep: Separator (char) for qualified names. Defaults to ``_``
+        (underscore).
     """
     if special_cols is None:
         special_cols = ['id', 'owner_id', 'ctime', 'editor_id', 'mtime',
@@ -557,7 +559,7 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
                     fm = fmap[qual]
                 except (TypeError, KeyError):
                     fm = None
-                qual += '.'
+                qual += qual_sep
             else:
                 incl = includes
                 excl = excludes
