@@ -457,6 +457,10 @@ class Validator(object):
             r = []
             for x in v:
                 try:
+                    # We may be called from a POST request that uses json_body as input.
+                    # Then v is already typed.
+                    if isinstance(x, bool):
+                        r.append(x)
                     if x[0].lower() in ('t', 'true', 'on', '1'):
                         r.append(True)
                     elif x[0].lower() in ('f', 'false', 'off', '0'):
@@ -468,6 +472,10 @@ class Validator(object):
                         "Not a boolean: '{}'->'{}'".format(k, x))
             return r
         else:
+            # We may be called from a POST request that uses json_body as input.
+            # Then v is already typed.
+            if isinstance(v, bool):
+                return v
             try:
                 if v.lower() in ('t', 'true', 'on', '1'):
                     r = True
