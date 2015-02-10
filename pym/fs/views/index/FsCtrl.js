@@ -2,7 +2,7 @@ var FsCtrl = PymApp.controller('FsCtrl',
         ['$scope', '$http', '$q', '$window', '$upload', 'RC', 'T', 'PymApp.GridTools', 'uiGridConstants',
 function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,          uiGridConstants) {
 
-    $scope.model = {};
+    $scope.model = $scope.model || {};
 
     $scope.FileBrowser = {
         files: [],

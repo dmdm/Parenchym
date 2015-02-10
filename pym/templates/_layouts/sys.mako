@@ -121,7 +121,7 @@
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
                     ['$scope', '$http',
             function ($scope,   $http) {
-                $scope.model = {};
+                $scope.model = $scope.model || {};
                 $scope.model.items = {};
 
                 function load_menu_items()

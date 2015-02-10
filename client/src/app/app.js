@@ -5,6 +5,9 @@ function (angular, PYM) {
 
     var PymApp = angular.module('PymApp', PYM_APP_INJECTS);
 
+    PymApp.constant('angularMomentConfig', {
+        timezone: 'Europe/Berlin'
+    });
 
     PymApp.config(
         [

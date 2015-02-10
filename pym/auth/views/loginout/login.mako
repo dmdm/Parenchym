@@ -77,7 +77,7 @@ function( doc,                   angular,  PYM,       PymApp) {
             ['$scope', '$http', '$q', '$window', 'RC', 'OIDC_CLIENTS',
     function ($scope,   $http,   $q,   $window,   RC,   OIDC_CLIENTS) {
 
-        $scope.model = {};
+        $scope.model = $scope.model || {};
         $scope.model.isSignedIn = false;
         $scope.model.immediateFailed = true;
 

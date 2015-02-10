@@ -40,7 +40,7 @@ function( doc,                   angular,  PYM,       PymApp) {
             ['$scope', '$http', '$q', '$window', 'RC',
     function ($scope,   $http,   $q,   $window,   RC) {
 
-        $scope.model = {};
+        $scope.model = $scope.model || {};
 
         /*
          * Tools menu
