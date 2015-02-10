@@ -185,6 +185,14 @@ function (angular, PYM) {
                 this.gridDef.loadItems();
             };
 
+            Pager.prototype.firstRow = function () {
+                return (this.currentPage - 1) * this.pageSize + 1;
+            };
+
+            Pager.prototype.lastRow = function () {
+                return (this.currentPage - 1) * this.pageSize + this.loadedItems;
+            };
+
             this.attachPager = function (gridDef, opts) {
                 var pager = new Pager(gridDef, opts);
                 gridDef.pym.pager = pager;
@@ -199,7 +207,7 @@ function (angular, PYM) {
              * @description Sorter provides tools for external sorting.
              * Sorter expects an object with the grid definition.
              * The gridDef must have
-             *   - hash ``options.columnDefsByField`` that
+             *   - hash ``options.indexedColumnDefs`` that
              *     indexes columnDefs by field name
              *   - method ``loadItems()`` to load the items
              *   - property ``pym``, an object that gets filled with grid tool
@@ -218,7 +226,7 @@ function (angular, PYM) {
              *   $scope.BrowseGrid = {
              *      pym: {},
              *      loadItems: function (),
-             *      options.columnDefsByField: {},
+             *      options.indexedColumnDefs: {},
              *      onRegisterApi: function(gridApi) {
              *          $scope.browseGridApi = gridApi;
              *          $scope.browseGridApi.core.on.sortChanged(
@@ -258,7 +266,7 @@ function (angular, PYM) {
             Sorter.prototype.gridApplyInitialSort = function () {
                 var self = this;
                 angular.forEach(self.opts.initialSortDef, function (sd) {
-                    self.gridDef.options.columnDefsByField[sd[0]] = {
+                    self.gridDef.options.indexedColumnDefs[sd[0]] = {
                         direction: sd[1],
                         priority: sd[2]
                     };
@@ -295,19 +303,24 @@ function (angular, PYM) {
 
             // ===[ ENHANCEMENTS ]=======
 
-            function indexColumnDefs () {
+            function indexColumnDefs (RC) {
                 var self = this; // Will reference the gridDef object
-                self.options.columnDefsByField = {};
+                self.options.indexedColumnDefs = {};
                 angular.forEach(self.options.columnDefs, function (cd) {
-                    self.options.columnDefsByField[cd.field] = cd;
+                    self.options.indexedColumnDefs[cd.name || cd.field] = cd;
                 });
+                if (RC && RC.col_display_names) {
+                    angular.forEach(self.options.columnDefs, function (cd) {
+                        cd['displayName'] = RC.col_display_names[cd.name || cd.field];
+                    });
+                }
             }
 
             /**
              * @description Enhances given grid definition.
              *
              * - Inserts method ``indexColumnDefs()`` that indexes the
-             *   ``options.columnDefs`` into ``options.columnDefsByField`` by
+             *   ``options.columnDefs`` into ``options.indexedColumnDefs`` by
              *   their ``field`` properties.
              * - Inits property ``pym`` to become an object container for
              *   other grid tool instances like sorter etc.
@@ -321,7 +334,7 @@ function (angular, PYM) {
                     filter: null,
                     spinner: false
                 };
-                gridDef.options.columnDefsByField = {};
+                gridDef.options.indexedColumnDefs = {};
                 gridDef.indexColumnDefs = indexColumnDefs;
             };
         }
@@ -374,6 +387,47 @@ function (angular, PYM) {
                 state: '='
             },
             template: '<i class="fa fa-spinner fa-spin" ng-show="state"></i>'
+        };
+    });
+
+    PymApp.directive('pymGridFooter', function() {
+        return {
+            restrict: 'E',
+            scope: {
+                gridPager: '=',
+                spinner: '='
+            },
+            template: ''
+                +'<div class="pym-grid-footer">'
+                +'  <div class="pym-grid-pagination">'
+                +      '<pagination class="pagination pagination-sm"'
+                +                  'total-items="gridPager.totalItems"'
+                +                  'items-per-page="gridPager.pageSize"'
+                +                  'ng-model="gridPager.currentPage"'
+                +                  'ng-change="gridPager.changed()"'
+                +                  'boundary-links="true"'
+                +                  'previous-text="&lsaquo;" next-text="&rsaquo;"'
+                +                  'first-text="&laquo;" last-text="&raquo;"'
+                +                  'max-size="3"'
+                +              '>'
+                +      '</pagination>'
+                +'  </div>'
+                +   '<div class="page">'
+                +    '<input type="number" ng-model="gridPager.currentPage"'
+                +            'ng-change="gridPager.changed()"'
+                +            'class="form-control">'
+                +'  </div>'
+                +'  <div class="pageSizeChooser">'
+                +    '<select ng-model="gridPager.pageSize"'
+                +            'ng-change="gridPager.sizeChanged()"'
+                +            'ng-options="v for v in gridPager.pageSizes"'
+                +            'class="form-control">'
+                +    '</select>'
+                +'  </div>'
+                +'  <div class="spacer"></div>'
+                +'  <div class="rowNumbers">{{gridPager.firstRow()|number}}-{{gridPager.lastRow()|number}} of {{gridPager.totalItems|number}}</div>'
+                +'  <div class="spinner"><pym-spinner state="spinner"></pym-spinner></div>'
+                +'</div>'
         };
     });
 
