@@ -11,9 +11,21 @@ function (angular, PYM) {
 
     PymApp.config(
         [
-                      '$httpProvider', '$provide', 'uiSelectConfig',
-            function ( $httpProvider,   $provide,   uiSelectConfig) {
-
+                      '$httpProvider', '$provide', 'uiSelectConfig', '$compileProvider',
+            function ( $httpProvider,   $provide,   uiSelectConfig,   $compileProvider) {
+                /**
+                 * Disable debug data
+                 *
+                 * Re-enable in a debug console with:
+                 *
+                 *     angular.reloadWithDebugInfo();
+                 *
+                 * See https://docs.angularjs.org/guide/production
+                 */
+                $compileProvider.debugInfoEnabled(false);
+                /**
+                 * Intercept HTTP errors to growl
+                 */
                 $provide.factory('PymHttpErrorInterceptor',
                     [
                         '$q',
@@ -28,12 +40,18 @@ function (angular, PYM) {
                     ]
                 );
                 $httpProvider.interceptors.push('PymHttpErrorInterceptor');
+                /**
+                 * Re-enable the XMLHttpRequest header
+                 */
                 $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
+                /**
+                 * Configure ui-select
+                 */
                 uiSelectConfig.theme = 'bootstrap';
             }
         ]
     );
+
 
     /**
      * @description Tools for ui-grid
