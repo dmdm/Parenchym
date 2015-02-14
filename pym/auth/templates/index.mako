@@ -9,7 +9,7 @@
     node_auth = node_sys[NODE_NAME_SYS_AUTH_MGR]
     url_to = request.resource_url
 %>
-<%inherit file="pym:templates/_layouts/sys.mako" />
+<%inherit file="pym:templates/layouts/sys.mako" />
 <%block name="meta_title">Authentication Manager</%block>
 <%block name="styles">
 ${parent.styles()}

@@ -1,4 +1,4 @@
-<%inherit file="pym:templates/_layouts/sys.mako" />
+<%inherit file="pym:templates/layouts/sys.mako" />
 <%block name="meta_title">Manage Principals</%block>
 <%block name="styles">
 ${parent.styles()}

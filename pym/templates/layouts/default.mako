@@ -1,4 +1,4 @@
-<%namespace name="pym" file="pym:templates/_lib/pym.mako" inheritable="True"/>
+<%namespace name="pym" file="pym:templates/lib/pym.mako" inheritable="True"/>
 
 <!DOCTYPE html>
 <html class="no-js">
@@ -100,7 +100,7 @@
 
         <div id="page_container"><!-- BEGIN #page_container -->
 
-            <%include file="pym:templates/_layouts/page_header.mako" args="parent=self, pym=pym, render_flash=False" />
+            <%include file="pym:templates/layouts/page_header.mako" args="parent=self, pym=pym, render_flash=False" />
 
             <div id="page_content"><!-- BEGIN #page_content -->
                   ${next.body()}
@@ -108,7 +108,7 @@
 
         </div><!-- END #page_container -->
 
-        <%include file="pym:templates/_layouts/page_footer.mako" />
+        <%include file="pym:templates/layouts/page_footer.mako" />
         <script>
         require(['requirejs/domReady!', 'ng',     'pym/pym', 'pym/app'],
         function( doc,                   angular,  PYM,       PymApp) {

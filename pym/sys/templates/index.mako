@@ -1,7 +1,7 @@
 <%!
     from pym.auth.const import NODE_NAME_SYS_AUTH_MGR
 %>
-<%inherit file="pym:templates/_layouts/sys.mako" />
+<%inherit file="pym:templates/layouts/sys.mako" />
 <%block name="meta_title">System</%block>
 <%block name="styles">
 ${parent.styles()}
