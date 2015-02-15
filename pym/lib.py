@@ -69,6 +69,13 @@ class Enum(enum.Enum):
             return [(name, member.value)
                 for name, member in cls.__members__.items()]
 
+    @classmethod
+    def by_val(cls, v):
+        for m in cls.__members__.values():
+            if m.value == v:
+                return m
+        raise KeyError("Member with value '{}' not found".format(v))
+
 
 class JsonEncoder(json.JSONEncoder):
     def default(self, obj):
