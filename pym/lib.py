@@ -332,7 +332,7 @@ def build_breadcrumbs(request):
             bc.append(elem.title)
         bcs.append(bc)
     if request.view_name:
-        bcs.append([None, request.view_name.capitalize()])
+        bcs.append([None, request.view_name.replace('_', ' ').title()])
     return bcs
 
 
