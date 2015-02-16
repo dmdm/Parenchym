@@ -465,7 +465,7 @@ to display the error messages.
     <%self:tag t="button" close="${True}" classes="${classes}" styles="${styles}" attr="${attr}">${text|n}</%self:tag>
 </%def>
 
-<%def name="form_button_row(cancel, col_classes, form)">
+<%def name="form_button_row(col_classes, form, cancel=None)">
     <%doc>
     Renders a button row below the form with cancel and save button.
 
@@ -486,7 +486,9 @@ to display the error messages.
         <div class="${col_classes}">
             <div class="form-button-row">
                 <%self:submit_button form="${form}"></%self:submit_button>
-                <%self:cancel_button click="${cancel}"></%self:cancel_button>
+                %if cancel:
+                    <%self:cancel_button click="${cancel}"></%self:cancel_button>
+                %endif
                 ${caller.body()}
             </div>
         </div>
@@ -586,6 +588,8 @@ to display the error messages.
                    the input control.
     </%doc>
     <%
+        if columns is None:
+            columns = ()
         if label_classes is None:
             label_classes = []
         label_classes.append(columns[0] + str(columns[1]))
@@ -644,6 +648,8 @@ to display the error messages.
     - messages_classes: Optional list of CSS classes for the message block.
     </%doc>
     <%
+        if columns is None:
+            columns = ()
         if label_classes is None:
             label_classes = []
         label_classes.append(columns[0] + str(columns[1]))
@@ -664,6 +670,68 @@ to display the error messages.
         <%self:messages form="${form}" field="${field}" classes="${messages_classes}">
         </%self:messages>
         ${caller.body()}
+    </%self:form_group>
+</%def>
+
+
+<%def name="empty_form_group(form, field, label,
+        orient='vertical', columns=None,
+        label_visible=True, label_classes=None, label_styles=None, label_attr=None,
+        input_container_classes=None, messages_classes=None)">
+    <%doc>
+    Renders an empty form group with caller's body as the control.
+
+    If orient is "horizontal", wraps caller's body in a div with
+    ``input_container_classes``.
+
+    Arguments:
+
+    - form: Name of the form
+    - field: Name of the field
+    - label: Text of label.
+    - orient: Orientation, see ``form``.
+    - columns: Optional 3-tuple: [0] = Prefix string for column classes, e.g.
+               "col-sm-". This will be used as e.g. "col-sm-6" or
+               "col-sm-offset-6". [1] Number of columns for the label. [2] Number
+               of columns for the control.
+    - label_visible: True (default) to display label, False to hide it and mark
+                     it as for screen readers only.
+    - label_classes: Optional list of CSS classes for the label.
+    - label_styles: Optional dict of CSS styles for the label.
+    - label_attr: Optional dict of additional attributes for the label.
+    - input_container_classes: Optional list of CSS classes for the container of
+                               the input control.
+    - messages_classes: Optional list of CSS classes for the message block.
+    </%doc>
+    <%
+        if label_classes is None:
+            label_classes = []
+        if columns is None:
+            columns = ()
+        if input_container_classes is None:
+            input_container_classes = []
+        if messages_classes is None:
+            messages_classes = []
+        if orient == 'horizontal':
+            label_classes.append(columns[0] + str(columns[1]))
+            input_container_classes.append(columns[0] + str(columns[2]))
+            messages_classes.append(columns[0] + 'offset-' + str(columns[1]))
+    %>
+    <%self:form_group form="${form}" field="${field}">
+        <%self:label for_="${field}" visible="${label_visible}"
+            classes="${label_classes}" styles="${label_styles}"
+            attr="${label_attr}">${label}</%self:label>
+
+        %if orient in ('horizontal', ):
+           <%self:tag t="div" classes="${input_container_classes}">
+                ${caller.body()}
+           </%self:tag>
+        %else:
+            ${caller.body()}
+        %endif
+
+        <%self:messages form="${form}" field="${field}" classes="${messages_classes}">
+        </%self:messages>
     </%self:form_group>
 </%def>
 
