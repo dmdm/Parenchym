@@ -24,12 +24,17 @@ class DataSet():
         columns of the result data (if the row of the result data is a dict, its
         an :class:`~collection.OrderedDict`.
 
+        Attribute ``initial_sort_def`` defines the initial sort parameters.
+        It is a list of 3-tuples (field_name, sort_oder, priority), see
+        angular ui-grid external sorting for details.
+
         :param sess: Instance of a DB session.
         """
         self.sess = sess
         self.col_map = {}
         self.col_titles = {}
         self.col_order = []
+        self.initial_sort_def = [['id', 'desc', 0]]
 
     def init_col_defs(self, *args, excludes=None):
         """

@@ -38,10 +38,10 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                 params: {}
             };
             httpConfig.params.path = self.pathToStr();
-            self.pym.spinner = true;
+            self.pym.loading = true;
             $http.get(RC.urls.ls, httpConfig)
             .then(function (resp) {
-                self.pym.spinner = false;
+                self.pym.loading = false;
                 if (resp.data.ok) {
                     self.data = resp.data.data.rows;
                 }
@@ -49,7 +49,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                     PYM.growl_ajax_resp(resp.data);
                 }
             }, function (result) {
-                self.pym.spinner = false;
+                self.pym.loading = false;
             });
         },
         rm: function () {
