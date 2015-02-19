@@ -3,45 +3,6 @@ define(PYM_APP_REQUIREMENTS,
 function (angular, PYM) {
     'use strict';
 
-    /**
-     * Module copied from
-     * https://github.com/shahata/angular-debounce
-     */
-    angular.module('debounce', [])
-        .service('debounce', ['$timeout', function ($timeout) {
-            return function (func, wait, immediate) {
-                var timeout, args, context, result;
-
-                function debounce() {
-                    /* jshint validthis:true */
-                    context = this;
-                    args = arguments;
-                    var later = function () {
-                        timeout = null;
-                        if (!immediate) {
-                            result = func.apply(context, args);
-                        }
-                    };
-                    var callNow = immediate && !timeout;
-                    if (timeout) {
-                        $timeout.cancel(timeout);
-                    }
-                    timeout = $timeout(later, wait);
-                    if (callNow) {
-                        result = func.apply(context, args);
-                    }
-                    return result;
-                }
-
-                debounce.cancel = function () {
-                    $timeout.cancel(timeout);
-                    timeout = null;
-                };
-                return debounce;
-            };
-        }]);
-
-    PYM_APP_INJECTS.push('debounce');
     var PymApp = angular.module('PymApp', PYM_APP_INJECTS);
 
     PymApp.constant('angularMomentConfig', {
@@ -123,8 +84,8 @@ function (angular, PYM) {
      *      </div>
      */
     PymApp.service('PymApp.GridTools',
-                 ['$http', 'debounce',
-        function ( $http,   debounce ) {
+                 ['$http', '$timeout', 'uiGridConstants',
+        function ( $http,   $timeout,   uiGridConstants ) {
 
             // ===[ FILTER ]=======
 
@@ -166,28 +127,52 @@ function (angular, PYM) {
                 angular.extend(this, opts);
                 this.filter = null;
                 this.timer = null;
+                this.activationState = 0;
+                this.allowedOperators = [
+                    '=', '<', '<=', '>', '>=', '!=',
+                    '!', '~', '!~'
+                ];
             };
+
+            Filter.prototype.buildFilter = function (grid) {
+                var self = this,
+                    fil = [];
+                angular.forEach(grid.columns, function (col) {
+                    angular.forEach(col.filters, function (f) {
+                        if (f.term) {
+                            var op, t;
+                            op = f.term[0] + f.term[1];
+                            t = f.term.slice(2)
+                            console.log('try 1', op, t);
+                            if (self.allowedOperators.indexOf(op) < 0) {
+                                op = f.term[0];
+                                t = f.term.slice(1);
+                                console.log('try 2', op, t);
+                                if (self.allowedOperators.indexOf(op) < 0) {
+                                    op = 'like';
+                                    t = f.term;
+                                }
+                            }
+                            if (op == '!') op = '!like';
+                            fil.push([col.field, op, 'i', t]);
+                        }
+                    });
+                });
+                if (!fil) {
+                    self.filter = null;
+                }
+                else {
+                    self.filter = ['a', fil];
+                }
+                self.gridDef.loadItems();
+            }
 
             Filter.prototype.changed = function (grid) {
                 var self = this;
-
-                function buildFilter() {
-                    var fil = [];
-                    angular.forEach(grid.columns, function (col) {
-                        if (col.filters[0] && col.filters[0].term) {
-                            fil.push([col.field, 'like', 'i', col.filters[0].term]);
-                        }
-                    });
-                    if (!fil) {
-                        self.filter = null;
-                    }
-                    else {
-                        self.filter = ['a', fil];
-                    }
-                    self.gridDef.loadItems();
-                }
-
-                debounce(buildFilter, self.delay)();
+                if (this.timer) $timeout.cancel(this.timer);
+                this.timer = $timeout(function () {
+                    self.buildFilter.call(self, grid);
+                }, this.delay);
             };
 
             Filter.prototype.clear = function () {
@@ -200,6 +185,22 @@ function (angular, PYM) {
                 });
                 this.filter = null;
             };
+
+            Filter.prototype.toggle = function () {
+                console.log('toggling');
+                var self = this;
+                if (self.activationState == 0) {
+                    self.activationState = 1;
+                }
+                else if (self.activationState == 1) {
+                    self.activationState = 2;
+                }
+                else if (self.activationState == 2) {
+                    self.activationState = 0;
+                }
+                self.gridDef.api.core.refresh();
+                console.log('new activationState', self.activationState);
+            }
 
             /**
              * @ngdoc method
@@ -217,6 +218,7 @@ function (angular, PYM) {
                 else {
                     params.fil = null;
                 }
+                console.log('FILTER', params.fil);
             };
 
             this.attachFilter = function (gridDef, opts) {
@@ -593,12 +595,35 @@ function (angular, PYM) {
     PymApp.directive('pymGridFooter', function() {
         return {
             restrict: 'E',
+            scope: {},
+            transclude: true,
+            template: ''
+                +'<div class="pym-grid-footer" ng-transclude>'
+                +'</div>'
+        };
+    });
+
+    PymApp.directive('pymGridToggleFilter', function() {
+        return {
+            restrict: 'E',
+            scope: {
+                gridFilter: '='
+            },
+            template: ''
+                +'<button class="pym-grid-toggle-filter btn btn-default form-control input-sm" ng-click="gridFilter.toggle()">'
+                +  '<i class="fa fa-filter"></i>'
+                +'</button>'
+        };
+    });
+
+    PymApp.directive('pymGridPagination', function() {
+        return {
+            restrict: 'E',
             scope: {
                 gridPager: '=',
                 spinner: '='
             },
             template: ''
-                +'<div class="pym-grid-footer">'
                 +'  <div class="pym-grid-pagination">'
                 +      '<pagination class="pagination pagination-sm"'
                 +                  'total-items="gridPager.totalItems"'
@@ -615,19 +640,18 @@ function (angular, PYM) {
                 +   '<div class="page">'
                 +    '<input type="number" ng-model="gridPager.currentPage"'
                 +            'ng-change="gridPager.changed()"'
-                +            'class="form-control">'
+                +            'class="form-control input-sm">'
                 +'  </div>'
-                +'  <div class="pageSizeChooser">'
+                +'  <div class="page-size-chooser">'
                 +    '<select ng-model="gridPager.pageSize"'
                 +            'ng-change="gridPager.sizeChanged()"'
                 +            'ng-options="v for v in gridPager.pageSizes"'
-                +            'class="form-control">'
+                +            'class="form-control input-sm">'
                 +    '</select>'
                 +'  </div>'
                 +'  <div class="spacer"></div>'
-                +'  <div class="rowNumbers">{{gridPager.firstRow()|number}}-{{gridPager.lastRow()|number}} of {{gridPager.totalItems|number}}</div>'
+                +'  <div class="row-numbers">{{gridPager.firstRow()|number}}-{{gridPager.lastRow()|number}} of {{gridPager.totalItems|number}}</div>'
                 +'  <div class="spinner"><pym-spinner state="spinner"></pym-spinner></div>'
-                +'</div>'
         };
     });
 

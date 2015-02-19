@@ -1,7 +1,10 @@
 import datetime
 import re
+import dateutil.parser
 import sqlalchemy as sa
 import sqlalchemy.sql.expression
+import sqlalchemy.sql.sqltypes as sqty
+import sqlalchemy.sql.operators as sqop
 from pym.exc import ValidationError
 from pym.lib import json_deserializer
 
@@ -166,14 +169,35 @@ class FilterValidator(object):
 
         self.allowed_fields = ('id', )
         """List of field names that are allowed in a filter expression"""
-        self.allowed_operators = (
-            '=', '<', '<=', '>', '>=', 'like', '~',
-            '!=', '!like', '!~'
-            '=*', '<*', '<=*', '>*', '>=*', 'like*', '~*',
-            '!=*', '!like*', '!~*'
-        )
+        self.operator_map = {
+            '=': sqop.eq,
+            '<': sqop.lt,
+            '<=': sqop.le,
+            '>': sqop.gt,
+            '>=': sqop.ge,
+            'like': sqop.like_op
+        }
+        ops = list(self.operator_map.keys()) + ['~']
+        self.allowed_operators = tuple(ops + ['!' + op for op in ops])
+        self.numerical_operators = ('=', '<', '<=', '>', '>=', '!=')
         """List of (prefix '!' means negation, suffix '*' means
         case-insensitive)"""
+        self.integer_types = (
+            sqty.BIGINT, sqty.BigInteger,
+            sqty.FLOAT, sqty.Float,
+            sqty.INT, sqty.INTEGER, sqty.Integer
+        )
+        self.float_types = (
+            sqty.DECIMAL, sqty.decimal,
+            sqty.FLOAT, sqty.Float,
+            sqty.NUMERIC, sqty.Numeric,
+            sqty.REAL
+        )
+        self.date_types = (
+            sqty.DATE, sqty.Date,
+            sqty.DATETIME, sqty.DateTime,
+            sqty.TIME, sqty.Time
+        )
         self.allowed_conjunctions = ('a', 'o')  # And, Or
         """List of conjunctions."""
         self.allowed_case_sensitivity = ('s', 'i')  # case Sensitive, Insensitive
@@ -298,9 +322,57 @@ class FilterValidator(object):
         fil = []
         for thing in fil_struct[1]:
             fld, op, case, val = thing
-            f = sa.sql.expression.cast(col_map[fld], sa.UnicodeText)
-            v = '%' + val.strip().replace(' ', '%') + '%'
-            fil.append(f.ilike(v))
+            # print('INPUT', fld, op, case, val)
+            if op.startswith('!'):
+                neg = True
+                op = op[1:]
+            else:
+                neg = False
+            f = col_map[fld]
+            ty = type(f.type)
+            # print('before', f, f.type, ty, type(ty))
+            # print(val, type(val))
+            if op == 'like':
+                if ty in self.integer_types or ty in self.float_types \
+                        or ty in self.date_types:
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+                v = '%' + val.strip().replace(' ', '%') + '%'
+            elif ty in self.date_types:
+                v = dateutil.parser.parse(val)
+            elif ty in self.integer_types and op in self.numerical_operators:
+                try:
+                    v = int(val)
+                except ValueError:
+                    v = val
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+            elif ty in self.float_types and op in self.numerical_operators:
+                try:
+                    v = float(val)
+                except ValueError:
+                    v = val
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+            else:
+                v = val
+            ty = type(f.type)
+            # print('after', f, f.type, ty)
+            # print(v, type(v))
+
+            if (op != 'like' and case == 'i') and (
+                            ty not in self.integer_types
+                            and ty not in self.float_types
+                            and ty not in self.date_types
+                    ):
+                v = v.lower()
+                f = sa.func.lower(f)
+
+            if op == 'like' and case == 'i':
+                expr = sqop.ilike_op(f, v)
+            else:
+                expr = self.operator_map[op](f, v)
+            if neg:
+                expr = sa.not_(expr)
+            # print(expr)
+            fil.append(expr)
         return fil
 
     def build_filter(self, fil, allowed_fields, col_map):
