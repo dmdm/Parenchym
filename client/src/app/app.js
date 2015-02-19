@@ -164,6 +164,9 @@ function (angular, PYM) {
                 else {
                     self.filter = ['a', fil];
                 }
+                if (self.gridDef.pym.pager) {
+                    self.gridDef.pym.pager.currentPage = 1;
+                }
                 self.gridDef.loadItems();
             }
 
