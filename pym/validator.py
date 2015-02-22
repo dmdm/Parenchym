@@ -355,10 +355,10 @@ class FilterValidator(object):
                     if ty in self.integer_types or ty in self.float_types \
                             or ty in self.date_types:
                         f = sa.sql.expression.cast(f, sa.UnicodeText)
-                # Apply '%' wisely to allow matching of fragments within
-                # field value: surround search value with '%' and also put '%'
-                # inside instead of blanks.
-                v = '%' + val.strip().replace(' ', '%') + '%'
+                    # Apply '%' wisely to allow matching of fragments within
+                    # field value: surround search value with '%' and also put
+                    # '%' inside instead of blanks.
+                    v = '%' + val.strip().replace(' ', '%') + '%'
             # In all other cases, i.e. operator is not 'LIKE', cast search value
             # to the type of the field. If search value failed to be cast, treat
             # field and search value as strings.
