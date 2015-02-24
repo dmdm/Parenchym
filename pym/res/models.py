@@ -5,7 +5,7 @@ from sqlalchemy.orm import (relationship, backref)
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.hybrid import hybrid_property
 import pyramid.security
-#from pyramid.decorator import reify
+from sqlalchemy.orm.exc import NoResultFound
 import zope.interface
 
 import pym.lib
@@ -28,48 +28,6 @@ class ISystemNode(zope.interface.Interface):
     pass
 
 
-# class RootNode(pym.lib.BaseNode):
-#     __name__ = 'root'
-#     __acl__ = [
-#         (Allow, 'g:wheel', ALL_PERMISSIONS),
-#     ]
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "Root"
-#         self['help'] = HelpNode(self)
-#         self['__sys__'] = ISystemNode(self)
-#
-#
-# # ===[ HELP ]=======
-#
-#
-# class HelpNode(pym.lib.BaseNode):
-#     __name__ = 'help'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "Help"
-#
-#     def __getitem__(self, item):
-#         return KeyError()
-#
-#
-# # ===[ SYSTEM ]======
-#
-#
-# class SystemNode(pym.lib.BaseNode):
-#     __name__ = '__sys__'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = "System"
-#         self['auth'] = pam.AuthNode(self)
-#
-#
-# root_node = RootNode(None)
-
-
 def root_factory(request):
     #return root_node
     sess = DbSession()
@@ -84,7 +42,7 @@ class ResourceNode(DbBase, DefaultMixin):
     __tablename__ = "resource_tree"
     # XXX Cannot use this unique constraint, because we might have child
     # XXX resources that have other unique requirements, e.g.
-    # XXX dbfs.models.FileNode that discriminates by revision.
+    # XXX fs.models.FsNode that discriminates by revision.
     #sa.UniqueConstraint('parent_id', 'name'),
     __table_args__ = (
         {'schema': 'pym'}
@@ -93,6 +51,8 @@ class ResourceNode(DbBase, DefaultMixin):
         'polymorphic_on': 'kind',
         'polymorphic_identity': 'res'
     }
+
+    IDENTITY_COL = None
 
     # Root resource has parent_id NULL
     parent_id = sa.Column(
@@ -198,8 +158,8 @@ class ResourceNode(DbBase, DefaultMixin):
         passive_deletes=True,
         # Typically, a resource is loaded during traversal. We need its full ACL
         # then.
-        lazy='select',
-        ##lazy='joined',
+        ##lazy='select',
+        lazy='joined',
         ##join_depth=1,
     )
 
@@ -217,49 +177,33 @@ class ResourceNode(DbBase, DefaultMixin):
         if user and group:
             raise pym.exc.PymError("Ace cannot reference user and group "
                                    "simultaneously.")
-        ace = pam.Ace()
 
-        if isinstance(owner, int):
-            ace.owner_id = owner
-        elif isinstance(owner, str):
-            o = sess.query(pam.User).filter(
-                pam.User.principal == owner
-            ).one()
-            ace.owner_id = o.id
-        else:
-            ace.owner_id = owner.id
-
+        owner = pam.User.find(sess, owner)
+        if isinstance(permission, pam.Permissions):
+            permission = permission.value
+        permission = pam.Permission.find(sess, permission)
+        fil = [
+            pam.Ace.allow == allow,
+            pam.Ace.permission_id == permission.id
+        ]
         if user:
-            if isinstance(user, int):
-                ace.user_id = user
-            elif isinstance(user, str):
-                u = sess.query(pam.User).filter(
-                    pam.User.principal == user
-                ).one()
-                ace.user_id = u.id
-            else:
-                ace.user_id = user.id
-
+            user = pam.User.find(sess, user)
+            fil.append(pam.Ace.user_id == user.id)
         if group:
-            if isinstance(group, int):
-                ace.group_id = group
-            elif isinstance(group, str):
-                g = sess.query(pam.Group).filter(
-                    pam.Group.name == group
-                ).one()
-                ace.group_id = g.id
-            else:
-                ace.group_id = group.id
+            group = pam.Group.find(sess, group)
+            fil.append(pam.Ace.group_id == group.id)
 
-        if permission:
-            if isinstance(permission, int):
-                ace.permission_id = permission
-            elif isinstance(permission, str):
-                p = sess.query(pam.Permission).filter(
-                    pam.Permission.name == permission
-                ).one()
-                ace.permission_id = p.id
-            else:
+        try:
+            ace = sess.query(pam.Ace).filter(*fil).one()
+            raise pym.exc.ItemExistsError("Ace exists. See attribute 'item'.", item=ace)
+        except NoResultFound:
+            ace = pam.Ace()
+            ace.owner_id = owner.id
+            if user:
+                ace.user_id = user.id
+            if group:
+                ace.group_id = group.id
+            if permission:
                 ace.permission_id = permission.id
 
         ace.allow = allow
@@ -268,6 +212,7 @@ class ResourceNode(DbBase, DefaultMixin):
             setattr(ace, k, v)
 
         self.acl.append(ace)
+        return ace
 
     def allow(self, sess, owner, permission, user=None, group=None,
             **kwargs):
@@ -286,7 +231,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        self._set_ace(sess=sess, owner=owner, allow=True, permission=permission,
+        return self._set_ace(sess=sess, owner=owner, allow=True, permission=permission,
             user=user, group=group, **kwargs)
 
     def deny(self, sess, owner, permission, user=None, group=None,
@@ -306,7 +251,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        self._set_ace(sess=sess, owner=owner, allow=False, permission=permission,
+        return self._set_ace(sess=sess, owner=owner, allow=False, permission=permission,
             user=user, group=group, **kwargs)
 
     def add_child(self, sess, owner, kind, name, **kwargs):
@@ -314,19 +259,18 @@ class ResourceNode(DbBase, DefaultMixin):
         n = ResourceNode(owner_id=owner_id, kind=kind, name=name, **kwargs)
         n.parent = self
         return n
-
-    @classmethod
-    def find(cls, sess, parent, **kwargs):
-        """
-        Finds a resource node with given attributes.
-
-        :returns: Instance of node if it exists, False otherwise.
-        """
-        parent_id = parent if isinstance(parent, int) else parent.id
-        try:
-            return sess.query(cls).filter_by(parent_id=parent_id, **kwargs).one()
-        except sa.orm.exc.NoResultFound:
-            return False
+    #
+    # @classmethod
+    # def find(cls, sess, parent, **kwargs):
+    #     """
+    #     Finds a resource node with given attributes.
+    #
+    #     :returns: Instance of found node.
+    #
+    #     :raises sqlalchemy.orm.exc.NoResultFound: If node was not found.
+    #     """
+    #     parent_id = parent if isinstance(parent, int) else parent.id
+    #     super().find(sess, None, parent_id=parent_id, **kwargs)
 
     @classmethod
     def create_root(cls, sess, owner, name, kind, **kwargs):
@@ -354,6 +298,10 @@ class ResourceNode(DbBase, DefaultMixin):
         return r
 
     @classmethod
+    def children_key(cls, query):
+        return '{}:children:{}'.format(cls.__name__, pym.cache.key_from_query(query))
+
+    @classmethod
     def load_root(cls, sess, name='root', use_cache=True):
         """
         Loads root resource of resource tree.
@@ -365,6 +313,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :param name: Name of the wanted root node
         :return: Instance of the root node or, None if not found
         """
+
         # CAVEAT: Setup fails if we use cache here!
         if use_cache:
             r = sess.query(
@@ -373,8 +322,12 @@ class ResourceNode(DbBase, DefaultMixin):
                 pym.cache.FromCache("auth_long_term",
                 cache_key='resource:{}:None'.format(name))
             ).options(
+                # CAVEAT: don't use our own cache_key. It's not specific enough
+                # to discriminate different instances of Res: it would load
+                # children from root's cache key also for children etc.!
                 pym.cache.RelationshipCache(cls.children, "auth_long_term",
-                cache_key='resource:{}:None:children'.format(name))
+                cache_key=cls.children_key)
+                #cache_key='resource:{}:None:children'.format(name))
             ).options(
                 # CAVEAT: Program hangs if we use our own cache key here!
                 pym.cache.RelationshipCache(cls.acl, "auth_long_term")  # ,
@@ -422,61 +375,70 @@ class ResourceNode(DbBase, DefaultMixin):
             if ace.allow:
                 if perms[ace.permission_id]['parents']:
                     for p in perms[ace.permission_id]['parents']:
-                        pyr_ace2 = (pyr_ace[0], pyr_ace[1], p['name'])
+                        pyr_ace2 = (pyr_ace[0], pyr_ace[1], p[1])
                         acl.append(pyr_ace2)
             # If deny, deny all children
             else:
                 for ch in perms[ace.permission_id]['children']:
-                    pyr_ace2 = (pyr_ace[0], pyr_ace[1], ch['name'])
+                    pyr_ace2 = (pyr_ace[0], pyr_ace[1], ch[1])
                     acl.append(pyr_ace2)
         return acl
 
-    @classmethod
-    def load_child(cls, sess, id_or_name, parent_id=None, use_cache=True):
-        if isinstance(id_or_name, int):
-            fil = [cls.id == id_or_name]
-        else:
-            fil = [
-                cls.parent_id == parent_id,
-                cls.name == id_or_name,
-            ]
-        if use_cache:
-            return sess.query(
-                cls
-            ).options(
-                pym.cache.FromCache("auth_long_term",
-                    cache_key='resource:{}:{}'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.children, "auth_long_term",
-                    cache_key='resource:{}:{}:children'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.acl, "auth_long_term",
-                    cache_key='resource:{}:{}:acl'.format(
-                        id_or_name, parent_id))
-            ).options(
-                pym.cache.RelationshipCache(cls.parent, "auth_long_term")#,
-                    #cache_key='presource:{}:{}:parent'.format(
-                    #    id_or_name, parent_id))
-            ).filter(
-                sa.and_(*fil)
-            ).one()
-        else:
-            return sess.query(
-                cls
-            ).filter(
-                sa.and_(*fil)
-            ).one()
+    # def load_child(self, sess, id_or_name, use_cache=True):
+    #     cls = self.__class__
+    #     if isinstance(id_or_name, int):
+    #         fil = [cls.id == id_or_name]
+    #     else:
+    #         fil = [
+    #             cls.parent_id == self.id,
+    #             cls.name == id_or_name,
+    #         ]
+    #     print('Res load child filter:', fil)
+    #     if use_cache:
+    #         return sess.query(
+    #             cls
+    #         ).options(
+    #             pym.cache.FromCache("auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.children, "auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}:children'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.acl, "auth_long_term")  # ,
+    #                 #cache_key='resource:{}:{}:acl'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).options(
+    #             pym.cache.RelationshipCache(cls.parent, "auth_long_term")  # ,
+    #                 #cache_key='presource:{}:{}:parent'.format(
+    #                 #    id_or_name, parent_id))
+    #         ).filter(
+    #             sa.and_(*fil)
+    #         ).one()
+    #     else:
+    #         return sess.query(
+    #             cls
+    #         ).filter(
+    #             sa.and_(*fil)
+    #         ).one()
 
     def __getitem__(self, item):
-        cls = self.__class__
-        sess = sa.inspect(self).session
+        return self.children[item]
+        # sess = sa.inspect(self).session
+        # try:
+        #     child = self.load_child(sess, id_or_name=item,
+        #                            use_cache=True)
+        # except sa.orm.exc.NoResultFound as exc:
+        #     raise KeyError("Child resource not found: '{}'".format(item))
+        # return child
+
+    def __contains__(self, item):
         try:
-            child = cls.load_child(sess, item, self.id, use_cache=True)
-        except sa.orm.exc.NoResultFound as exc:
-            raise KeyError("Child resource not found: '{}'".format(item))
-        return child
+            self.children[item]
+            return True
+        except KeyError:
+            return False
 
     def __repr__(self):
         return "<{cls}(id={0}, parent_id='{1}', name='{2}', kind='{3}')>".format(

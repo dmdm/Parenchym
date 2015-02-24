@@ -3,19 +3,21 @@ from pyramid.security import (
 )
 from pyramid.httpexceptions import HTTPFound
 from pyramid.view import view_config
-
+from pym.lib import json_serializer
 import pym.models
-
 import pym.res.models
 import pym.auth.models
+from pym.tenants.const import DEFAULT_TENANT_NAME
 import pym.tenants.manager
+import pym.resp
+import pym.menu
 
 
 # noinspection PyUnusedLocal
 @view_config(
     name='',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/index.mako',
+    renderer='index.mako',
     permission=NO_PERMISSION_REQUIRED
 )
 def index(context, request):
@@ -28,7 +30,7 @@ def index(context, request):
 @view_config(
     name='imprint',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/imprint.mako',
+    renderer='imprint.mako',
     permission=NO_PERMISSION_REQUIRED
 )
 def imprint(context, request):
@@ -39,7 +41,7 @@ def imprint(context, request):
 @view_config(
     name='main',
     context=pym.res.models.IRootNode,
-    renderer='pym:templates/main.mako',
+    renderer='main.mako',
     permission='visit'
 )
 def main(context, request):
@@ -53,3 +55,22 @@ def main(context, request):
         return HTTPFound(location=url)
     else:
         return dict(tenants=tt)
+
+
+@view_config(
+    name='xhr_main_menu',
+    context=pym.res.models.IRootNode,
+    renderer='string',
+    permission=NO_PERMISSION_REQUIRED
+)
+def xhr_main_menu(context, request):
+    # TODO Build different menus for un/authenticated users
+    resp = pym.resp.JsonResp()
+    resp.data = pym.menu.main_menu(
+        request=request,
+        root_node=request.root,
+        url_to=request.resource_url,
+        tenant=DEFAULT_TENANT_NAME,
+        translate=request.localizer.translate
+    )
+    return json_serializer(resp.resp)

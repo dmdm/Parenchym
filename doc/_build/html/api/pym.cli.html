@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.cli module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.dd module" href="pym.dd.html"/>
+        <link rel="prev" title="pym.cache module" href="pym.cache.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.cli module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.cli.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.cli">
+<span id="pym-cli-module"></span><h1>pym.cli module<a class="headerlink" href="#module-pym.cli" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pym.cli.Cli">
+<em class="property">class </em><tt class="descclassname">pym.cli.</tt><tt class="descname">Cli</tt><a class="headerlink" href="#pym.cli.Cli" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<dl class="staticmethod">
+<dt id="pym.cli.Cli.add_parser_args">
+<em class="property">static </em><tt class="descname">add_parser_args</tt><big>(</big><em>parser</em>, <em>which=None</em><big>)</big><a class="headerlink" href="#pym.cli.Cli.add_parser_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds default arguments to given parser instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parser</strong> &#8211; Instance of a parser</li>
+<li><strong>which</strong> &#8211; List of 2-Tuples. 1st elem tells which argument to add,
+2nd elem tells requiredness True/False</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.cli.Cli.impersonate_root">
+<tt class="descname">impersonate_root</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.cli.Cli.impersonate_root" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.cli.Cli.impersonate_unit_tester">
+<tt class="descname">impersonate_unit_tester</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.cli.Cli.impersonate_unit_tester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.cli.Cli.init_app">
+<tt class="descname">init_app</tt><big>(</big><em>args</em>, <em>lgg=None</em>, <em>rc=None</em>, <em>rc_key=None</em>, <em>setup_logging=True</em><big>)</big><a class="headerlink" href="#pym.cli.Cli.init_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialises Pyramid application.</p>
+<p>Loads config settings. Initialises SQLAlchemy and a session.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>args</strong> &#8211; Namespace of parsed CLI arguments</li>
+<li><strong>lgg</strong> &#8211; Inject a logger, or keep the default module logger</li>
+<li><strong>rc</strong> &#8211; Inject a RC instance, or keep the loaded one.</li>
+<li><strong>rc_key</strong> &#8211; <em>obsolete</em></li>
+<li><strong>setup_logging</strong> &#8211; Whether or not to setup logging as configured in
+rc. Default is True.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.cli.Cli.init_web_app">
+<tt class="descname">init_web_app</tt><big>(</big><em>args</em>, <em>lgg=None</em>, <em>rc=None</em>, <em>rc_key=None</em>, <em>setup_logging=True</em><big>)</big><a class="headerlink" href="#pym.cli.Cli.init_web_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialises the full web application.</p>
+<p>Calls <a class="reference internal" href="#pym.cli.Cli.init_app" title="pym.cli.Cli.init_app"><tt class="xref py py-meth docutils literal"><span class="pre">init_app()</span></tt></a> and additionally initialises the WSGI environment
+and sets up a request and the resource tree.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.cli.Cli.sess">
+<tt class="descname">sess</tt><a class="headerlink" href="#pym.cli.Cli.sess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialised DB session.</p>
+<p>The session is created from the web app&#8217;s default settings and therefore
+is in most cases a scoped session with transaction extension. If you need
+a different session, caller may create one itself and set this property.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.cli.DummyArgs">
+<em class="property">class </em><tt class="descclassname">pym.cli.</tt><tt class="descname">DummyArgs</tt><a class="headerlink" href="#pym.cli.DummyArgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.dd.html" class="btn btn-neutral float-right" title="pym.dd module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.cache.html" class="btn btn-neutral" title="pym.cache module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

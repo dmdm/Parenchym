@@ -28,7 +28,7 @@
         this.base_url = rc['base_url'];
         my.init_growl();
         my.init_pym(rc);
-        my.init_ajax();
+        //my.init_ajax();
     };
 
     my.init_growl = function () {
@@ -48,6 +48,7 @@
         );
     };
 
+    /*
     my.init_ajax = function () {
         var that = this;
         $.ajaxSetup({
@@ -75,6 +76,7 @@
             that.growl(resp);
         });
     };
+    */
 
     /**
      * Sort select list by text
@@ -199,6 +201,33 @@
         for (i = 0; i < imax; i++) {
             this.growl(resp.msgs[i]);
         }
+        if (imax < 1) {
+            if (resp.ok) {
+                this.growl({kind: 'success', text: 'Ok'});
+            }
+            else {
+                this.growl({kind: 'warning', text: 'Unspecified error occurred'});
+            }
+        }
+    };
+
+    /**
+     * Binds given method to given object.
+     *
+     * By means of a wrapper, ensures that ``method`` is always bound to
+     * ``object`` regardless of its calling environment.
+     * Iow, inside ``method``, ``this`` always points to ``object``.
+     *
+     * See http://alistapart.com/article/getoutbindingsituations
+     *
+     * @param {object}
+     * @param {method}
+     * @returns {Function}
+     */
+    my.createBoundedWrapper = function (object, method) {
+        return function() {
+            return method.apply(object, arguments);
+        };
     };
 
     return my;

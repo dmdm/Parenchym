@@ -1,0 +1,471 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.models package &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.models.types module" href="pym.models.types.html"/>
+        <link rel="prev" title="pym.me.setup module" href="pym.me.setup.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.models package</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.models.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="pym-models-package">
+<h1>pym.models package<a class="headerlink" href="#pym-models-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pym.models.types.html">pym.models.types module</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="module-pym.models">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pym.models" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="pym.models.DbBase">
+<tt class="descclassname">pym.models.</tt><tt class="descname">DbBase</tt><a class="headerlink" href="#pym.models.DbBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Our base class for declarative models.</p>
+<p>alias of <tt class="xref py py-class docutils literal"><span class="pre">Base</span></tt></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.models.DefaultMixin">
+<em class="property">class </em><tt class="descclassname">pym.models.</tt><tt class="descname">DefaultMixin</tt><a class="headerlink" href="#pym.models.DefaultMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Mixin to add Parenchym&#8217;s standard fields to a model class.</p>
+<p>These are: id, ctime, owner, mtime, editor.</p>
+<dl class="method">
+<dt id="pym.models.DefaultMixin.dump">
+<tt class="descname">dump</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.models.DefaultMixin.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pym.models.DefaultMixin.find">
+<em class="property">classmethod </em><tt class="descname">find</tt><big>(</big><em>sess</em>, <em>obj</em><big>)</big><a class="headerlink" href="#pym.models.DefaultMixin.find" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds given object and returns its instance.</p>
+<p>Input object may be the integer ID of a DB record, or a value that is
+checked in IDENTITY_COL. If object is already the requested instance,
+it is returned unchanged.</p>
+<p>Raises NoResultFound if object is unknown.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.models.DefaultMixin.is_deleted">
+<tt class="descname">is_deleted</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.models.DefaultMixin.is_deleted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.IDENTITY_COL">
+<tt class="descname">IDENTITY_COL</tt><em class="property"> = 'name'</em><a class="headerlink" href="#pym.models.DefaultMixin.IDENTITY_COL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of a column that can be used to identify a record uniquely, besides ID.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.ctime">
+<tt class="descname">ctime</tt><em class="property"> = Column(None, DateTime(), table=None, nullable=False, server_default=DefaultClause(&lt;sqlalchemy.sql.functions.current_timestamp at 0x7fb9759c10f0; current_timestamp&gt;, for_update=False))</em><a class="headerlink" href="#pym.models.DefaultMixin.ctime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp, creation time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.deleter_id">
+<tt class="descname">deleter_id</tt><em class="property"> = Column(None, Integer(), ForeignKey('pym.user.id'), table=None)</em><a class="headerlink" href="#pym.models.DefaultMixin.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.deletion_reason">
+<tt class="descname">deletion_reason</tt><em class="property"> = Column(None, Unicode(length=255), table=None)</em><a class="headerlink" href="#pym.models.DefaultMixin.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.dtime">
+<tt class="descname">dtime</tt><em class="property"> = Column(None, DateTime(), table=None)</em><a class="headerlink" href="#pym.models.DefaultMixin.dtime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp, deletion time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.editor_id">
+<tt class="descname">editor_id</tt><em class="property"> = Column(None, Integer(), ForeignKey('pym.user.id'), table=None)</em><a class="headerlink" href="#pym.models.DefaultMixin.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.id">
+<tt class="descname">id</tt><em class="property"> = Column(None, Integer(), table=None, primary_key=True, nullable=False)</em><a class="headerlink" href="#pym.models.DefaultMixin.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Primary key of table.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.mtime">
+<tt class="descname">mtime</tt><em class="property"> = Column(None, DateTime(), table=None, onupdate=ColumnDefault(&lt;sqlalchemy.sql.functions.current_timestamp at 0x7fb9759c1358; current_timestamp&gt;))</em><a class="headerlink" href="#pym.models.DefaultMixin.mtime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp, last edit time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.models.DefaultMixin.owner_id">
+<tt class="descname">owner_id</tt><em class="property"> = Column(None, Integer(), ForeignKey('pym.user.id'), table=None, nullable=False)</em><a class="headerlink" href="#pym.models.DefaultMixin.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.models.LoginSchema">
+<em class="property">class </em><tt class="descclassname">pym.models.</tt><tt class="descname">LoginSchema</tt><big>(</big><em>*arg</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#pym.models.LoginSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">colander.Schema</span></tt></p>
+<p>Schema for basic login form with CSRF token.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.add_cache_region">
+<tt class="descclassname">pym.models.</tt><tt class="descname">add_cache_region</tt><big>(</big><em>name</em>, <em>region</em><big>)</big><a class="headerlink" href="#pym.models.add_cache_region" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.models.attribute_names">
+<tt class="descclassname">pym.models.</tt><tt class="descname">attribute_names</tt><big>(</big><em>cls</em>, <em>kind='all'</em><big>)</big><a class="headerlink" href="#pym.models.attribute_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.models.compile_query">
+<tt class="descclassname">pym.models.</tt><tt class="descname">compile_query</tt><big>(</big><em>query</em><big>)</big><a class="headerlink" href="#pym.models.compile_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.models.create_all">
+<tt class="descclassname">pym.models.</tt><tt class="descname">create_all</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.models.create_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates bound data model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.exists">
+<tt class="descclassname">pym.models.</tt><tt class="descname">exists</tt><big>(</big><em>sess</em>, <em>name</em>, <em>schema='public'</em><big>)</big><a class="headerlink" href="#pym.models.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if given relation exists.</p>
+<p>Relation may be:</p>
+<p>r = ordinary table
+i = index
+S = sequence
+v = view
+f = foreign table
+m = materialized view</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; Instance of a DB session.</li>
+<li><strong>name</strong> &#8211; Name of the relation.</li>
+<li><strong>schema</strong> &#8211; Optional name of schema. Defaults to &#8216;public&#8217;.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">One of above mentioned letters if relation exists, None if not.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.init">
+<tt class="descclassname">pym.models.</tt><tt class="descname">init</tt><big>(</big><em>settings</em>, <em>prefix</em>, <em>invalidate_caches=False</em><big>)</big><a class="headerlink" href="#pym.models.init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes scoped SQLAlchemy by rc settings.</p>
+<p>Creates engine, binds a scoped session and declarative base.
+Call this function for global initialization of the WebApp.</p>
+<p>Initialises the module globals <tt class="docutils literal"><span class="pre">DbEngine</span></tt>, <tt class="docutils literal"><span class="pre">DbSession</span></tt> and <tt class="docutils literal"><span class="pre">DbBase</span></tt>.
+The session is joined into the Zope Transaction Manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>settings</strong> &#8211; Dict with settings</li>
+<li><strong>prefix</strong> &#8211; Prefix for SQLAlchemy settings</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.init_unscoped">
+<tt class="descclassname">pym.models.</tt><tt class="descname">init_unscoped</tt><big>(</big><em>settings</em>, <em>prefix</em><big>)</big><a class="headerlink" href="#pym.models.init_unscoped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes unscoped SQLAlchemy by rc settings.</p>
+<p>Creates engine, binds a scoped session and declarative base.
+Call this function for global initialization of the WebApp.</p>
+<p>Initialises the module globals <tt class="docutils literal"><span class="pre">DbEngine</span></tt>, <tt class="docutils literal"><span class="pre">DbSession</span></tt> and <tt class="docutils literal"><span class="pre">DbBase</span></tt>.
+This session has no external transaction manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>settings</strong> &#8211; Dict with settings</li>
+<li><strong>prefix</strong> &#8211; Prefix for SQLAlchemy settings</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Dict with <tt class="docutils literal"><span class="pre">DbEngine</span></tt>, <tt class="docutils literal"><span class="pre">DbSession</span></tt> and <tt class="docutils literal"><span class="pre">DbBase</span></tt>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.receive_before_update">
+<tt class="descclassname">pym.models.</tt><tt class="descname">receive_before_update</tt><big>(</big><em>mapper</em>, <em>connection</em>, <em>target</em><big>)</big><a class="headerlink" href="#pym.models.receive_before_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.models.todata">
+<tt class="descclassname">pym.models.</tt><tt class="descname">todata</tt><big>(</big><em>rs</em>, <em>fully_qualified=False</em>, <em>fmap=None</em>, <em>excludes=None</em>, <em>includes=None</em>, <em>dict_class=&lt;class 'collections.OrderedDict'&gt;</em><big>)</big> &rarr; list<a class="headerlink" href="#pym.models.todata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transmogrifies a result set into a list of dicts.</p>
+<p>Applies <a class="reference internal" href="#pym.models.todict" title="pym.models.todict"><tt class="xref py py-func docutils literal"><span class="pre">todict()</span></tt></a> to each iterated row.
+For params not explained here, see <a class="reference internal" href="#pym.models.todict" title="pym.models.todict"><tt class="xref py py-func docutils literal"><span class="pre">todict()</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rs</strong> (<em>list | sqlalchemy.orm.query.Query |
+sqlalchemy.ext.declarative.api.DeclarativeMeta</em>) &#8211; Data to transmogrify. May be some iterable like a list or a
+result set from a query. May also be a single ORM entity.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of the transmogrified records.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.models.todict">
+<tt class="descclassname">pym.models.</tt><tt class="descname">todict</tt><big>(</big><em>o</em>, <em>fully_qualified=False</em>, <em>fmap=None</em>, <em>excludes=None</em>, <em>includes=None</em>, <em>dict_class=&lt;class 'collections.OrderedDict'&gt;</em><big>)</big> &rarr; dict<a class="headerlink" href="#pym.models.todict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transmogrifies data object into dict.</p>
+<p>Inspired by
+<a class="reference external" href="http://blog.mitechie.com/2010/04/01/hacking-the-sqlalchemy-base-class/">http://blog.mitechie.com/2010/04/01/hacking-the-sqlalchemy-base-class/</a>
+Converts only physical table columns.</p>
+<p>By default, the created dict is a <tt class="xref py py-class docutils literal"><span class="pre">OrderedDict</span></tt> which
+has column <tt class="docutils literal"><span class="pre">id</span></tt> as the first, and the other columns of <tt class="xref py py-class docutils literal"><span class="pre">PymMixin</span></tt>
+at the end.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>o</strong> (<em>sqlalchemy.util.KeyedTuple |
+sqlalchemy.ext.declarative.api.DeclarativeMeta</em>) &#8211; Data object to transmogrify.</li>
+<li><strong>fully_qualified</strong> (<em>bool</em>) &#8211; Whether the keys of returned dict are fully
+qualified column names or not. N.b. that full column names are only
+available if <tt class="docutils literal"><span class="pre">o</span></tt> has attribute <tt class="docutils literal"><span class="pre">__table__</span></tt>, which e.g. for
+KeyedTuples is not the case.</li>
+<li><strong>fmap</strong> (<em>dict</em>) &#8211; Mapping of column names to functions. Each function is called
+to build the value for this column. May be a lambda expression.</li>
+<li><strong>excludes</strong> (<em>NoneType | list</em>) &#8211; List of column names to exclude.</li>
+<li><strong>includes</strong> (<em>NoneType | list</em>) &#8211; List of column names to include. If None, all columns are
+included</li>
+<li><strong>dict_class</strong> (<em>type</em>) &#8211; Class of the dict to build. Defaults to
+<tt class="xref py py-class docutils literal"><span class="pre">collections.OrderedDict</span></tt>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="data">
+<dt id="pym.models.CSRF_SCHEMA_NODE">
+<tt class="descclassname">pym.models.</tt><tt class="descname">CSRF_SCHEMA_NODE</tt><em class="property"> = &lt;colander.SchemaNode object at 140434577480448 (named csrf_token)&gt;</em><a class="headerlink" href="#pym.models.CSRF_SCHEMA_NODE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colander schema node for a hidden field containing a CSRF token.</p>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LoginSchema</span><span class="p">(</span><span class="n">colander</span><span class="o">.</span><span class="n">MappingSchema</span><span class="p">):</span>
+    <span class="n">login</span> <span class="o">=</span> <span class="n">colander</span><span class="o">.</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">colander</span><span class="o">.</span><span class="n">String</span><span class="p">())</span>
+    <span class="n">pwd</span>   <span class="o">=</span> <span class="n">colander</span><span class="o">.</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">colander</span><span class="o">.</span><span class="n">String</span><span class="p">(),</span>
+                <span class="n">widget</span><span class="o">=</span><span class="n">deform</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">PasswordWidget</span><span class="p">()</span>
+            <span class="p">)</span>
+    <span class="n">csrf_token</span> <span class="o">=</span> <span class="n">CSRF_SCHEMA_NODE</span>
+</pre></div>
+</div>
+<p>When you create a schema instance, do not forget to bind the current
+request like so:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sch</span> <span class="o">=</span> <span class="n">LoginSchema</span><span class="p">()</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="data">
+<dt id="pym.models.DbEngine">
+<tt class="descclassname">pym.models.</tt><tt class="descname">DbEngine</tt><em class="property"> = None</em><a class="headerlink" href="#pym.models.DbEngine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default DB engine.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="pym.models.DbSession">
+<tt class="descclassname">pym.models.</tt><tt class="descname">DbSession</tt><em class="property"> = &lt;sqlalchemy.orm.scoping.scoped_session object at 0x7fb9759b8e48&gt;</em><a class="headerlink" href="#pym.models.DbSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for DB session.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.models.types.html" class="btn btn-neutral float-right" title="pym.models.types module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.me.setup.html" class="btn btn-neutral" title="pym.me.setup module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

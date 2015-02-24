@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.libxl module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.menu module" href="pym.menu.html"/>
+        <link rel="prev" title="pym.libuno module" href="pym.libuno.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.libxl module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.libxl.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.libxl">
+<span id="pym-libxl-module"></span><h1>pym.libxl module<a class="headerlink" href="#module-pym.libxl" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="pym.libxl.cell_to_packed_rowcol">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">cell_to_packed_rowcol</tt><big>(</big><em>cell</em><big>)</big><a class="headerlink" href="#pym.libxl.cell_to_packed_rowcol" title="Permalink to this definition">¶</a></dt>
+<dd><p>pack row and column into the required 4 byte format</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.cell_to_rowcol">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">cell_to_rowcol</tt><big>(</big><em>cell</em><big>)</big><a class="headerlink" href="#pym.libxl.cell_to_rowcol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an Excel cell reference string in A1 notation
+to numeric row/col notation.</p>
+<p>Returns: row, col, row_abs, col_abs</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.cell_to_rowcol2">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">cell_to_rowcol2</tt><big>(</big><em>cell</em><big>)</big><a class="headerlink" href="#pym.libxl.cell_to_rowcol2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an Excel cell reference string in A1 notation
+to numeric row/col notation.</p>
+<p>Returns: row, col</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.cellrange_to_rowcol_pair">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">cellrange_to_rowcol_pair</tt><big>(</big><em>cellrange</em><big>)</big><a class="headerlink" href="#pym.libxl.cellrange_to_rowcol_pair" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert cell range string in A1 notation to numeric row/col
+pair.</p>
+<p>Returns: row1, col1, row2, col2</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.col_by_name">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">col_by_name</tt><big>(</big><em>colname</em><big>)</big><a class="headerlink" href="#pym.libxl.col_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8216;A&#8217; -&gt; 0, &#8216;Z&#8217; -&gt; 25, &#8216;AA&#8217; -&gt; 26, etc</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.quote_sheet_name">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">quote_sheet_name</tt><big>(</big><em>unquoted_sheet_name</em><big>)</big><a class="headerlink" href="#pym.libxl.quote_sheet_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.rowcol_pair_to_cellrange">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">rowcol_pair_to_cellrange</tt><big>(</big><em>row1</em>, <em>col1</em>, <em>row2</em>, <em>col2</em>, <em>row1_abs=False</em>, <em>col1_abs=False</em>, <em>row2_abs=False</em>, <em>col2_abs=False</em><big>)</big><a class="headerlink" href="#pym.libxl.rowcol_pair_to_cellrange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert two (row,column) pairs
+into a cell range string in A1:B2 notation.</p>
+<p>Returns: cell range string</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.rowcol_to_cell">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">rowcol_to_cell</tt><big>(</big><em>row</em>, <em>col</em>, <em>row_abs=False</em>, <em>col_abs=False</em><big>)</big><a class="headerlink" href="#pym.libxl.rowcol_to_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert numeric row/col notation to an Excel cell reference string in
+A1 notation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.libxl.valid_sheet_name">
+<tt class="descclassname">pym.libxl.</tt><tt class="descname">valid_sheet_name</tt><big>(</big><em>sheet_name</em><big>)</big><a class="headerlink" href="#pym.libxl.valid_sheet_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.menu.html" class="btn btn-neutral float-right" title="pym.menu module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.libuno.html" class="btn btn-neutral" title="pym.libuno module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

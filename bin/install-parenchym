@@ -1,0 +1,14 @@
+#!/bin/bash
+
+PYM_DIR="."
+
+pip install \
+	--upgrade \
+	--download-cache /var/cache/pip \
+	-f /var/cache/pip/ \
+	--allow-external mysql-connector-python \
+	--allow-external pyodbc \
+	--allow-unverified pyodbc \
+	-e $PYM_DIR
+
+echo "You might need to run ./bin/setup-dirs as root"

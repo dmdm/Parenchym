@@ -1,4 +1,4 @@
-debug: false
+debug: true
 
 pyramid.reload_templates: true
 pyramid.debug_templates: true

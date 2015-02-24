@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.resp module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.sched module" href="pym.sched.html"/>
+        <link rel="prev" title="pym.renderer_globals module" href="pym.renderer_globals.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.resp module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.resp.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.resp">
+<span id="pym-resp-module"></span><h1>pym.resp module<a class="headerlink" href="#module-pym.resp" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pym.resp.JsonResp">
+<em class="property">class </em><tt class="descclassname">pym.resp.</tt><tt class="descname">JsonResp</tt><a class="headerlink" href="#pym.resp.JsonResp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<dl class="method">
+<dt id="pym.resp.JsonResp.adapt">
+<tt class="descname">adapt</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.adapt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies state and data of other resp object into self.
+:param other: Other JsonResp object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.add_msg">
+<tt class="descname">add_msg</tt><big>(</big><em>msg</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.add_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a message of user-defined kind.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>msg</strong> (<em>Dict(kind=..., text=...)</em>) &#8211; The message</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.call_wrapped">
+<tt class="descname">call_wrapped</tt><big>(</big><em>lgg</em>, <em>f</em>, <em>respond_full_exception=None</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.call_wrapped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps a function call in a JsonResp object.</p>
+<p>We call prepared function <tt class="docutils literal"><span class="pre">f</span></tt> with kwarg <tt class="docutils literal"><span class="pre">resp</span></tt> set to this JsonResp
+object. We catch any exception and log it using the given logger
+<tt class="docutils literal"><span class="pre">lgg</span></tt>. Depending on <tt class="xref py py-const docutils literal"><span class="pre">pym.resp.RESPOND_FULL_EXCEPTION</span></tt> we add the
+exception or just a generic message as a fatal to the response.</p>
+<p>If the function call succeeds, we store its return value in our <tt class="docutils literal"><span class="pre">data</span></tt>
+attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lgg</strong> &#8211; Logger to log exceptions with.</li>
+<li><strong>f</strong> &#8211; Function to call</li>
+<li><strong>respond_full_exception</strong> &#8211; Whether or not to respond with exception
+or generic message. Overrides module constant
+<tt class="docutils literal"><span class="pre">RESPOND_FULL_EXCEPTION</span></tt>. If None (default), we use module
+constant.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.error">
+<tt class="descname">error</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.fatal">
+<tt class="descname">fatal</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.fatal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.info">
+<tt class="descname">info</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.notice">
+<tt class="descname">notice</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.notice" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.ok">
+<tt class="descname">ok</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.ok" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.print">
+<tt class="descname">print</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.print" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.resp.JsonResp.warn">
+<tt class="descname">warn</tt><big>(</big><em>txt</em><big>)</big><a class="headerlink" href="#pym.resp.JsonResp.warn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.resp.JsonResp.data">
+<tt class="descname">data</tt><a class="headerlink" href="#pym.resp.JsonResp.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the data</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.resp.JsonResp.is_ok">
+<tt class="descname">is_ok</tt><a class="headerlink" href="#pym.resp.JsonResp.is_ok" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.resp.JsonResp.msgs">
+<tt class="descname">msgs</tt><a class="headerlink" href="#pym.resp.JsonResp.msgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the list of messages.</p>
+<p>Each message is a dict with at least keys <tt class="docutils literal"><span class="pre">kind</span></tt> and <tt class="docutils literal"><span class="pre">text</span></tt>. This
+format is suitable for the PYM.growl() JavaScript.</p>
+<p><tt class="docutils literal"><span class="pre">kind</span></tt> is one of (notice, info, warning, error, fatal, success).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.resp.JsonResp.resp">
+<tt class="descname">resp</tt><a class="headerlink" href="#pym.resp.JsonResp.resp" title="Permalink to this definition">¶</a></dt>
+<dd><p>The response is:</p>
+<div class="highlight-python"><div class="highlight"><pre>resp = {
+    &#39;ok&#39;: True/False,
+    &#39;msgs&#39;: [ {&#39;kind&#39;: &#39;success&#39;, &#39;text&#39;: &#39;foo&#39;}, ... ]
+    &#39;data: ... # arbitrary response data
+}
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.resp.build_json_response">
+<tt class="descclassname">pym.resp.</tt><tt class="descname">build_json_response</tt><big>(</big><em>lgg</em>, <em>validator</em>, <em>keys</em>, <em>func</em>, <em>request=None</em>, <em>die_on_error=True</em><big>)</big><a class="headerlink" href="#pym.resp.build_json_response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.sched.html" class="btn btn-neutral float-right" title="pym.sched module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.renderer_globals.html" class="btn btn-neutral" title="pym.renderer_globals module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

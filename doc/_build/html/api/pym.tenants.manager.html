@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.tenants.manager module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym.tenants package" href="pym.tenants.html"/>
+        <link rel="next" title="pym.tenants.models module" href="pym.tenants.models.html"/>
+        <link rel="prev" title="pym.tenants.const module" href="pym.tenants.const.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+          <li><a href="pym.tenants.html">pym.tenants package</a> &raquo;</li>
+      
+    <li>pym.tenants.manager module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.tenants.manager.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.tenants.manager">
+<span id="pym-tenants-manager-module"></span><h1>pym.tenants.manager module<a class="headerlink" href="#module-pym.tenants.manager" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="pym.tenants.manager.add_user">
+<tt class="descclassname">pym.tenants.manager.</tt><tt class="descname">add_user</tt><big>(</big><em>sess</em>, <em>tenant</em>, <em>user</em>, <em>owner</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.tenants.manager.add_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a user to tenant&#8217;s group.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sess</strong> &#8211; A DB session instance.</li>
+<li><strong>tenant</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">name</span></tt>, or instance of a tenant.</li>
+<li><strong>user</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">principal</span></tt>, or instance of a user.</li>
+<li><strong>owner</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">principal</span></tt>, or instance of a user.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.tenants.manager.collect_my_tenants">
+<tt class="descclassname">pym.tenants.manager.</tt><tt class="descname">collect_my_tenants</tt><big>(</big><em>sess</em>, <em>user_id</em><big>)</big><a class="headerlink" href="#pym.tenants.manager.collect_my_tenants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns list of tenants to which given user belongs.</p>
+<p>Each tenant has a global group with the same name. Membership in those
+groups determines whether a tenant is listed here or not.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; Instance of a DB session.</li>
+<li><strong>user_id</strong> &#8211; ID of user.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of tenants.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.tenants.manager.create_tenant">
+<tt class="descclassname">pym.tenants.manager.</tt><tt class="descname">create_tenant</tt><big>(</big><em>sess</em>, <em>owner</em>, <em>name</em>, <em>cascade</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.tenants.manager.create_tenant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new tenant record.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; A DB session instance.</li>
+<li><strong>owner</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">principal</span></tt>, or instance of a user.</li>
+<li><strong>name</strong> &#8211; Name.</li>
+<li><strong>cascade</strong> &#8211; True to also create a group and resource for this tenant.</li>
+<li><strong>kwargs</strong> &#8211; See <tt class="xref py py-class docutils literal"><span class="pre">Tenant</span></tt>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Instance of created tenant.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.tenants.manager.delete_tenant">
+<tt class="descclassname">pym.tenants.manager.</tt><tt class="descname">delete_tenant</tt><big>(</big><em>sess</em>, <em>tenant</em>, <em>deleter</em>, <em>delete_from_db=False</em><big>)</big><a class="headerlink" href="#pym.tenants.manager.delete_tenant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a tenant.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; A DB session instance.</li>
+<li><strong>tenant</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">name</span></tt>, or instance of a tenant.</li>
+<li><strong>deleter</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">principal</span></tt>, or instance of a user.</li>
+<li><strong>delete_from_db</strong> &#8211; Optional. Defaults to just tag as deleted (False),
+set True to physically delete record from DB.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None if really deleted, else instance of tagged tenant.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pym.tenants.manager.update_tenant">
+<tt class="descclassname">pym.tenants.manager.</tt><tt class="descname">update_tenant</tt><big>(</big><em>sess</em>, <em>tenant</em>, <em>editor</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.tenants.manager.update_tenant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates a tenant.</p>
+<p>For details about <tt class="docutils literal"><span class="pre">**kwargs</span></tt>, see <tt class="xref py py-class docutils literal"><span class="pre">Tenant</span></tt>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; A DB session instance.</li>
+<li><strong>tenant</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">name</span></tt>, or instance of a tenant.</li>
+<li><strong>editor</strong> &#8211; ID, <tt class="docutils literal"><span class="pre">principal</span></tt>, or instance of a user.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Instance of updated tenant.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.tenants.models.html" class="btn btn-neutral float-right" title="pym.tenants.models module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.tenants.const.html" class="btn btn-neutral" title="pym.tenants.const module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

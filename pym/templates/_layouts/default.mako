@@ -16,7 +16,6 @@
         <meta name="author"      content="<%block name="meta_author">${request.registry.settings['project.author']}</%block>">
         <%block name="styles">
             <link rel="stylesheet" href="${request.static_url('pym:static/css/styles.css')}">
-            <!--link rel="stylesheet" href="${request.static_url('pym:static/vendor/jquery-ui-themes/themes/ui-lightness/jquery-ui.min.css')}"-->
             <link rel="stylesheet" href="${request.static_url('pym:static/vendor/pnotify/pnotify.custom.min.css')}">
             <link rel="stylesheet" href="${request.static_url('pym:static/css/styles2.css')}">
             % if request.registry.settings['environment'] != 'production':
@@ -25,13 +24,17 @@
         </%block>
         <script>
         <%block name="require_config">
-            var PYM_APP_REQUIREMENTS = ['ng'];
-            var PYM_APP_INJECTS = [];
+            ## List the minimal libs that require has to load
+            ## Mind to include those that PymApp.config initialises!
+            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'ng-ui-bs', 'ui-select'];
+            ## List the minimal libs that anular has to inject.
+            ## Mind to include those that PymApp.config initialises!
+            var PYM_APP_INJECTS = ['ui.bootstrap', 'ui.select'];
             var require = {
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
                     '${request.static_url('pym:static/app/plugins.js')}',
-                    //'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
+                    ##'${request.static_url('pym:static/vendor/deform/js/deform.js')}',
                     '${request.static_url('pym:static/app/boot-ng.js')}'
                 ]
                 , paths: {
@@ -43,13 +46,16 @@
                     , 'pnotify.buttons': 'static-pym/vendor/pnotify/pnotify.buttons'
                     , 'select2':         'static-pym/vendor/select2/select2.min'
                     , 'ng':              'static-pym/vendor/angular/angular.min'
-                    , 'ng-resource':     'static-pym/vendor/angular-resource/angular-resource.min'
+                    , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
+                    , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
                     , 'ng-grid':         'static-pym/vendor/angular-grid/build/ng-grid.min'
-                    , 'ng-ui-grid':      'static-pym/vendor/angular-ui-grid/ui-grid-unstable.min'
+                    , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
+                    , 'ui-select':       'static-pym/vendor/ui-select/select.min'
                     , 'ng-ui':           'static-pym/vendor/angular-ui/build/angular-ui.min'
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
                     , 'ng-ui-router':    'static-pym/vendor/angular-ui-router/release/angular-ui-router.min'
+                    , 'ng-fup':          'static-pym/vendor/angular-file-upload'
                     , 'pym':             'static-pym/app'
                     , 'pym-v':           'static-pym/vendor'
                     , 'ccg':             'static-ccg/app'
@@ -61,7 +67,10 @@
                     , 'pnotify.buttons':                      ['pnotify']
                     , 'ng':                                   {deps: ['jquery'], exports: 'angular'}
                     , 'ng-resource':                          ['ng']
+                    , 'ng-sanitize':                          ['ng']
                     , 'ng-grid':                              ['ng']
+                    , 'ui-select':                            ['ng', 'ng-sanitize']
+                    , 'ui-grid':                              ['ng']
                     , 'ng-ui':                                ['ng']
                     , 'ng-ui-select2':                        ['ng', 'select2']
                     , 'ng-ui-bs':                             ['ng']
@@ -73,6 +82,7 @@
         </script>
         <%block name="scripts">
             <script src="${request.static_url('pym:static/vendor/requirejs/require.min.js')}"></script>
+##          PYM can and must be initialised even before the page is complete
             <script>
             require(['pym/pym'], function(PYM) {
                 PYM.init({
@@ -84,7 +94,7 @@
         </%block>
     </head>
     <body>
-        <!--[if lt IE 7]>
+        <!--[if lt IE 10]>
             <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
         <![endif]-->
 
@@ -100,17 +110,16 @@
 
         <%include file="pym:templates/_layouts/page_footer.mako" />
         <script>
-        require(['requirejs/domReady!', 'jquery', 'pym/pym', 'ng',    'pym/app'],
-        function( doc,                   $,        PYM,       angular, PymApp) {
+        require(['requirejs/domReady!', 'ng',     'pym/pym', 'pym/app'],
+        function( doc,                   angular,  PYM,       PymApp) {
+            ## This needs PYM!
             ${pym.growl_flash()}
 
             var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
-                    ['$scope', '$http', 'URLS',
-            function ($scope, $http, URLS) {
-
+                    ['$scope', '$http',
+            function ($scope,   $http) {
                 $scope.model = {};
                 $scope.model.items = {};
-                $scope.model.active_item = null;
 
                 function load_menu_items()
                 {
@@ -120,9 +129,8 @@
                         });
                 }
                 load_menu_items();
-
             }]);
-
+            return MainMenuCtrl;
         });
         </script>
     </body>

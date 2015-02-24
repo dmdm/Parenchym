@@ -1,21 +1,35 @@
+import configparser
+import locale
 import logging
+import logging.config
+import subprocess
 import sys
+import redis
 import yaml
-from collections import OrderedDict
 import pyramid.paster
 import pyramid.config
 import pyramid.request
 import json
 import os
 from prettytable import PrettyTable
+import pym.exc
+from pym.security import safepath
 
 from pym.rc import Rc
 import pym.models
 import pym.lib
+from pym.resp import JsonResp
 import pym.testing
 
 
 mlgg = logging.getLogger(__name__)
+
+
+CMD_SASSC = os.path.abspath(os.path.join(os.path.dirname(__file__),
+    '..', 'bin', 'sassc'))
+"""
+Command-line to call sassc.
+"""
 
 
 class DummyArgs(object):
@@ -45,6 +59,7 @@ class Cli(object):
         self.settings = None
         self.lang_code = None
         self.encoding = None
+        self.cache = None
 
         self._config = None
         self._sess = None
@@ -100,24 +115,42 @@ class Cli(object):
                     help="Set format for input and output"
                 )
 
-    def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
+    def base_init(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
-        Initialises Pyramid application.
+        Initialises base for CLI apps: logger, console, rc, Pyramid Configurator
 
-        Loads config settings. Initialises SQLAlchemy and a session.
+        Used by :meth:`init_app` and :meth:`init_web_app`.
+
+        :param args: Namespace of parsed CLI arguments
+        :param lgg: Inject a logger, or keep the default module logger
+        :param rc: Inject a RC instance, or keep the loaded one.
+        :param rc_key: *obsolete*
+        :param setup_logging: Whether or not to setup logging as configured in
+            rc. Default is True.
         """
         self.args = args
+        fn_config = os.path.abspath(args.config)
         self.rc_key = rc_key
         if setup_logging:
-            pyramid.paster.setup_logging(args.config)
+            logging.config.fileConfig(
+                fn_config,
+                dict(
+                    __file__=fn_config,
+                    here=os.path.dirname(fn_config)
+                ),
+                # Keep module loggers
+                disable_existing_loggers=False
+            )
         if lgg:
             self.lgg = lgg
 
-        self.lang_code, self.encoding = pym.lib.init_cli_locale(args.locale)
+        self.lang_code, self.encoding = init_cli_locale(args.locale)
         self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
         self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
 
-        settings = pyramid.paster.get_appsettings(args.config)
+        p = configparser.ConfigParser()
+        p.read(fn_config)
+        settings = dict(p['app:main'])
         if 'environment' not in settings:
             raise KeyError('Missing key "environment" in config. Specify '
                 'environment in INI file "{}".'.format(args.config))
@@ -137,19 +170,45 @@ class Cli(object):
         self._config = pyramid.config.Configurator(
             settings=settings
         )
+        self._config.scan('pym')
 
-        pym.models.init(settings, 'db.pym.sa.')
+    def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
+        """
+        Initialises Pyramid application for command-line use.
+
+        Additional to :meth:`base_init`, initialises SQLAlchemy and a DB
+        session, authentication module and the cache.
+
+        :param args: Namespace of parsed CLI arguments
+        :param lgg: Inject a logger, or keep the default module logger
+        :param rc: Inject a RC instance, or keep the loaded one.
+        :param rc_key: *obsolete*
+        :param setup_logging: Whether or not to setup logging as configured in
+            rc. Default is True.
+        """
+        self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
+            setup_logging=setup_logging)
+        pym.models.init(self.settings, 'db.pym.sa.')
         self._sess = pym.models.DbSession()
-        pym.init_auth(rc)
+        pym.init_auth(self.rc)
+        self.cache = redis.StrictRedis.from_url(
+            **self.rc.get_these('cache.redis'))
+        pym.configure_cache_regions(self.rc)
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
-        self.init_app(args, lgg=lgg, rc=rc, rc_key=rc_key,
-            setup_logging=setup_logging)
+        """
+        Initialises the full web application.
 
-        self._config.include(pym)
+        Additional to :meth:`base_init`, lets Paster bootstrap a complete
+        WSGI application. Its environment will then be in attribute ``env``,
+        and an initialised request in attribute ``request``.
+        """
+        self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
+            setup_logging=setup_logging)
 
         req = pyramid.request.Request.blank('/',
             base_url='http://localhost:6543')
+        # paster.bootstrap calls the entry point configured in the INI
         self.env = pyramid.paster.bootstrap(
             os.path.join(
                 self.rc.root_dir,
@@ -169,73 +228,45 @@ class Cli(object):
         self.request.user.impersonate(ut)
         self.unit_tester = ut
 
-    # noinspection PyUnresolvedReferences
-    @staticmethod
-    def _db_data_to_list(rs, fkmaps=None):
+    def print(self, data):
         """
-        Transmogrifies db data into list including relationships.
+        Prints data according to given format.
 
-        We use :func:`~.pym.models.todict` to turn an entity into a dict,
-        which will only catch regular field, not foreign keys (relationships).
-        Parameter ``fkmaps`` is a dict that maps relationship names to
-        functions.  The function must have one input parameter which obtains a
-        reference to the processed foreign entity. The function then returns
-        the computed value.
+        Format is specified via command-line argument ``--format`` and may be
+        ``JSON``, ``YAML``, or ``TXT``
 
-        E.g.::
-
-            class Principal(DbBase):
-                roles = relationship(Role)
-
-        If accessed, member ``roles`` is a list of associated roles. For each
-        role the mapped function is called and the current role given::
-
-            for attr, func in fkmaps.items():
-                r[attr] = [func(it) for it in getattr(obj, attr)]
-
-        And the function is defined like this::
-
-            fkmaps=dict(roles=lambda it: it.name)
-
-        :param rs: Db resultset, like a list of entities
-        :param fkmaps: Dict with foreign key mappings
+        :param data: Some data, e.g. a list of dicts.
         """
-        rr = []
-        for obj in rs:
-            it = pym.models.todict(obj)
-            r = OrderedDict()
-            r['id'] = it['id']
-            for k in sorted(it.keys()):
-                if k in ['id', 'owner', 'ctime', 'editor', 'mtime']:
-                    continue
-                r[k] = it[k]
-            for k in ['owner', 'ctime', 'editor', 'mtime']:
-                try:
-                    r[k] = it[k]
-                except KeyError:
-                    pass
-            if fkmaps:
-                for attr, func in fkmaps.items():
-                    r[attr] = [func(it) for it in getattr(obj, attr)]
-            rr.append(r)
-        return rr
-
-    def _print(self, data):
         fmt = self.args.format.lower()
         if fmt == 'json':
-            self._print_json(data)
+            self.print_json(data)
         elif fmt == 'tsv':
-            self._print_tsv(data)
+            self.print_tsv(data)
         elif fmt == 'txt':
-            self._print_txt(data)
+            if data:
+                self.print_txt(data)
+            else:
+                print('No data')
         else:
-            self._print_yaml(data)
+            self.print_yaml(data)
 
-    def _print_json(self, data):
+    def print_json(self, data):
+        """
+        Prints data as JSON.
+
+        JSON options are given in attribute ``dump_opts_json``.
+        """
         print(json.dumps(data, **self.dump_opts_json))
 
     @staticmethod
-    def _print_tsv(data):
+    def print_tsv(data):
+        """
+        Prints data as TSV text (tab-separated).
+
+        :param data: If data is a list of dicts, uses keys of first row as
+            column headers. If data is just a dict, uses its keys. If data is
+            a list, no column headers are written.
+        """
         try:
             hh = data[0].keys()
             print("\t".join(hh))
@@ -253,7 +284,19 @@ class Cli(object):
                 print("\t".join([str(v) for v in row.values()]))
 
     @staticmethod
-    def _print_txt(data):
+    def print_txt(data):
+        """
+        Prints data as a table.
+
+        Uses ``prettytable``. You may want to use
+        :class:`~collections.OrderedDict` for the dicts in the data to define
+        a consistent sequence of columns.
+
+        :param data: If data is a list of dicts, uses keys of first row as
+            column headers. If data is just a dict, uses its keys. If data is
+            a list, column headers are just the indices.
+        :return:
+        """
         # We need a list of hh for prettytable, otherwise we get
         # TypeError: 'KeysView' object does not support indexing
         try:
@@ -281,34 +324,56 @@ class Cli(object):
                 t.add_row([row[h] for h in hh])
             print(t)
 
-    def _print_yaml(self, data):
+    def print_yaml(self, data):
+        """
+        Prints data as YAML.
+
+        Options are given in attribute ``dump_opts_yaml``.
+        """
         yaml.dump(data, sys.stdout, **self.dump_opts_yaml)
 
-    def _parse(self, data):
+    def parse(self, data):
+        """
+        Parses data according to given format and returns Python data structure.
+
+        Format is specified by command-line argument ``--format``.
+
+        :param data:
+        :return: Parsed data as Python data structure
+        """
         fmt = self.args.format.lower()
         if fmt == 'json':
-            return self._parse_json(data)
+            return self.parse_json(data)
         if fmt == 'tsv':
-            return self._parse_tsv(data)
+            return self.parse_tsv(data)
         if fmt == 'txt':
             raise NotImplementedError("Reading data from pretty ASCII tables"
                 "is not implemented")
         else:
-            return self._parse_yaml(data)
+            return self.parse_yaml(data)
 
     @staticmethod
-    def _parse_json(data):
+    def parse_json(data):
+        """
+        Parses data as JSON.
+        """
         return json.loads(data)
 
     @staticmethod
-    def _parse_tsv(s):
+    def parse_tsv(s):
+        """
+        Parses data as TSV (tab-separated).
+        """
         data = []
         for row in "\n".split(s):
             data.append([x.strip() for x in "\t".split(row)])
         return data
 
     @staticmethod
-    def _parse_yaml(data):
+    def parse_yaml(data):
+        """
+        Parses data as YAML.
+        """
         return yaml.load(data)
 
     @property
@@ -318,11 +383,89 @@ class Cli(object):
 
         The session is created from the web app's default settings and therefore
         is in most cases a scoped session with transaction extension. If you need
-        a different session, caller may create one itself and set this property
-
+        a different session, caller may create one itself and set this property.
         """
         return self._sess
 
     @sess.setter
     def sess(self, v):
         self._sess = v
+
+
+def compile_sass_file(infile, outfile, output_style='nested'):
+    try:
+        _ = subprocess.check_output([CMD_SASSC, '-t',
+            output_style, infile, outfile],
+            stderr=subprocess.STDOUT)
+        return True
+    except subprocess.CalledProcessError as exc:
+        raise pym.exc.SassError("Compilation failed: {}".format(
+            exc.output.decode('utf-8')))
+
+
+def compile_sass(in_, out):
+    resp = JsonResp()
+    # in_ is string, so we have one input file
+    # Convert it into list
+    if isinstance(in_, str):
+        infiles = [safepath(in_)]
+        # in_ is str and out is string, so treat out as file:
+        # Build list of out filenames.
+        if isinstance(out, str):
+            outfiles = [safepath(out)]
+    else:
+        infiles = [safepath(f) for f in in_]
+        # in_ is list and out is string, so treat out as directory:
+        # Build list of out filenames.
+        if isinstance(out, str):
+            outfiles = []
+            out = safepath(out)
+            for f in in_:
+                bn = os.path.splitext(os.path.basename(f))[0]
+                outfiles.append(os.path.join(out, bn) + '.css')
+        # in_ and out are lists
+        else:
+            outfiles = [safepath(f) for f in out]
+    for i, inf in enumerate(infiles):
+        # noinspection PyUnboundLocalVariable
+        outf = outfiles[i]
+        if not os.path.exists(inf):
+            raise pym.exc.SassError("Sass infile '{0}' does not exist.".format(inf))
+        result = compile_sass_file(inf, outf)
+        if result is not True:
+            resp.error("Sass compilation failed for file '{0}'".format(inf))
+            resp.add_msg(dict(kind="error", title="Sass compilation failed",
+                text=result))
+            continue
+        resp.ok("Sass compiled to outfile '{0}'".format(outf))
+    if not resp.is_ok:
+        raise pym.exc.SassError("Batch compilation failed. See resp.", resp)
+    return resp
+
+
+def init_cli_locale(locale_name):
+    """
+    Initialises CLI locale and encoding.
+
+    Sets a certain locale. Ensures that output is correctly encoded, whether
+    it is send directly to a console or piped.
+
+    :param locale_name: A locale name, e.g. "de_DE.utf8".
+    :return: active locale as 2-tuple (lang_code, encoding)
+    """
+    # Set the locale
+    if locale_name:
+        locale.setlocale(locale.LC_ALL, locale_name)
+    else:
+        if sys.stdout.isatty():
+            locale.setlocale(locale.LC_ALL, '')
+        else:
+            locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
+    # lang_code, encoding = locale.getlocale(locale.LC_ALL)
+    lang_code, encoding = locale.getlocale(locale.LC_CTYPE)
+    # If output goes to pipe, detach stdout to allow writing binary data.
+    # See http://docs.python.org/3/library/sys.html#sys.stdout
+    if not sys.stdout.isatty():
+        import codecs
+        sys.stdout = codecs.getwriter(encoding)(sys.stdout.detach())
+    return lang_code, encoding

@@ -1,16 +1,18 @@
 import babel
 import pyramid.security
+import pyramid.util
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import INET, HSTORE, ARRAY
+from sqlalchemy.dialects.postgresql import INET, HSTORE, ARRAY, JSON
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
-from pyramid.security import Allow, ALL_PERMISSIONS
+from pyramid.security import ALL_PERMISSIONS
 import pyramid.i18n
 import zope.interface
 
 from pym.models import (
-    DbBase, DefaultMixin
+    DbBase, DefaultMixin, DbSession
 )
 from pym.models.types import CleanUnicode
 import pym.lib
@@ -23,6 +25,9 @@ from .const import (NOBODY_UID, NOBODY_PRINCIPAL, NOBODY_EMAIL,
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
+
+
+_dnr = pyramid.util.DottedNameResolver(None)
 
 
 class IAuthMgrNode(zope.interface.Interface):
@@ -116,21 +121,24 @@ class GroupMember(DbBase, DefaultMixin):
     IDENTITY_COL = None
 
     group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
         nullable=False)
     """This group is the container."""
     member_user_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.user.id",
+        sa.ForeignKey(
+            "pym.user.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
         nullable=True)
     """This user is the member."""
     member_group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
@@ -143,6 +151,96 @@ class GroupMember(DbBase, DefaultMixin):
     group = relationship('Group', foreign_keys=[group_id])
     member_user = relationship('User', foreign_keys=[member_user_id])
     member_group = relationship('Group', foreign_keys=[member_group_id])
+
+
+class GplusProfile():
+
+    def __init__(self, user):
+        self._user = user
+        if 'gplus' not in user._profile:
+            user._profile['gplus'] = {}
+
+    @property
+    def id(self):
+        return self._user.gplus_id
+
+    @id.setter
+    def id(self, v):
+        self._user.gplus_id = v
+
+    @property
+    def picture_url(self):
+        return self._user._profile['gplus'].get('picture_url')
+
+    @picture_url.setter
+    def picture_url(self, v):
+        self._user._profile['gplus']['picture_url'] = v
+
+    @property
+    def profile_url(self):
+        return self._user._profile['gplus'].get('profile_url')
+
+    @profile_url.setter
+    def profile_url(self, v):
+        self._user._profile['gplus']['profile_url'] = v
+
+
+class GenderEnum(pym.lib.Enum):
+    male = 'm'
+    female = 'f'
+    trans = 't'
+    unknown = None
+
+
+class UserProfile():
+
+    def __init__(self, user, gplus_class=GplusProfile):
+        if user._profile is None:
+            user._profile = {}
+        self._user = user
+        self._gplus = gplus_class(user)
+
+    def get_all(self):
+        return self._user._profile
+
+    @property
+    def gplus(self):
+        return self._gplus
+
+    @property
+    def locale_name(self):
+        return self._user._profile.get('locale_name')
+
+    @locale_name.setter
+    def locale_name(self, v):
+        self._user._profile['locale_name'] = v
+
+    @property
+    def gender(self):
+        v = self._user._profile.get('gender')
+        if v is None:
+            return None
+        for name, elem in GenderEnum.__members__.items():
+            if v == elem.value:
+                return elem
+        raise ValueError("Invalid gender: '{}'".format(v))
+
+    @gender.setter
+    def gender(self, v):
+        if isinstance(v, str):
+            for name, elem in GenderEnum.__members__.items():
+                if v == elem.value or v == name:
+                    self._user._profile['gender'] = v
+                    return
+            raise ValueError("Invalid gender: '{}'".format(v))
+        else:
+            self._user._profile['gender'] = v.value
+
+
+class UserRc():
+
+    def __init__(self, user):
+        self.user = user
 
 
 class User(DbBase, DefaultMixin):
@@ -201,6 +299,9 @@ class User(DbBase, DefaultMixin):
     identity_url = sa.Column(CleanUnicode(255), index=True, unique=True,
         info={'colanderalchemy': {'title': _("Identity URL")}})
     """Used for login by OpenID."""
+    gplus_id = sa.Column(CleanUnicode(255), index=True, unique=True,
+        info={'colanderalchemy': {'title': _("Google+ ID")}})
+    """Used for login by Google+ (OpenID Connect)."""
     email = sa.Column(CleanUnicode(128), nullable=False,
         info={'colanderalchemy': {'title': _("Email")}})
     """Email address. Always lower cased."""
@@ -239,8 +340,37 @@ class User(DbBase, DefaultMixin):
         info={'colanderalchemy': {'title': _("Description")}})
     )
     """Optional description."""
+    _profile = sa.orm.deferred(
+        sa.Column(
+            'profile',
+            MutableDict.as_mutable(JSON()),
+            nullable=True,
+            default=dict(),
+            info={'colanderalchemy': {'title': _("Profile")}}
+        )
+    )
+    """Profile data as JSON (aka detailed 'about me')"""
+    _rc = sa.orm.deferred(
+        sa.Column(
+            'rc',
+            MutableDict.as_mutable(JSON()),
+            nullable=True,
+            info={'colanderalchemy': {'title': _("Rc")}}
+        )
+    )
+    """User's preferences"""
+    sessionrc = sa.Column(
+        MutableDict.as_mutable(JSON()),
+        nullable=True,
+        info={'colanderalchemy': {'title': _("SessionRc")}}
+    )
+    """User's session"""
 
     group_memberships = relationship('GroupMember',
+        # cascade deletions
+        cascade="all, delete-orphan",
+        # Let the DB cascade deletions to children
+        passive_deletes=True,
         foreign_keys='GroupMember.member_user_id')
     """List of our direct group memberships."""
     groups = association_proxy('group_memberships', 'group')
@@ -248,11 +378,23 @@ class User(DbBase, DefaultMixin):
     """List of groups we are directly member of. Call :meth:`load_all_groups` to
     get all."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orm_init()
+
+    @sa.orm.reconstructor
+    def init_on_load(self):
+        self._orm_init()
+
+    def _orm_init(self):
+        self.profile = UserProfile(self)
+        self.rc = UserRc(self)
+
     def load_all_groups(self):
         def creator():
             # TODO Load nested groups
             return [(x.id, x.name) for x in self.groups]
-        key = 'auth:groups_for_user:{}'.format(self.id)
+        key = 'auth:user:{}:groups'.format(self.principal)
         return region_auth_long_term.get_or_create(key, creator)
 
     def __repr__(self):
@@ -285,7 +427,8 @@ class Group(DbBase, DefaultMixin):
     )
 
     tenant_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.tenant.id",
+        sa.ForeignKey(
+            "pym.tenant.id",
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
@@ -301,6 +444,10 @@ class Group(DbBase, DefaultMixin):
     """Optional description."""
 
     group_memberships = relationship('GroupMember',
+        # cascade deletions
+        cascade="all, delete-orphan",
+        # Let the DB cascade deletions to children
+        passive_deletes=True,
         foreign_keys='GroupMember.group_id')
     """List of memberships in which we are the container."""
     member_groups = association_proxy('group_memberships', 'member_group')
@@ -312,6 +459,17 @@ class Group(DbBase, DefaultMixin):
         return "<{name}(id={id}, tenant_id={t}, name='{n}'>".format(
             id=self.id, t=self.tenant_id, n=self.name,
             name=self.__class__.__name__)
+
+
+class Permissions(pym.lib.Enum):
+    all = '*'
+    visit = 'visit'
+    read = 'read'
+    write = 'write'
+    delete = 'delete'
+    admin = 'admin'
+    admin_auth = 'admin_auth'
+    admin_res = 'admin_res'
 
 
 class Permission(DbBase, DefaultMixin):
@@ -381,7 +539,7 @@ class Permission(DbBase, DefaultMixin):
         """
         perm.parent = self
 
-    @region_auth_long_term.cache_on_arguments()
+    @region_auth_long_term.cache_on_arguments(namespace='permission')
     def load_all(sess):
         """
         Returns detailed info about permissions.
@@ -433,7 +591,8 @@ class Permission(DbBase, DefaultMixin):
         # Some permissions may have no parents.
         q = sa.text("SELECT id, name, parents "
             "FROM pym.vw_permissions_with_parents") \
-            .columns(id=sa.Integer(), name=sa.Unicode(),
+            .columns(
+                id=sa.Integer(), name=sa.Unicode(),
                 parents=ARRAY(sa.Unicode, dimensions=2)
             )
         rs = sess.execute(q)
@@ -453,7 +612,8 @@ class Permission(DbBase, DefaultMixin):
         # CAVEAT: Permissions without children are not listed!
         q = sa.text("SELECT id, name, children "
             "FROM pym.vw_permissions_with_children") \
-            .columns(id=sa.Integer(), name=sa.Unicode(),
+            .columns(
+                id=sa.Integer(), name=sa.Unicode(),
                 children=ARRAY(sa.Unicode, dimensions=2)
             )
         rs = sess.execute(q)
@@ -497,8 +657,10 @@ class Ace(DbBase, DefaultMixin):
         {'schema': 'pym'}
     )
 
-    resource_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.resource_tree.id",
+    resource_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            "pym.resource_tree.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_resource_fk'
@@ -507,7 +669,8 @@ class Ace(DbBase, DefaultMixin):
     )
     """Reference to a resource node."""
     group_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.group.id",
+        sa.ForeignKey(
+            "pym.group.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_group_fk'
@@ -516,7 +679,8 @@ class Ace(DbBase, DefaultMixin):
     )
     """Reference to a group. Mandatory if user is not set."""
     user_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.user.id",
+        sa.ForeignKey(
+            "pym.user.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_user_fk'
@@ -533,7 +697,8 @@ class Ace(DbBase, DefaultMixin):
         important to setup ``sortix`` properly!
     """
     permission_id = sa.Column(sa.Integer(),
-        sa.ForeignKey("pym.permission_tree.id",
+        sa.ForeignKey(
+            "pym.permission_tree.id",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name='resource_acl_permission_fk'
@@ -541,7 +706,8 @@ class Ace(DbBase, DefaultMixin):
         nullable=False
     )
     """Reference to a permission."""
-    allow = sa.Column(sa.Boolean(),
+    allow = sa.Column(
+        sa.Boolean(),
         nullable=False
     )
     """Allow if TRUE, deny if FALSE."""
@@ -564,9 +730,9 @@ class Ace(DbBase, DefaultMixin):
         return allow_deny, princ, perm
 
     def __repr__(self):
-        return "<{name}(id={id}, resource_node_id={r}, group_id={g}," \
+        return "<{name}(id={id}, resource_id={r}, group_id={g}," \
                " user_id={u}, sortix={ix}, permission_id={p}, allow={allow}>".format(
-                   id=self.id, r=self.resource_node_id, p=self.permission_id,
+                   id=self.id, r=self.resource_id, p=self.permission_id,
                    g=self.group_id, u=self.user_id, allow=self.allow,
                    ix=self.sortix, name=self.__class__.__name__
                )
@@ -610,30 +776,45 @@ def get_vw_group_member_browse():
 
 class CurrentUser(object):
 
-    SESS_KEY = 'auth:current_user'
+    SESSION_KEY = 'auth:current_user'
 
-    def __init__(self, request):
+    def __init__(self, sess, request, user_class):
+        """
+        This class describes the current user.
+
+        This class gets bolted onto ``request`` and is used to handle the
+        current user. Even if no-one is logged in, we have a current user:
+        "nobody".
+
+        Use this class to process login/logout, and handle attributes of the
+        current user in the current session.
+
+        This class does not handle storage of user records itself, but relies
+        on an injected ``auth_provider``.
+
+        :param sess: Current DB session
+        :param request: Current request
+        :param user_class: Class that represents a stored user, needed for
+            ``auth_provider``.
+        """
         self._request = request
-        self._metadata = None
+        self._metadata = {}
         self._groups = []
         self.uid = None
         self.principal = None
+        self.sess = sess
+        rc = request.registry.settings['rc']
+        cls = _dnr.resolve(rc.g('auth.provider'))
+        self.auth_provider = cls(self.sess, user_class)
         self.init_nobody()
-        self.auth_provider = AuthProviderFactory.factory(
-            request.registry.settings['auth.provider'])
 
     def load_by_principal(self, principal):
         u = self.auth_provider.load_by_principal(principal)
         self.init_from_user(u)
 
     def init_nobody(self):
-        self.uid = NOBODY_UID
-        self.principal = NOBODY_PRINCIPAL
-        self._metadata = dict(
-            email=NOBODY_EMAIL,
-            display_name=NOBODY_DISPLAY_NAME
-        )
-        self.groups = []
+        u = self.auth_provider.load_by_principal(NOBODY_PRINCIPAL)
+        self.init_from_user(u)
 
     def init_from_user(self, u):
         """
@@ -646,6 +827,7 @@ class CurrentUser(object):
         self._metadata['first_name'] = u.first_name
         self._metadata['last_name'] = u.last_name
         self._metadata['display_name'] = u.display_name
+        self._metadata['preferred_locale'] = u.profile.locale_name
 
     def is_auth(self):
         """Tells whether user is authenticated, i.e. is not nobody
@@ -669,11 +851,15 @@ class CurrentUser(object):
         # Login methods throw AuthError exception. Caller should handle them.
         try:
             if '@' in login:
-                p = self.auth_provider.login_by_email(request=self._request,
-                    email=login, pwd=pwd, remote_addr=remote_addr)
+                p = self.auth_provider.login_by_email(
+                    request=self._request,
+                    email=login, pwd=pwd, remote_addr=remote_addr
+                )
             else:
-                p = self.auth_provider.login_by_principal(request=self._request,
-                    principal=login, pwd=pwd, remote_addr=remote_addr)
+                p = self.auth_provider.login_by_principal(
+                    request=self._request,
+                    principal=login, pwd=pwd, remote_addr=remote_addr
+                )
         except pym.exc.AuthError as exc:
             self._request.registry.notify(
                 UserAuthError(self._request, login, pwd,
@@ -698,7 +884,7 @@ class CurrentUser(object):
             u = self.auth_provider.load_by_principal(principal)
         else:
             u = principal
-        self._request.session[self.__class__.SESS_KEY + '/prev_user'] = \
+        self._request.session[self.__class__.SESSION_KEY + '/prev_user'] = \
             self.principal
         self.init_from_user(u)
         self._request.session.new_csrf_token()
@@ -713,13 +899,17 @@ class CurrentUser(object):
         """
         try:
             principal = self._request.session[
-                self.__class__.SESS_KEY + '/prev_user']
+                self.__class__.SESSION_KEY + '/prev_user']
+            del self._request.session[self.__class__.SESSION_KEY + '/prev_user']
         except KeyError:
             return False
         u = self.auth_provider.load_by_principal(principal)
         self.init_from_user(u)
         self._request.session.new_csrf_token()
         return u
+
+    def is_impersonated(self):
+        return self.__class__.SESSION_KEY + '/prev_user' in self._request.session
 
     def logout(self):
         """
@@ -756,14 +946,11 @@ class CurrentUser(object):
         else:
             return None
 
-
-class AuthProviderFactory(object):
-    @staticmethod
-    def factory(type_):
-        if type_ == 'sqlalchemy':
-            from . import manager
-            return manager
-        raise Exception("Unknown auth provider: '{0}'".format(type_))
+    def __repr__(self):
+        return "<{name}(id={id}, principal='{pr}', email='{email}')>".format(
+            id=self.uid, pr=self.principal, email=self.email,
+            name=self.__class__.__name__
+        )
 
 
 def get_current_user(request):
@@ -773,7 +960,10 @@ def get_current_user(request):
     """
     #mlgg.debug("get user: {}".format(request.path))
     principal = pyramid.security.unauthenticated_userid(request)
-    cusr = CurrentUser(request)
+    sess = DbSession()
+    rc = request.registry.settings['rc']
+    user_class = _dnr.resolve(rc.g('auth.class.user'))
+    cusr = CurrentUser(sess, request, user_class)
     if principal is not None:
         cusr.load_by_principal(principal)
     return cusr

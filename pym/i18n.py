@@ -9,6 +9,8 @@ DOMAIN = 'Parenchym'
 """Translation Domain for ``request.translate``."""
 
 _ = pyramid.i18n.TranslationStringFactory(DOMAIN)
+"""Translation function, configured for domain ``DOMAIN``.
+   Import it in your modules to use."""
 
 
 def translate_choices(translate_func, choices):
@@ -24,7 +26,7 @@ def translate_choices(translate_func, choices):
     `translate_func` can be a partial (see `functools.partial`) initialised
     with domain and mapping. A translation function can be
     `pyramid.i18n.Localizer.translate()`, which can be obtained with
-    `pyramid.i18n.get_localizer(request)`.
+    ``request.localizer``.
 
     :param translate_func: A function to translate the strings.
     :param choices: Typically list of 2-tuples with choices. May also be a dict.
@@ -59,13 +61,6 @@ def locale_negotiator(request):
     which is a WebOb object, find the best match from our available
     languages.
     """
-    avail_languages = request.registry.settings['i18n.avail_languages']
-    loc = request.user.preferred_locale
-    if not loc:
-        loc = pyramid.i18n.default_locale_negotiator(request)
-    if loc:
-        if '*' in avail_languages or loc in avail_languages:
-            return loc
     # Some bots seem to transmit just '*' and WebOB then throws
     # an exception:
     #     Traceback (most recent call last):
@@ -110,6 +105,15 @@ def locale_negotiator(request):
     #   File "/home/ceres/.virtualenvs/pym-py32-env/lib/python3.2/site-packages/webob/acceptparse.py", line 316, in _check_offer
     #     raise ValueError("The application should offer specific types, got %r" % offer)
     # ValueError: The application should offer specific types, got '*'
+    avail_languages = request.registry.settings['i18n.avail_languages']
+    wanted_loc = request.user.preferred_locale
+    if wanted_loc is not None:
+        wanted_loc = str(wanted_loc)
+    if not wanted_loc:
+        wanted_loc = pyramid.i18n.default_locale_negotiator(request)
+    if wanted_loc:
+        if '*' in avail_languages or wanted_loc in avail_languages:
+            return wanted_loc
     try:
         return request.accept_language.best_match(avail_languages)
     except ValueError:
@@ -155,6 +159,10 @@ def fetch_translated(request, data):
     The requested language is determined from user's preferred locale
     setting and the current request's language setting.
 
+    If neither of these locales have en entry in ``data`` we return entry ``*``.
+    Should this one also be amiss, we return the first entry of ``data``
+    (which, if ``data`` is just a standard dict, might be arbitrary).
+
     :param request: Current request
     :param data: Dict with translated strings
     :return: Translated string
@@ -165,6 +173,8 @@ def fetch_translated(request, data):
     if request.user.preferred_locale:
         wanted.insert(0, str(request.user.preferred_locale))
     avail = list(data.keys())
+    if not avail:
+        return None
     loc = babel.Locale.negotiate(wanted, avail)
     if loc:
         return data[str(loc)]
@@ -172,4 +182,4 @@ def fetch_translated(request, data):
         try:
             return data['*']
         except KeyError:
-            return None
+            return data[avail[0]]

@@ -1,8 +1,9 @@
 from pym.res.models import ResourceNode
-from pym.res.const import NODE_NAME_ROOT, NODE_NAME_SYS
+from pym.res.const import NODE_NAME_ROOT
+from pym.sys.const import NODE_NAME_SYS
 from . import manager as authmgr
 from .const import *
-from .models import Permission
+from .models import Permission, Permissions
 
 
 SQL_VW_USER_BROWSE = """
@@ -41,22 +42,6 @@ CREATE OR REPLACE VIEW pym.vw_user_browse AS
     LEFT JOIN pym."user" AS e ON pym."user".editor_id = e.id
 );"""
 
-SQL_VW_TENANT_BROWSE = """
-CREATE OR REPLACE VIEW pym.vw_tenant_browse AS
-(
-    SELECT tenant.id                     AS id,
-           tenant.name                   AS name,
-           tenant.descr                  AS descr,
-           tenant.mtime                  AS mtime,
-           tenant.editor_id              AS editor_id,
-           e.display_name                AS editor_display_name,
-           tenant.ctime                  AS ctime,
-           tenant.owner_id                  AS owner_id,
-           o.display_name                AS owner_display_name
-    FROM      pym.tenant
-    JOIN      pym."user" AS o ON pym.tenant.owner_id = o.id
-    LEFT JOIN pym."user" AS e ON pym.tenant.editor_id = e.id
-);"""
 
 SQL_VW_GROUP_BROWSE = """
 CREATE OR REPLACE VIEW pym.vw_group_browse AS
@@ -65,6 +50,7 @@ CREATE OR REPLACE VIEW pym.vw_group_browse AS
            "group".tenant_id               AS tenant_id,
            t.name                        AS tenant_name,
            "group".name                    AS name,
+           "group".kind                    AS kind,
            "group".descr                   AS descr,
            "group".mtime                   AS mtime,
            "group".editor_id                  AS editor_id,
@@ -75,7 +61,7 @@ CREATE OR REPLACE VIEW pym.vw_group_browse AS
     FROM      pym."group"
     JOIN      pym."user" AS o ON pym."group".owner_id = o.id
     LEFT JOIN pym."user" AS e ON pym."group".editor_id = e.id
-    LEFT JOIN pym.tenant AS t ON pym."group".tenant_id = t.id
+    LEFT JOIN pym.resource_tree AS t ON pym."group".tenant_id = t.id AND t.kind='tenant'
 );"""
 
 SQL_VW_GROUP_MEMBER_BROWSE = """
@@ -83,8 +69,8 @@ CREATE OR REPLACE VIEW pym.vw_group_member_browse AS
 (
     SELECT gm.id                        AS id,
            gr.id                        AS group_id,
-           tenant.id                    AS tenant_id,
-           tenant.name                  AS tenant_name,
+           t.id                         AS tenant_id,
+           t.name                       AS tenant_name,
            gr.name                      AS group_name,
            mu.id                        AS member_user_id,
            mu.principal                 AS member_user_principal,
@@ -100,7 +86,7 @@ CREATE OR REPLACE VIEW pym.vw_group_member_browse AS
     JOIN      pym."group" AS gr     ON gm.group_id        = gr.id
     LEFT JOIN pym."user"  AS mu     ON gm.member_user_id  = mu.id
     LEFT JOIN pym."group" AS mgr    ON gm.member_group_id = mgr.id
-    LEFT JOIN pym.tenant            ON gr.tenant_id       = tenant.id
+    LEFT JOIN pym.resource_tree t   ON gr.tenant_id       = t.id AND t.kind='tenant'
 );"""
 
 # -- List all permissions with their respective parent path.
@@ -204,16 +190,15 @@ CREATE OR REPLACE VIEW pym.vw_permissions_with_children AS
 """
 
 
-def create_views(sess):
+def _create_views(sess, rc):
     sess.execute(SQL_VW_USER_BROWSE)
-    sess.execute(SQL_VW_TENANT_BROWSE)
     sess.execute(SQL_VW_GROUP_BROWSE)
     sess.execute(SQL_VW_GROUP_MEMBER_BROWSE)
     sess.execute(SQL_VW_PERMISSIONS_WITH_PARENTS)
     sess.execute(SQL_VW_PERMISSIONS_WITH_CHILDREN)
 
 
-def setup_users(sess, root_pwd):
+def _setup_users(sess, root_pwd):
     # 1// Create user system
     u_system = authmgr.create_user(
         sess,
@@ -286,7 +271,9 @@ def setup_users(sess, root_pwd):
     )
 
     # 4// Create users
-    authmgr.create_user(
+
+    # root
+    u = authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
         id=ROOT_UID,
@@ -298,6 +285,8 @@ def setup_users(sess, root_pwd):
         is_enabled=True,
         groups=[g_wheel.name, g_users.name]
     )
+
+    # nobody
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
@@ -308,10 +297,11 @@ def setup_users(sess, root_pwd):
         first_name='Nobody',
         display_name='Nobody',
         is_enabled=False,
-        # This user is not member of any group
         # Not-authenticated users are automatically 'nobody'
-        groups=False
+        groups=['everyone']
     )
+
+    # sample data
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
@@ -325,6 +315,8 @@ def setup_users(sess, root_pwd):
         # This user is not member of any group
         groups=False
     )
+
+    # unit_tester
     authmgr.create_user(
         sess,
         owner=SYSTEM_UID,
@@ -348,7 +340,7 @@ def setup_users(sess, root_pwd):
     sess.flush()
 
 
-def setup_permissions(sess):
+def _setup_permissions(sess):
     """
     Sets up permission tree as follows:
 
@@ -364,43 +356,43 @@ def setup_permissions(sess):
     """
     p_all = Permission()
     p_all.owner_id = SYSTEM_UID
-    p_all.name = '*'
+    p_all.name = Permissions.all.value
     p_all.descr = "All permissions."
 
     p_visit = Permission()
     p_visit.owner_id = SYSTEM_UID
-    p_visit.name = 'visit'
+    p_visit.name = Permissions.visit.value
     p_visit.descr = "Permission to visit this node. This is weaker than 'read'."
 
     p_read = Permission()
     p_read.owner_id = SYSTEM_UID
-    p_read.name = 'read'
+    p_read.name = Permissions.read.value
     p_read.descr = "Permission to read this resource."
 
     p_write = Permission()
     p_write.owner_id = SYSTEM_UID
-    p_write.name = 'write'
+    p_write.name = Permissions.write.value
     p_write.descr = "Permission to write this resource."
 
     p_delete = Permission()
     p_delete.owner_id = SYSTEM_UID
-    p_delete.name = 'delete'
+    p_delete.name = Permissions.delete.value
     p_delete.descr = "Permission to delete this resource."
 
     p_admin = Permission()
     p_admin.owner_id = SYSTEM_UID
-    p_admin.name = 'admin'
+    p_admin.name = Permissions.admin.value
     p_admin.descr = "Permission to administer in general."
 
     p_admin_auth = Permission()
     p_admin_auth.owner_id = SYSTEM_UID
-    p_admin_auth.name = 'admin_auth'
+    p_admin_auth.name = Permissions.admin_auth.value
     p_admin_auth.descr = "Permission to administer authentication and "\
         "authorization, like users, groups, permissions and ACL on resources."
 
     p_admin_res = Permission()
     p_admin_res.owner_id = SYSTEM_UID
-    p_admin_res.name = 'admin_res'
+    p_admin_res.name = Permissions.admin_res.value
     p_admin_res.descr = "Permission to administer resources."
 
     p_visit.add_child(p_read)
@@ -416,7 +408,7 @@ def setup_permissions(sess):
     sess.add(p_visit)
 
 
-def setup_resources(sess):
+def _setup_resources(sess):
     n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
     n_sys = n_root[NODE_NAME_SYS]
 
@@ -442,13 +434,15 @@ def setup_resources(sess):
         iface='pym.auth.models.IPermissionMgrNode')
 
 
-def setup_basics(sess, root_pwd, schema_only=False):
-    create_views(sess)
-    if not schema_only:
-        setup_users(sess, root_pwd)
-        setup_permissions(sess)
+def create_schema(sess, rc):
+    pass
 
 
-def setup(sess, schema_only=False):
-    if not schema_only:
-        setup_resources(sess)
+def populate(sess, root_pwd, rc):
+    _setup_users(sess, root_pwd)
+    _setup_permissions(sess)
+
+
+def setup(sess, rc):
+    _create_views(sess, rc)
+    _setup_resources(sess)

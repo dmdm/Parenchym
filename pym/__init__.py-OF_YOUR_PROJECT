@@ -1,0 +1,71 @@
+import os.path
+
+from pyramid.config import Configurator
+
+import pym
+from pym.rc import Rc
+
+from .res.models import root_factory
+
+"""
+If you want to use Parenchym as a framework and develop your project as a
+separate package, the ``__init__.py`` of your project may look like this:
+"""
+
+
+def main(global_config, **settings):
+    """ This function returns a Pyramid WSGI application.
+    """
+    # Init Rc
+    # Get Rc instance like this, then use its methods e.g. g() or s():
+    #     request.registry.settings['rc']
+    # Rc data is merged directly into settings, so you can retrieve it like
+    # this:
+    #     request.registry.settings['project']
+    # Set Rc's root_dir, which by default is the project dir (not the package
+    # dir)
+    #     ProjectDir
+    #     +-- pym
+    #     |   `-- rc.py
+    #     `-- PackageDir
+    if 'environment' not in settings:
+        raise KeyError('Missing key "environment" in config. Specify '
+            'environment in paster INI file.')
+    rc = Rc(environment=settings['environment'],
+        root_dir=os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..')
+        )
+    )
+    rc.load()
+    settings.update(rc.data)
+    rc.s('environment', settings['environment'])
+    # Put rc into config settings
+    settings['rc'] = rc
+
+    # Create config
+    config = Configurator(
+        settings=settings
+    )
+    config.include(pym)
+    config.commit()
+    config.include(includeme)
+
+    return config.make_wsgi_app()
+
+
+def includeme(config):
+    # Set our own root factory
+    config.set_root_factory(root_factory)
+
+    # Run scan() which also imports db models
+    config.scan('MY_PROJECT')
+
+    # i18n
+    config.add_translation_dirs('MY_PROJECT:locale/')
+
+    # Static assets for this project
+    config.add_static_view('static-MY_PROJECT', 'MY_PROJECT:static')
+
+    # Override Pym's layouts with ours, e.g. for system pages
+    config.override_asset(to_override='pym:templates/_layouts/',
+                      override_with='MY_PROJECT:templates/_layouts/')

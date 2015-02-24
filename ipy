@@ -1,0 +1,7 @@
+#!/bin/bash
+
+ipython3 \
+	--InteractiveShellApp.extensions="['autoreload']" \
+	--InteractiveShellApp.exec_lines="['%autoreload 2']" \
+	-i ipy_helper.py
+

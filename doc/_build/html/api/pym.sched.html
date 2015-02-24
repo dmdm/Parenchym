@@ -1,0 +1,535 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pym.sched module &mdash; Parenchym 0.3 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Parenchym 0.3 documentation" href="../index.html"/>
+        <link rel="up" title="pym package" href="pym.html"/>
+        <link rel="next" title="pym.security module" href="pym.security.html"/>
+        <link rel="prev" title="pym.resp module" href="pym.resp.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="fa fa-home"> Parenchym</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../narr/index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Narrative documentation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">pym</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pym.html">pym package</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Parenchym</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">pym</a> &raquo;</li>
+      
+          <li><a href="pym.html">pym package</a> &raquo;</li>
+      
+    <li>pym.sched module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/api/pym.sched.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="module-pym.sched">
+<span id="pym-sched-module"></span><h1>pym.sched module<a class="headerlink" href="#module-pym.sched" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pym.sched.JobStore">
+<em class="property">class </em><tt class="descclassname">pym.sched.</tt><tt class="descname">JobStore</tt><big>(</big><em>sess</em>, <em>user_id=1</em>, <em>pickle_protocol=4</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">apscheduler.jobstores.base.BaseJobStore</span></tt></p>
+<dl class="method">
+<dt id="pym.sched.JobStore.add_job">
+<tt class="descname">add_job</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore.add_job" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.get_all_jobs">
+<tt class="descname">get_all_jobs</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.sched.JobStore.get_all_jobs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.get_due_jobs">
+<tt class="descname">get_due_jobs</tt><big>(</big><em>now</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore.get_due_jobs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.get_next_run_time">
+<tt class="descname">get_next_run_time</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.sched.JobStore.get_next_run_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.lookup_job">
+<tt class="descname">lookup_job</tt><big>(</big><em>job_id</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore.lookup_job" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.remove_all_jobs">
+<tt class="descname">remove_all_jobs</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.sched.JobStore.remove_all_jobs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.remove_job">
+<tt class="descname">remove_job</tt><big>(</big><em>job_id</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore.remove_job" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.shutdown">
+<tt class="descname">shutdown</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.sched.JobStore.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.JobStore.update_job">
+<tt class="descname">update_job</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#pym.sched.JobStore.update_job" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.sched.Scheduler">
+<em class="property">class </em><tt class="descclassname">pym.sched.</tt><tt class="descname">Scheduler</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt>, <a class="reference internal" href="pym.models.html#pym.models.DefaultMixin" title="pym.models.DefaultMixin"><tt class="xref py py-class docutils literal"><span class="pre">pym.models.DefaultMixin</span></tt></a></p>
+<p>Scheduler for automated jobs.</p>
+<p>Each job is registered with a name. Some external cron job should
+ensure that jobs are executed.</p>
+<p>State flow:</p>
+<div class="highlight-python"><div class="highlight"><pre>sleeping  --&gt;  running  --&gt; sleeping  --&gt; running ...
+                        |              ^
+                        +-&gt; error    --+
+</pre></div>
+</div>
+<p>Typically you use it like this: <tt class="docutils literal"><span class="pre">Scheduler.run(sess,</span> <span class="pre">user,</span> <span class="pre">some_callable)</span></tt></p>
+<dl class="classmethod">
+<dt id="pym.sched.Scheduler.add_all_to_apscheduler">
+<em class="property">classmethod </em><tt class="descname">add_all_to_apscheduler</tt><big>(</big><em>sched</em>, <em>sess_maker</em>, <em>lgg=None</em>, <em>user=None</em>, <em>begin_transaction=True</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.add_all_to_apscheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.add_to_apscheduler">
+<tt class="descname">add_to_apscheduler</tt><big>(</big><em>sched</em>, <em>func</em>, <em>e_user</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.add_to_apscheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pym.sched.Scheduler.create">
+<em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>sess</em>, <em>job</em>, <em>func</em>, <em>user</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates instance of a job.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pym.sched.Scheduler.fetch">
+<em class="property">classmethod </em><tt class="descname">fetch</tt><big>(</big><em>sess</em>, <em>job</em>, <em>user</em>, <em>func=None</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads instance of this job from DB or creates one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.is_ok">
+<tt class="descname">is_ok</tt><big>(</big><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.is_ok" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.prepare_func">
+<tt class="descname">prepare_func</tt><big>(</big><em>sess_maker</em>, <em>lgg=None</em>, <em>user=None</em>, <em>begin_transaction=True</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.prepare_func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pym.sched.Scheduler.run">
+<em class="property">classmethod </em><tt class="descname">run</tt><big>(</big><em>sess</em>, <em>user</em>, <em>callback</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads or creates a job and runs callback.</p>
+<p>The job&#8217;s name is the <tt class="docutils literal"><span class="pre">__name__</span></tt> of the callable.</p>
+<p>We call callback like this: <tt class="docutils literal"><span class="pre">callback(sess,</span> <span class="pre">user,</span> <span class="pre">*args,</span> <span class="pre">**kwargs)</span></tt>.
+Callback runs in nested savepoint.</p>
+<p>We catch all exceptions that that the callback may raise and save their
+traceback in the <tt class="docutils literal"><span class="pre">out</span></tt> field. We log these exceptions also to the
+logger, so that a history is available. Pass specific logger as keyword
+<tt class="docutils literal"><span class="pre">lgg</span></tt>, else we use the module&#8217;s logger. <tt class="docutils literal"><span class="pre">lgg</span></tt> may be name (string)
+or instance of a logger.</p>
+<p>Scheduler itself may raise other exceptions, e.g.
+<a class="reference internal" href="pym.exc.html#pym.exc.SchedulerError" title="pym.exc.SchedulerError"><tt class="xref py py-class docutils literal"><span class="pre">pym.exc.SchedulerError</span></tt></a>, which the caller must handle and log.</p>
+<p>Additional <tt class="docutils literal"><span class="pre">args</span></tt> and <tt class="docutils literal"><span class="pre">kwargs</span></tt> are passed through to the callback.</p>
+<p>We assume, a transaction is already started, and run the callback inside
+its own savepoint. If an error occurs, we roll back this single savepoint,
+leaving the rest of the transaction, in which also the status information
+of the job is saved, intact.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sess</strong> &#8211; Current DB session</li>
+<li><strong>user</strong> &#8211; Instance of current user, used e.g. as owner or editor</li>
+<li><strong>callback</strong> &#8211; Callable</li>
+<li><strong>args</strong> &#8211; More args</li>
+<li><strong>kwargs</strong> &#8211; More keyword args</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Instance of used job.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.start">
+<tt class="descname">start</tt><big>(</big><em>user</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.stop_error">
+<tt class="descname">stop_error</tt><big>(</big><em>user</em>, <em>out=None</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.stop_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pym.sched.Scheduler.stop_ok">
+<tt class="descname">stop_ok</tt><big>(</big><em>user</em>, <em>out=None</em><big>)</big><a class="headerlink" href="#pym.sched.Scheduler.stop_ok" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.IDENTITY_COL">
+<tt class="descname">IDENTITY_COL</tt><em class="property"> = 'job'</em><a class="headerlink" href="#pym.sched.Scheduler.IDENTITY_COL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.SECTION_CACHE">
+<tt class="descname">SECTION_CACHE</tt><em class="property"> = 'cache'</em><a class="headerlink" href="#pym.sched.Scheduler.SECTION_CACHE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.STATE_ERROR">
+<tt class="descname">STATE_ERROR</tt><em class="property"> = 'e'</em><a class="headerlink" href="#pym.sched.Scheduler.STATE_ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.STATE_RUNNING">
+<tt class="descname">STATE_RUNNING</tt><em class="property"> = 'r'</em><a class="headerlink" href="#pym.sched.Scheduler.STATE_RUNNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.STATE_SLEEPING">
+<tt class="descname">STATE_SLEEPING</tt><em class="property"> = 's'</em><a class="headerlink" href="#pym.sched.Scheduler.STATE_SLEEPING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.args">
+<tt class="descname">args</tt><a class="headerlink" href="#pym.sched.Scheduler.args" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of positional arguments to call func</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.caption">
+<tt class="descname">caption</tt><a class="headerlink" href="#pym.sched.Scheduler.caption" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.coalesce">
+<tt class="descname">coalesce</tt><a class="headerlink" href="#pym.sched.Scheduler.coalesce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run once instead of many times if the scheduler determines that the job
+should be run more than once in succession</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.ctime">
+<tt class="descname">ctime</tt><a class="headerlink" href="#pym.sched.Scheduler.ctime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.deleter_id">
+<tt class="descname">deleter_id</tt><a class="headerlink" href="#pym.sched.Scheduler.deleter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who tagged this this record as deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.deletion_reason">
+<tt class="descname">deletion_reason</tt><a class="headerlink" href="#pym.sched.Scheduler.deletion_reason" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional reason for deletion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.descr">
+<tt class="descname">descr</tt><a class="headerlink" href="#pym.sched.Scheduler.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Description of task</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.dtime">
+<tt class="descname">dtime</tt><a class="headerlink" href="#pym.sched.Scheduler.dtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.duration">
+<tt class="descname">duration</tt><a class="headerlink" href="#pym.sched.Scheduler.duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duration of last run</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.editor_id">
+<tt class="descname">editor_id</tt><a class="headerlink" href="#pym.sched.Scheduler.editor_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who was last editor.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.enabled">
+<tt class="descname">enabled</tt><a class="headerlink" href="#pym.sched.Scheduler.enabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is task enabled/disabled</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.end_time">
+<tt class="descname">end_time</tt><a class="headerlink" href="#pym.sched.Scheduler.end_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when last run ended</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.func">
+<tt class="descname">func</tt><a class="headerlink" href="#pym.sched.Scheduler.func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callable as textual reference in the format
+&#8216;package.module:some.object&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.id">
+<tt class="descname">id</tt><a class="headerlink" href="#pym.sched.Scheduler.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.job">
+<tt class="descname">job</tt><a class="headerlink" href="#pym.sched.Scheduler.job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of a job</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.job_state">
+<tt class="descname">job_state</tt><a class="headerlink" href="#pym.sched.Scheduler.job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pickled job state</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.kwargs">
+<tt class="descname">kwargs</tt><a class="headerlink" href="#pym.sched.Scheduler.kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of keyword arguments to call func</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.lgg">
+<tt class="descname">lgg</tt><a class="headerlink" href="#pym.sched.Scheduler.lgg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of a logger</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.max_instances">
+<tt class="descname">max_instances</tt><a class="headerlink" href="#pym.sched.Scheduler.max_instances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum number of concurrently running instances allowed for this job</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.misfire_grace_time">
+<tt class="descname">misfire_grace_time</tt><a class="headerlink" href="#pym.sched.Scheduler.misfire_grace_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seconds after the designated run time that the job is still allowed to
+be run</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.mtime">
+<tt class="descname">mtime</tt><a class="headerlink" href="#pym.sched.Scheduler.mtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.next_time">
+<tt class="descname">next_time</tt><a class="headerlink" href="#pym.sched.Scheduler.next_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp of next scheduled run</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.out">
+<tt class="descname">out</tt><a class="headerlink" href="#pym.sched.Scheduler.out" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.owner_id">
+<tt class="descname">owner_id</tt><a class="headerlink" href="#pym.sched.Scheduler.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of user who created this record.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.schedule">
+<tt class="descname">schedule</tt><a class="headerlink" href="#pym.sched.Scheduler.schedule" title="Permalink to this definition">¶</a></dt>
+<dd><p>CRONTAB-like schedule. See <tt class="xref py py-class docutils literal"><span class="pre">apscheduler.triggers.cron</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.section">
+<tt class="descname">section</tt><a class="headerlink" href="#pym.sched.Scheduler.section" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group tasks</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.start_time">
+<tt class="descname">start_time</tt><a class="headerlink" href="#pym.sched.Scheduler.start_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp when last (or current) run was started.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.state">
+<tt class="descname">state</tt><a class="headerlink" href="#pym.sched.Scheduler.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8216;s&#8217; = sleeping, &#8216;r&#8217; = running, &#8216;e&#8217; = error, &#8216;w&#8217; = warning</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pym.sched.Scheduler.user">
+<tt class="descname">user</tt><a class="headerlink" href="#pym.sched.Scheduler.user" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID or principal of the user executing this job</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pym.sched.jobify">
+<em class="property">class </em><tt class="descclassname">pym.sched.</tt><tt class="descname">jobify</tt><big>(</big><em>job: str</em><big>)</big><a class="headerlink" href="#pym.sched.jobify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pym.security.html" class="btn btn-neutral float-right" title="pym.security module"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pym.resp.html" class="btn btn-neutral" title="pym.resp module"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Dirk Makowski.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
