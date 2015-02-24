@@ -5,12 +5,27 @@ function (angular, PYM) {
 
     var PymApp = angular.module('PymApp', PYM_APP_INJECTS);
 
+    PymApp.constant('angularMomentConfig', {
+        timezone: 'Europe/Berlin'
+    });
 
     PymApp.config(
         [
-                      '$httpProvider', '$provide', 'uiSelectConfig',
-            function ( $httpProvider,   $provide,   uiSelectConfig) {
-
+                      '$httpProvider', '$provide', 'uiSelectConfig', '$compileProvider',
+            function ( $httpProvider,   $provide,   uiSelectConfig,   $compileProvider) {
+                /**
+                 * Disable debug data
+                 *
+                 * Re-enable in a debug console with:
+                 *
+                 *     angular.reloadWithDebugInfo();
+                 *
+                 * See https://docs.angularjs.org/guide/production
+                 */
+                $compileProvider.debugInfoEnabled(false);
+                /**
+                 * Intercept HTTP errors to growl
+                 */
                 $provide.factory('PymHttpErrorInterceptor',
                     [
                         '$q',
@@ -25,12 +40,18 @@ function (angular, PYM) {
                     ]
                 );
                 $httpProvider.interceptors.push('PymHttpErrorInterceptor');
+                /**
+                 * Re-enable the XMLHttpRequest header
+                 */
                 $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
+                /**
+                 * Configure ui-select
+                 */
                 uiSelectConfig.theme = 'bootstrap';
             }
         ]
     );
+
 
     /**
      * @description Tools for ui-grid
@@ -59,11 +80,12 @@ function (angular, PYM) {
      *          </div>
      *          <div class="spacer"></div>
      *          <div class="rowNumbers">{{(BrowseGrid.pym.pager.currentPage-1)*BrowseGrid.pym.pager.pageSize+1}}-{{(BrowseGrid.pym.pager.currentPage-1)*BrowseGrid.pym.pager.pageSize+BrowseGrid.pym.pager.loadedItems}} of {{BrowseGrid.pym.pager.totalItems}}</div>
-     *          <div class="spinner"><pym-spinner state="BrowseGrid.pym.spinner"></pym-spinner></div>
+     *          <div class="spinner"><pym-spinner state="BrowseGrid.pym.loading"></pym-spinner></div>
      *      </div>
      */
     PymApp.service('PymApp.GridTools',
-        function (  ) {
+                 ['$http', '$timeout', 'uiGridConstants',
+        function ( $http,   $timeout,   uiGridConstants ) {
 
             // ===[ FILTER ]=======
 
@@ -101,24 +123,105 @@ function (angular, PYM) {
              */
             var Filter = function Filter(gridDef, opts) {
                 this.gridDef = gridDef;
-                this.filterText = '';
-                this.filterField = '';
                 this.delay = 500;
                 angular.extend(this, opts);
-                this._timer = null;
+                this.filter = null;
+                this.timer = null;
+                this.activationState = 0;
+                this.allowedOperators = [
+                    '=', '<', '<=', '>', '>=', '!=',
+                    '!', '~', '!~'
+                ];
             };
 
-            Filter.prototype.changed = function () {
-                var self = this;
-                if (self._timer) {
-                    $timeout.cancel(self._timer);
+            Filter.prototype.buildFilter = function (grid) {
+                var self = this,
+                    fil = [];
+                angular.forEach(grid.columns, function (col) {
+                    angular.forEach(col.filters, function (f) {
+                        if (f.term) {
+                            var op, t;
+                            op = f.term[0] + f.term[1];
+                            t = f.term.slice(2)
+                            console.log('try 1', op, t);
+                            if (self.allowedOperators.indexOf(op) < 0) {
+                                op = f.term[0];
+                                t = f.term.slice(1);
+                                console.log('try 2', op, t);
+                                if (self.allowedOperators.indexOf(op) < 0) {
+                                    op = 'like';
+                                    t = f.term;
+                                }
+                            }
+                            if (op == '!') op = '!like';
+                            fil.push([col.field, op, 'i', t]);
+                        }
+                    });
+                });
+                if (!fil) {
+                    self.filter = null;
                 }
-                self._timer = $timeout(function () {
-                    self.gridDef.loadItems();
-                    if (self.gridDef.pym.pager) {
-                        self.gridDef.pym.pager.currentPage = 1;
-                    }
-                }, self.delay);
+                else {
+                    self.filter = ['a', fil];
+                }
+                if (self.gridDef.pym.pager) {
+                    self.gridDef.pym.pager.currentPage = 1;
+                }
+                self.gridDef.loadItems();
+            }
+
+            Filter.prototype.changed = function (grid) {
+                var self = this;
+                if (this.timer) $timeout.cancel(this.timer);
+                this.timer = $timeout(function () {
+                    self.buildFilter.call(self, grid);
+                }, this.delay);
+            };
+
+            Filter.prototype.clear = function () {
+                // We might get called before gridApi was published.
+                if (! this.gridDef.api) return;
+                angular.forEach(this.gridDef.api.grid.columns, function (col) {
+                    angular.forEach(col.filters, function (f) {
+                        f.term = null;
+                    });
+                });
+                this.filter = null;
+            };
+
+            Filter.prototype.toggle = function () {
+                console.log('toggling');
+                var self = this;
+                if (self.activationState == 0) {
+                    self.activationState = 1;
+                }
+                else if (self.activationState == 1) {
+                    self.activationState = 2;
+                }
+                else if (self.activationState == 2) {
+                    self.activationState = 0;
+                }
+                self.gridDef.api.core.refresh();
+                console.log('new activationState', self.activationState);
+            }
+
+            /**
+             * @ngdoc method
+             * @methodOf Filter
+             * @name applyParams
+             * @description Applies current filter to given object of
+             *     query parameters. Key is ``fil`` and value is JSON-stringified
+             *     filter, or null. Given object is changed in-place.
+             * @param {object} params The object of query parameters.
+             */
+            Filter.prototype.applyParams = function (params) {
+                if (this.filter && this.filter[1]) {
+                    params.fil = JSON.stringify(this.filter);
+                }
+                else {
+                    params.fil = null;
+                }
+                console.log('FILTER', params.fil);
             };
 
             this.attachFilter = function (gridDef, opts) {
@@ -185,6 +288,47 @@ function (angular, PYM) {
                 this.gridDef.loadItems();
             };
 
+            Pager.prototype.firstRow = function () {
+                return (this.currentPage - 1) * this.pageSize + 1;
+            };
+
+            Pager.prototype.lastRow = function () {
+                return (this.currentPage - 1) * this.pageSize + this.loadedItems;
+            };
+
+            /**
+             * @ngdoc method
+             * @methodOf PymApp.service: PymApp.GridTools.Pager
+             * @name applyParams
+             * @description Applies current page and page size to given object of
+             *     query parameters. Keys are ``pg`` for current page and ``ps``
+             *     for page size. Given object is changed in-place. Applied
+             *     page number (``pg``) is zero-based, where-as page number
+             *     maintained in Pager object is one-based.
+             * @param {object} params The object of query parameters.
+             */
+            Pager.prototype.applyParams = function (params) {
+                params.pg = this.currentPage - 1;
+                params.ps = this.pageSize;
+            };
+
+            Pager.prototype.updateItemCount = function (totalItems, loadedItems) {
+                this.totalItems = totalItems;
+                this.loadedItems = loadedItems;
+            };
+
+            /**
+             * @ngdoc method
+             * @methodOf PymApp.service: PymApp.GridTools
+             * @name attachPager
+             * @description Attaches a new instance of a pager to the given
+             *     grid definition object. Pager instance is then available as
+             *     ``gridDef.pym.pager``.
+             * @param {object} gridDef The object with grid definition.
+             * @param {object} opts Additional options to pass to pager
+             *     constructor.
+             * @return Instance of the pager.
+             */
             this.attachPager = function (gridDef, opts) {
                 var pager = new Pager(gridDef, opts);
                 gridDef.pym.pager = pager;
@@ -199,7 +343,7 @@ function (angular, PYM) {
              * @description Sorter provides tools for external sorting.
              * Sorter expects an object with the grid definition.
              * The gridDef must have
-             *   - hash ``options.columnDefsByField`` that
+             *   - hash ``options.indexedColumnDefs`` that
              *     indexes columnDefs by field name
              *   - method ``loadItems()`` to load the items
              *   - property ``pym``, an object that gets filled with grid tool
@@ -218,7 +362,7 @@ function (angular, PYM) {
              *   $scope.BrowseGrid = {
              *      pym: {},
              *      loadItems: function (),
-             *      options.columnDefsByField: {},
+             *      options.indexedColumnDefs: {},
              *      onRegisterApi: function(gridApi) {
              *          $scope.browseGridApi = gridApi;
              *          $scope.browseGridApi.core.on.sortChanged(
@@ -255,10 +399,11 @@ function (angular, PYM) {
                 if (! self.opts.sortDef.length) self.opts.sortDef = self.opts.initialSortDef.slice(0);
                 self.gridDef.loadItems();
             };
-            Sorter.prototype.gridApplyInitialSort = function () {
+            Sorter.prototype.gridApplyInitialSort = function (isd) {
                 var self = this;
+                if (isd) self.opts.initialSortDef = isd;
                 angular.forEach(self.opts.initialSortDef, function (sd) {
-                    self.gridDef.options.columnDefsByField[sd[0]] = {
+                    self.gridDef.options.indexedColumnDefs[sd[0]] = {
                         direction: sd[1],
                         priority: sd[2]
                     };
@@ -287,6 +432,35 @@ function (angular, PYM) {
                 return vv;
             };
 
+            /**
+             * @ngdoc method
+             * @methodOf PymApp.service: PymApp.GridTools.Sorter
+             * @name applyParams
+             * @description Applies current sort settings to given object of
+             *     query parameters. Keys are ``sf`` for current fields, ``sd``
+             *     for directions and, ``sp`` for priorities. The value of each
+             *     key is a list with the appropriate column names. Given object
+             *     is changed in-place.
+             * @param {object} params The object of query parameters.
+             */
+            Sorter.prototype.applyParams = function (params) {
+                params.sf = this.getFields();
+                params.sd = this.getDirections();
+                params.sp = this.getPriorities();
+            };
+
+            /**
+             * @ngdoc method
+             * @methodOf PymApp.service: PymApp.GridTools
+             * @name attachSorter
+             * @description Attaches a new instance of a sorter to the given
+             *     grid definition object. Sorter instance is then available as
+             *     ``gridDef.pym.sorter``.
+             * @param {object} gridDef The object with grid definition.
+             * @param {object} opts Additional options to pass to sorter
+             *     constructor.
+             * @return Instance of the sorter.
+             */
             this.attachSorter = function (gridDef, opts) {
                 var sorter = new Sorter(gridDef, opts);
                 gridDef.pym.sorter = sorter;
@@ -295,19 +469,62 @@ function (angular, PYM) {
 
             // ===[ ENHANCEMENTS ]=======
 
-            function indexColumnDefs () {
+            function indexColumnDefs (RC) {
                 var self = this; // Will reference the gridDef object
-                self.options.columnDefsByField = {};
+                self.options.indexedColumnDefs = {};
                 angular.forEach(self.options.columnDefs, function (cd) {
-                    self.options.columnDefsByField[cd.field] = cd;
+                    self.options.indexedColumnDefs[cd.name || cd.field] = cd;
                 });
+                if (RC && RC.col_display_names) {
+                    angular.forEach(self.options.columnDefs, function (cd) {
+                        cd['displayName'] = RC.col_display_names[cd.name || cd.field];
+                    });
+                }
+            }
+
+            /**
+             * @ngdoc method
+             * @methodOf PymApp.service: PymApp.GridTools
+             * @name loadItems
+             * @description Loads the items for the grid. It regards optionally
+             *     available sorter, pager and filter. It handles the spinner
+             *     and updates the pager's item count.
+             * @param {string} url The GET URL to load from.
+             * @param {object} httpConf Object with additional configuration for
+             *     for the request. It *must* have property ``params`` set as a
+             *     nested object, because we apply all query parameters here.
+             * @return A promise that the caller can chain to with ``.then()``.
+             *     The parameters of the chained resolve and reject functions
+             *     are the original ones.
+             */
+            function loadItems(url, httpConf) {
+                // ``this`` points to the ``pym`` namespace of the gridDef
+                var self = this,
+                    params = httpConf.params;
+                if (self.filter) self.filter.applyParams(params);
+                if (self.sorter) self.sorter.applyParams(params);
+                if (self.pager) self.pager.applyParams(params);
+                self.loading = true;
+                return $http.get(url, httpConf)
+                    .then(function (resp) {
+                        var data = resp.data.data;
+                        self.loading = false;
+                        if (resp.data.ok) {
+                            if (self.pager) self.pager.updateItemCount(
+                                data.total, data.rows.length);
+                        }
+                        return resp;
+                    }, function (result) {
+                        self.pym.loading = false;
+                        return result;
+                    });
             }
 
             /**
              * @description Enhances given grid definition.
              *
              * - Inserts method ``indexColumnDefs()`` that indexes the
-             *   ``options.columnDefs`` into ``options.columnDefsByField`` by
+             *   ``options.columnDefs`` into ``options.indexedColumnDefs`` by
              *   their ``field`` properties.
              * - Inits property ``pym`` to become an object container for
              *   other grid tool instances like sorter etc.
@@ -319,12 +536,13 @@ function (angular, PYM) {
                     sorter: null,
                     pager: null,
                     filter: null,
-                    spinner: false
+                    loading: false,
+                    loadItems: loadItems
                 };
-                gridDef.options.columnDefsByField = {};
+                gridDef.options.indexedColumnDefs = {};
                 gridDef.indexColumnDefs = indexColumnDefs;
             };
-        }
+        }]
     );
 
     /**
@@ -374,6 +592,69 @@ function (angular, PYM) {
                 state: '='
             },
             template: '<i class="fa fa-spinner fa-spin" ng-show="state"></i>'
+        };
+    });
+
+    PymApp.directive('pymGridFooter', function() {
+        return {
+            restrict: 'E',
+            scope: {},
+            transclude: true,
+            template: ''
+                +'<div class="pym-grid-footer" ng-transclude>'
+                +'</div>'
+        };
+    });
+
+    PymApp.directive('pymGridToggleFilter', function() {
+        return {
+            restrict: 'E',
+            scope: {
+                gridFilter: '='
+            },
+            template: ''
+                +'<button class="pym-grid-toggle-filter btn btn-default form-control input-sm" ng-click="gridFilter.toggle()">'
+                +  '<i class="fa fa-filter"></i>'
+                +'</button>'
+        };
+    });
+
+    PymApp.directive('pymGridPagination', function() {
+        return {
+            restrict: 'E',
+            scope: {
+                gridPager: '=',
+                spinner: '='
+            },
+            template: ''
+                +'  <div class="pym-grid-pagination">'
+                +      '<pagination class="pagination pagination-sm"'
+                +                  'total-items="gridPager.totalItems"'
+                +                  'items-per-page="gridPager.pageSize"'
+                +                  'ng-model="gridPager.currentPage"'
+                +                  'ng-change="gridPager.changed()"'
+                +                  'boundary-links="true"'
+                +                  'previous-text="&lsaquo;" next-text="&rsaquo;"'
+                +                  'first-text="&laquo;" last-text="&raquo;"'
+                +                  'max-size="3"'
+                +              '>'
+                +      '</pagination>'
+                +'  </div>'
+                +   '<div class="page">'
+                +    '<input type="number" ng-model="gridPager.currentPage"'
+                +            'ng-change="gridPager.changed()"'
+                +            'class="form-control input-sm">'
+                +'  </div>'
+                +'  <div class="page-size-chooser">'
+                +    '<select ng-model="gridPager.pageSize"'
+                +            'ng-change="gridPager.sizeChanged()"'
+                +            'ng-options="v for v in gridPager.pageSizes"'
+                +            'class="form-control input-sm">'
+                +    '</select>'
+                +'  </div>'
+                +'  <div class="spacer"></div>'
+                +'  <div class="row-numbers">{{gridPager.firstRow()|number}}-{{gridPager.lastRow()|number}} of {{gridPager.totalItems|number}}</div>'
+                +'  <div class="spinner"><pym-spinner state="spinner"></pym-spinner></div>'
         };
     });
 

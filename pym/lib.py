@@ -69,6 +69,13 @@ class Enum(enum.Enum):
             return [(name, member.value)
                 for name, member in cls.__members__.items()]
 
+    @classmethod
+    def by_val(cls, v):
+        for m in cls.__members__.values():
+            if m.value == v:
+                return m
+        raise KeyError("Member with value '{}' not found".format(v))
+
 
 class JsonEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -325,7 +332,7 @@ def build_breadcrumbs(request):
             bc.append(elem.title)
         bcs.append(bc)
     if request.view_name:
-        bcs.append([None, request.view_name.capitalize()])
+        bcs.append([None, request.view_name.replace('_', ' ').title()])
     return bcs
 
 

@@ -1,4 +1,4 @@
-<%inherit file="pym:templates/_layouts/sys.mako" />
+<%inherit file="pym:templates/layouts/sys.mako" />
 
 <%block name="styles">
 ${parent.styles()}
@@ -40,7 +40,7 @@ function( doc,                   angular,  PYM,       PymApp) {
             ['$scope', '$http', '$q', '$window', 'RC',
     function ($scope,   $http,   $q,   $window,   RC) {
 
-        $scope.model = {};
+        $scope.model = $scope.model || {};
 
         /*
          * Tools menu

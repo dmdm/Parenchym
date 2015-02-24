@@ -1,7 +1,10 @@
 import datetime
 import re
+import dateutil.parser
 import sqlalchemy as sa
 import sqlalchemy.sql.expression
+import sqlalchemy.sql.sqltypes as sqty
+import sqlalchemy.sql.operators as sqop
 from pym.exc import ValidationError
 from pym.lib import json_deserializer
 
@@ -149,10 +152,8 @@ class FilterValidator(object):
 
         ``allowed_operators``: List of allowed operators, by default these::
 
-            '=', '<', '<=', '>', '>=', 'like', '~',
-            '!=', '!like', '!~'
-            '=*', '<*', '<=*', '>*', '>=*', 'like*', '~*',
-            '!=*', '!like*', '!~*'
+            '=', '<', '<=', '>', '>=', 'like', '~'
+            and their negations: '!=', '!<', '!<=', '!>', '!>=', '!like', '!~'
 
         ``allowed_conjunctions``: List of tokens that represent conjunctions
             ``AND`` and ``OR`` in an expression, default ``('a', 'o')``.
@@ -166,14 +167,40 @@ class FilterValidator(object):
 
         self.allowed_fields = ('id', )
         """List of field names that are allowed in a filter expression"""
-        self.allowed_operators = (
-            '=', '<', '<=', '>', '>=', 'like', '~',
-            '!=', '!like', '!~'
-            '=*', '<*', '<=*', '>*', '>=*', 'like*', '~*',
-            '!=*', '!like*', '!~*'
+        self.operator_map = {
+            '=': sqop.eq,
+            '<': sqop.lt,
+            '<=': sqop.le,
+            '>': sqop.gt,
+            '>=': sqop.ge,
+            'like': sqop.like_op
+        }
+        """Mapping of operator names to Python functions"""
+        ops = list(self.operator_map.keys()) + ['~']
+        self.allowed_operators = tuple(ops + ['!' + op for op in ops])
+        """List of allowed operators, incl. negated"""
+        self.numerical_operators = ('=', '<', '<=', '>', '>=', '!=')
+        """List of operators suitable for numerical comparison
+        (prefix '!' means negation)"""
+        self.integer_types = (
+            sqty.BIGINT, sqty.BigInteger,
+            sqty.FLOAT, sqty.Float,
+            sqty.INT, sqty.INTEGER, sqty.Integer
         )
-        """List of (prefix '!' means negation, suffix '*' means
-        case-insensitive)"""
+        self.float_types = (
+            sqty.DECIMAL, sqty.decimal,
+            sqty.FLOAT, sqty.Float,
+            sqty.NUMERIC, sqty.Numeric,
+            sqty.REAL
+        )
+        self.date_types = (
+            sqty.DATE, sqty.Date,
+            sqty.DATETIME, sqty.DateTime,
+            sqty.TIME, sqty.Time
+        )
+        self.bool_types = (
+            sqty.BOOLEAN, sqty.Boolean
+        )
         self.allowed_conjunctions = ('a', 'o')  # And, Or
         """List of conjunctions."""
         self.allowed_case_sensitivity = ('s', 'i')  # case Sensitive, Insensitive
@@ -201,7 +228,7 @@ class FilterValidator(object):
             fil = json_deserializer(fil)
         except ValueError:
             raise ValidationError("Invalid JSON")
-        # Expect be [CONJ, TAIL]
+        # Expect to be [CONJ, TAIL]
         if len(fil) != 2:
             raise ValidationError("Invalid expression")
 
@@ -254,11 +281,11 @@ class FilterValidator(object):
                     # this thing is filter expression
                     elif l == 4:
                         fld, op, case, val = thing
-                        if not fld in aff:
+                        if fld not in aff:
                             raise ValidationError("Invalid field: '{}'".format(fld))
-                        if not op in aops:
+                        if op not in aops:
                             raise ValidationError("Invalid op: '{}'".format(op))
-                        if not case in acase:
+                        if case not in acase:
                             raise ValidationError("Invalid case: '{}'".format(case))
                     # this thing is garbage
                     else:
@@ -272,7 +299,8 @@ class FilterValidator(object):
         """
         Builds simple SA filter suitable for use in UI grid.
 
-        Structure created by client must be::
+        Structure created by client and available in attribute ``filter`` must
+        be::
 
             ['a', [
                 thing0,
@@ -284,13 +312,17 @@ class FilterValidator(object):
 
             [fld, op, case, val]
 
-        All things are ANDed. We ignore client's setting for op and case, and
-        instead build search pattern for case-insensitive like (ilike). To
-        prevent SQL errors in case column is not a string, we cast all fields
-        to UnicodeText.
+        All things are ANDed. We honor client's setting for op and case.
 
-        :param entity: Object to pull the SA fields from
-        :return: List of SA filter expressions, may be empty
+        Uses LIKE operator in case no specific operator is given. Casts search
+        value and field value to string if necessary to prevent SQL errors.
+
+        Gets the filter structure from attribute ``filter``.
+
+        TODO: Implement regex op '~'
+
+        :param col_map: Mapping of field names to instances of SA columns.
+        :returns: List of SA filter expressions, may be empty.
         """
         fil_struct = self.filter
         if not fil_struct:
@@ -298,9 +330,89 @@ class FilterValidator(object):
         fil = []
         for thing in fil_struct[1]:
             fld, op, case, val = thing
-            f = sa.sql.expression.cast(col_map[fld], sa.UnicodeText)
-            v = '%' + val.strip().replace(' ', '%') + '%'
-            fil.append(f.ilike(v))
+            # print('INPUT', fld, op, case, val)
+            if op.startswith('!'):
+                neg = True
+                op = op[1:]
+            else:
+                neg = False
+            f = col_map[fld]
+            ty = type(f.type)
+            # print('before', f, f.type, ty, type(ty))
+            # print(val, type(val))
+
+            # If operator is 'LIKE', treat field as string and perform a LIKE
+            # pattern matching. This way we can search for parts of numbers and
+            # parts of dates etc.
+            if op == 'like':
+                # Except if field is boolean: then keep its type and perform
+                # equality test
+                if ty in self.bool_types:
+                    op = '='
+                    v = val
+                else:
+                    # For LIKE, everything that is not a string must be cast.
+                    if ty in self.integer_types or ty in self.float_types \
+                            or ty in self.date_types:
+                        f = sa.sql.expression.cast(f, sa.UnicodeText)
+                    # Apply '%' wisely to allow matching of fragments within
+                    # field value: surround search value with '%' and also put
+                    # '%' inside instead of blanks.
+                    v = '%' + val.strip().replace(' ', '%') + '%'
+            # In all other cases, i.e. operator is not 'LIKE', cast search value
+            # to the type of the field. If search value failed to be cast, treat
+            # field and search value as strings.
+            elif ty in self.date_types:
+                try:
+                    v = dateutil.parser.parse(val)
+                except ValueError:
+                    v = val
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+            elif ty in self.integer_types and op in self.numerical_operators:
+                try:
+                    v = int(val)
+                except ValueError:
+                    v = val
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+            elif ty in self.float_types and op in self.numerical_operators:
+                try:
+                    v = float(val)
+                except ValueError:
+                    v = val
+                    f = sa.sql.expression.cast(f, sa.UnicodeText)
+            else:
+                # Field is a string and op might be a numerical operator, so keep
+                # search value as string and apply operator normally.
+                v = val
+            # Fetch field's type again after above conversions.
+            ty = type(f.type)
+            # print('after', f, f.type, ty)
+            # print(v, type(v))
+
+            # Let's see if we have to do a case-insensitive search. LIKE has its
+            # counterpart ILIKE (see below), all other string searches must be
+            # lowercased.
+            if (op != 'like' and case == 'i') and (
+                        ty not in self.integer_types
+                        and ty not in self.float_types
+                        and ty not in self.date_types
+                        and ty not in self.bool_types
+                    ):
+                v = v.lower()
+                f = sa.func.lower(f)
+            # Use ILIKE directly
+            # WTF, SQLAlchemy will render this as "lower() LIKE lower()"...
+            if op == 'like' and case == 'i':
+                expr = sqop.ilike_op(f, v)
+            else:
+                # So, no LIKE and case-sensitive: use operator as mapped.
+                # TODO Implement regex op '~' and '~*'
+                expr = self.operator_map[op](f, v)
+            # Apply negation if necessary
+            if neg:
+                expr = sa.not_(expr)
+            # print(expr)
+            fil.append(expr)
         return fil
 
     def build_filter(self, fil, allowed_fields, col_map):
@@ -457,6 +569,10 @@ class Validator(object):
             r = []
             for x in v:
                 try:
+                    # We may be called from a POST request that uses json_body as input.
+                    # Then v is already typed.
+                    if isinstance(x, bool):
+                        r.append(x)
                     if x[0].lower() in ('t', 'true', 'on', '1'):
                         r.append(True)
                     elif x[0].lower() in ('f', 'false', 'off', '0'):
@@ -468,6 +584,10 @@ class Validator(object):
                         "Not a boolean: '{}'->'{}'".format(k, x))
             return r
         else:
+            # We may be called from a POST request that uses json_body as input.
+            # Then v is already typed.
+            if isinstance(v, bool):
+                return v
             try:
                 if v.lower() in ('t', 'true', 'on', '1'):
                     r = True

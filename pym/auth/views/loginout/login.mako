@@ -1,7 +1,7 @@
 <%!
     from pprint import pformat
 %>
-<%inherit file="pym:templates/_layouts/sys.mako" />
+<%inherit file="pym:templates/layouts/sys.mako" />
 
 <%block name="styles">
 ${parent.styles()}
@@ -77,7 +77,7 @@ function( doc,                   angular,  PYM,       PymApp) {
             ['$scope', '$http', '$q', '$window', 'RC', 'OIDC_CLIENTS',
     function ($scope,   $http,   $q,   $window,   RC,   OIDC_CLIENTS) {
 
-        $scope.model = {};
+        $scope.model = $scope.model || {};
         $scope.model.isSignedIn = false;
         $scope.model.immediateFailed = true;
 

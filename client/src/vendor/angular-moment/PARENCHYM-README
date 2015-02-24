@@ -1,0 +1,2 @@
+Parenchym loads angular as 'ng', not as 'angular' as this module does.
+So we patched it.
