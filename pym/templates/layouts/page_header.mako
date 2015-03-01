@@ -47,12 +47,13 @@
                     <nav>
                         <i class="fa fa-bars ccp-red button"></i>
                         <div class="menu">
-                            <ul ng-controller="MainMenuCtrl">
-                                <li ng-repeat="item in model.items" ng-include="'menu_item_renderer.html'"></li>
+                            <ul>
+                                <li ng-repeat="item in MainMenu.items" ng-include="'menu_item_renderer.html'"></li>
                             </ul>
                         </div>
                     </nav>
                     <div class="crumbs">${pym.breadcrumbs()}</div>
+                    <div ng-if="model.lastRefresh" title="{{model.lastRefresh | date:'medium'}}" class="pull-right" style="display: inline-block">{{model.lastRefreshMsg}} <span am-time-ago="model.lastRefresh"></span></div>
                 </div>
             </div>
         </div>

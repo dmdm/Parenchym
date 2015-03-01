@@ -26,10 +26,10 @@
         <%block name="require_config">
             ## List the minimal libs that require has to load
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'ng-ui-bs', 'ui-select'];
+            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'angular-moment', 'ng-ui-bs', 'ui-select'];
             ## List the minimal libs that anular has to inject.
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_INJECTS = ['ui.bootstrap', 'ui.select'];
+            var PYM_APP_INJECTS = ['angularMoment', 'ui.bootstrap', 'ui.select', 'ngSanitize'];
             var require = {
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
@@ -48,6 +48,7 @@
                     , 'ng':              'static-pym/vendor/angular/angular.min'
                     , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
                     , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
+                    , 'ng-messages':     'static-pym/vendor/angular/angular-messages.min'
                     , 'ng-grid':         'static-pym/vendor/angular-grid/build/ng-grid.min'
                     , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
                     , 'ui-select':       'static-pym/vendor/ui-select/select.min'
@@ -55,7 +56,9 @@
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
                     , 'ng-ui-router':    'static-pym/vendor/angular-ui-router/release/angular-ui-router.min'
-                    , 'ng-fup':          'static-pym/vendor/angular-file-upload/angular-file-upload-all.min'
+                    , 'moment':          'static-pym/vendor/moment/moment.min'
+                    , 'angular-moment':  'static-pym/vendor/angular-moment/angular-moment.min'
+                    , 'ng-fup':          'static-pym/vendor/angular-file-upload'
                     , 'pym':             'static-pym/app'
                     , 'pym-v':           'static-pym/vendor'
                     , 'ccg':             'static-ccg/app'
@@ -67,8 +70,10 @@
                     , 'select2':                              ['ng']
                     , 'pnotify.buttons':                      ['pnotify']
                     , 'ng':                                   {deps: ['jquery'], exports: 'angular'}
+                    , 'angular':                              {deps: ['jquery'], exports: 'angular'}
                     , 'ng-resource':                          ['ng']
                     , 'ng-sanitize':                          ['ng']
+                    , 'ng-messages':                          ['ng']
                     , 'ng-grid':                              ['ng']
                     , 'ui-select':                            ['ng', 'ng-sanitize']
                     , 'ui-grid':                              ['ng']
@@ -79,7 +84,7 @@
                     , 'ng-fup':                               ['ng']
                     , 'google-client':                        ['ng']
                 }
-                , waitSeconds: 15
+                , waitSeconds: 5
             };
         </%block>
         </script>
@@ -96,7 +101,7 @@
             </script>
         </%block>
     </head>
-    <body>
+    <body ng-controller="PageCtrl">
         <!--[if lt IE 10]>
             <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
         <![endif]-->
@@ -113,27 +118,41 @@
 
         <%include file="pym:templates/layouts/page_footer.mako" />
         <script>
-        require(['requirejs/domReady!', 'ng',     'pym/pym', 'pym/app'],
-        function( doc,                   angular,  PYM,       PymApp) {
-            ## This needs PYM!
-            ${pym.growl_flash()}
+        require(['ng',     'pym/pym', 'pym/app'],
+        function (angular,  PYM,       PymApp) {
+            'use strict';
 
-            var MainMenuCtrl = PymApp.controller('MainMenuCtrl',
+            var PageCtrl = PymApp.controller('PageCtrl',
                     ['$scope', '$http',
             function ($scope,   $http) {
                 $scope.model = $scope.model || {};
-                $scope.model.items = {};
+                // if lastRefresh is set, the breadcrumb line will have this
+                // message to the right. lastRefresh must be a JavaScript Date.
+                $scope.model.lastRefresh = null;
+                $scope.model.lastRefreshMsg = null;
 
-                function load_menu_items()
-                {
-                    $http.get('/xhr_main_menu', {})
-                        .success(function(data, status, headers, config) {
-                            $scope.model.items = data.data;
-                        });
-                }
-                load_menu_items();
+                $scope.MainMenu = {
+                    items: {},
+                    activeItem: null,
+                    loadItems: function () {
+                        var self = this;
+                        $http.get('/xhr_main_menu', {})
+                            .success(function(data, status, headers, config) {
+                                self.items = data.data;
+                            });
+                    },
+                    init: function () {
+                        this.loadItems();
+                    }
+                };
+
+                $scope.MainMenu.init();
             }]);
-            return MainMenuCtrl;
+        });
+
+        require(['requirejs/domReady!', 'pym/pym'],
+        function( doc,                   PYM) {
+            ${pym.growl_flash()}
         });
         </script>
     </body>

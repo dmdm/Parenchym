@@ -15,6 +15,7 @@
         </div>
     </footer>
 </%block>
+
 % if request.registry.settings['debug']:
     <hr>
     <h3>SESSION</h3>
