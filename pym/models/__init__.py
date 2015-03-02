@@ -7,21 +7,11 @@
 #
 # http://stackoverflow.com/questions/4617291/how-do-i-get-a-raw-compiled-sql-query-from-a-sqlalchemy-expression
 
-import datetime
 import collections
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy import (
-    engine_from_config,
-    Column,
-    Integer,
-    Unicode,
-    DateTime,
-    ForeignKey,
-    event,
-    util
-)
+import sqlalchemy.event
+from sqlalchemy import engine_from_config
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import (
     scoped_session,
@@ -33,75 +23,25 @@ import sqlalchemy.orm.query
 import sqlalchemy.types
 from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.ext.declarative import (
-    declared_attr,
-    declarative_base
-)
-from sqlalchemy.sql.expression import (func)
+    declarative_base,
+    declared_attr)
+from sqlalchemy.sql import compiler
 import sqlalchemy.engine
-
 from psycopg2.extensions import adapt as sqlescape
-# or use the appropiate escape function from your db driver
+# or use the appropriate escape function from your db driver
 from sqlalchemy.util import KeyedTuple
 
 from zope.sqlalchemy import ZopeTransactionExtension
-
-import colander
-import deform
-import deform.widget
+from zope.deprecation import deprecation
 import pyramid.i18n
 import pym.exc
+from pym.i18n import _
 import pym.lib
 import pym.i18n
 import pym.cache
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
-
-
-# ===[ SCHEMA HELPERS ]=======
-
-# noinspection PyUnusedLocal
-@colander.deferred
-def deferred_csrf_token_default(node, kw):
-    request = kw.get('request')
-    csrf_token = request.session.get_csrf_token()
-    return csrf_token
-
-
-CSRF_SCHEMA_NODE = colander.SchemaNode(
-    colander.String(),
-    default=deferred_csrf_token_default,
-    # Don't need a validator. We have a subscriber checking this token.
-    widget=deform.widget.HiddenWidget(),
-)
-"""
-Colander schema node for a hidden field containing a CSRF token.
-
-Usage::
-
-    class LoginSchema(colander.MappingSchema):
-        login = colander.SchemaNode(colander.String())
-        pwd   = colander.SchemaNode(colander.String(),
-                    widget=deform.widget.PasswordWidget()
-                )
-        csrf_token = CSRF_SCHEMA_NODE
-
-When you create a schema instance, do not forget to bind the current
-request like so::
-
-    sch = LoginSchema().bind(request=self.request)
-"""
-
-
-class LoginSchema(colander.MappingSchema):
-    """
-    Schema for basic login form with CSRF token.
-    """
-    login = colander.SchemaNode(colander.String())
-    pwd = colander.SchemaNode(colander.String(),
-        widget=deform.widget.PasswordWidget()
-    )
-    csrf_token = CSRF_SCHEMA_NODE
 
 
 # ===[ DB HELPERS ]=======
@@ -125,183 +65,6 @@ DbEngine = None
 """
 Default DB engine.
 """
-
-
-class DefaultMixin(object):
-    """Mixin to add Parenchym's standard fields to a model class.
-
-    These are: id, ctime, owner, mtime, editor.
-    """
-
-    IDENTITY_COL = 'name'
-    """
-    Name of a column that can be used to identify a record uniquely, besides ID.
-    """
-
-    id = Column(Integer, primary_key=True, nullable=False,
-        info={'colanderalchemy': {'title': _("ID")}})
-    """Primary key of table."""
-
-    ctime = Column(DateTime, server_default=func.current_timestamp(),
-        nullable=False,
-            info={'colanderalchemy': {'title': _("Creation Time")}})
-    """Timestamp, creation time."""
-
-    # noinspection PyMethodParameters
-    @declared_attr
-    def owner_id(cls):
-        """ID of user who created this record."""
-        return Column(
-            Integer(),
-            ForeignKey(
-                "pym.user.id",
-                onupdate="CASCADE",
-                ondelete="RESTRICT"
-            ),
-            nullable=False,
-            info={'colanderalchemy': {'title': _("OwnerID")}}
-        )
-
-    mtime = Column(DateTime, onupdate=func.current_timestamp(), nullable=True,
-            info={'colanderalchemy': {'title': _("Mod Time")}})
-    """Timestamp, last edit time."""
-
-    # noinspection PyMethodParameters
-    @declared_attr
-    def editor_id(cls):
-        """ID of user who was last editor."""
-        return Column(
-            Integer(),
-            ForeignKey(
-                "pym.user.id",
-                onupdate="CASCADE",
-                ondelete="RESTRICT"
-            ),
-            nullable=True,
-            info={'colanderalchemy': {'title': _("EditorID")}}
-        )
-
-    dtime = Column(DateTime, nullable=True,
-            info={'colanderalchemy': {'title': _("Deletion Time")}})
-    """Timestamp, deletion time."""
-
-    # noinspection PyMethodParameters
-    @declared_attr
-    def deleter_id(cls):
-        """ID of user who tagged this this record as deleted."""
-        return Column(
-            Integer(),
-            ForeignKey(
-                "pym.user.id",
-                onupdate="CASCADE",
-                ondelete="RESTRICT"
-            ),
-            nullable=True,
-            info={'colanderalchemy': {'title': _("DeleterID")}}
-        )
-
-    # noinspection PyMethodParameters
-    @declared_attr
-    def deletion_reason(cls):
-        """Optional reason for deletion."""
-        return Column(Unicode(255), nullable=True,
-            info={'colanderalchemy': {'title': _("Deletion Reason")}}
-        )
-
-    def dump(self):
-        from pym.models import todict
-        from pprint import pprint
-        pprint(todict(self))
-
-    @classmethod
-    def find(cls, sess, obj, **filter_args):
-        """
-        Finds given object and returns its instance.
-
-        Input object may be the integer ID of a DB record, or a value that is
-        checked in IDENTITY_COL. If object is already the requested instance,
-        it is returned unchanged.
-
-        Raises NoResultFound if object is unknown.
-        """
-        if isinstance(obj, int):
-            o = sess.query(cls).get(obj)
-            if not o:
-                raise sa.orm.exc.NoResultFound(
-                    "Failed to find {} by integer ID {}".format(
-                        cls.__name__, obj))
-            return o
-        elif isinstance(obj, cls):
-            return obj
-        else:
-            if not cls.IDENTITY_COL and not filter_args:
-                raise TypeError('{} has no IDENTITY_COL and no filter args'
-                                ' given'.format(cls.__name__))
-            if cls.IDENTITY_COL and obj:
-                filter_args[cls.IDENTITY_COL] = obj
-            try:
-                return sess.query(cls).filter_by(**filter_args).one()
-            except sa.orm.exc.NoResultFound:
-                if cls.IDENTITY_COL and obj:
-                    m = "Failed to find {} by identity value '{}' in column {}" \
-                        " and filter {}".format(cls.__name__, obj,
-                        cls.IDENTITY_COL, filter_args)
-                else:
-                    m = "Failed to find {} by filter {}".format(cls.__name__,
-                        cls.IDENTITY_COL, filter_args)
-                raise sa.orm.exc.NoResultFound(m)
-
-    def is_deleted(self):
-        return self.deleter_id is not None
-
-
-@sa.event.listens_for(DefaultMixin, 'before_update', propagate=True)
-def receive_before_update(mapper, connection, target):
-    will_result_in_update_sql = sa.orm.object_session(target).is_modified(
-        target, include_collections=False)
-    if will_result_in_update_sql:
-        # Now check editor_id
-        if target.editor_id is None:
-            raise ValueError('Editor must be set on update for ' + str(target))
-
-
-class TypedJson(sa.types.TypeDecorator):
-
-    impl = JSON
-
-    def __init__(self, *arg, **kw):
-        """
-        JSON data type that uses a colander schema to de/serialize.
-
-        The stored JSON data (cstruct) is deserialized and thus transformed into
-        typed values (appstruct) by the given colander schema. If a validation
-        error occurs, as expected a ``colander.Invalid`` exception is thrown.
-        The whole (unverified) ctruct is available as its ``value`` attribute.
-        """
-        try:
-            self.json_schema = kw['json_schema']
-            del kw['json_schema']
-        except KeyError:
-            self.json_schema = None
-        super().__init__(*arg, **kw)
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        if self.json_schema is None:
-            return value
-        return self.json_schema.serialize(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        if self.json_schema is None:
-            return value
-        try:
-            return self.json_schema.deserialize(value)
-        except colander.Invalid as exc:
-            exc.value = value
-            raise exc
 
 
 # ================================
@@ -351,7 +114,8 @@ def init(settings, prefix, invalidate_caches=False):
     :param prefix: Prefix for SQLAlchemy settings
     """
     global DbEngine
-    DbEngine = engine_from_config(settings, prefix,
+    DbEngine = engine_from_config(
+        settings, prefix,
         json_serializer=pym.lib.json_serializer,
         json_deserializer=pym.lib.json_deserializer
     )
@@ -382,7 +146,8 @@ def init_unscoped(settings, prefix):
     :return: Dict with ``DbEngine``, ``DbSession`` and ``DbBase``.
     """
     global DbEngine, DbSession, DbBase
-    DbEngine = engine_from_config(settings, prefix,
+    DbEngine = engine_from_config(
+        settings, prefix,
         json_serializer=pym.lib.json_serializer,
         json_deserializer=pym.lib.json_deserializer
     ),
@@ -665,6 +430,7 @@ def dictate_iter(inp, objects_as='nested', fmap=None, excludes=None, includes=No
     ]
 
 
+@deprecation.deprecate('Use dictate() instead')
 def todict(o, fully_qualified=False, fmap=None, excludes=None, includes=None,
            dict_class=collections.OrderedDict) -> dict:
     """Transmogrifies data object into dict.
@@ -742,7 +508,7 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None, includes=None,
                 continue
             if c.name in special_cols:
                 continue
-            if isinstance(c.type, DateTime):
+            if isinstance(c.type, sa.DateTime):
                 value = convert_datetime(getattr(o, c.name))
             elif isinstance(c, InstrumentedList):
                 value = list(c)
@@ -771,6 +537,7 @@ def todict(o, fully_qualified=False, fmap=None, excludes=None, includes=None,
     return d
 
 
+@deprecation.deprecate('Use dictate_iter() instead')
 def todata(rs, fully_qualified=False, fmap=None, excludes=None, includes=None,
            dict_class=collections.OrderedDict) -> list:
     """
@@ -818,7 +585,6 @@ def attribute_names(cls, kind="all"):
             if isinstance(prop, ColumnProperty)]
     else:
         return [prop.key for prop in class_mapper(cls).iterate_properties]
-from sqlalchemy.sql import compiler
 
 
 def compile_query(query):
@@ -826,7 +592,7 @@ def compile_query(query):
     statement = query.statement
     comp = compiler.SQLCompiler(dialect, statement)
     comp.compile()
-    enc = dialect.encoding
+    # enc = dialect.encoding
     params = {}
     for k, v in comp.params.items():
         params[k] = sqlescape(v)
@@ -877,3 +643,141 @@ def compile_query(query):
 #          element.name,
 #          compiler.process(element.select, literal_binds=True)
 #          )
+
+
+class DefaultMixin(object):
+    """Mixin to add Parenchym's standard fields to a model class.
+
+    These are: id, ctime, owner, mtime, editor.
+    """
+
+    IDENTITY_COL = 'name'
+    """
+    Name of a column that can be used to identify a record uniquely, besides ID.
+    """
+
+    id = sa.Column(sa.Integer, primary_key=True, nullable=False,
+        info={'colanderalchemy': {'title': _("ID")}})
+    """Primary key of table."""
+
+    ctime = sa.Column(sa.DateTime, server_default=sa.func.current_timestamp(),
+        nullable=False,
+            info={'colanderalchemy': {'title': _("Creation Time")}})
+    """Timestamp, creation time."""
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def owner_id(cls):
+        """ID of user who created this record."""
+        return sa.Column(
+            sa.Integer(),
+            sa.ForeignKey(
+                "pym.user.id",
+                onupdate="CASCADE",
+                ondelete="RESTRICT"
+            ),
+            nullable=False,
+            info={'colanderalchemy': {'title': _("OwnerID")}}
+        )
+
+    mtime = sa.Column(sa.DateTime, onupdate=sa.func.current_timestamp(), nullable=True,
+            info={'colanderalchemy': {'title': _("Mod Time")}})
+    """Timestamp, last edit time."""
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def editor_id(cls):
+        """ID of user who was last editor."""
+        return sa.Column(
+            sa.Integer(),
+            sa.ForeignKey(
+                "pym.user.id",
+                onupdate="CASCADE",
+                ondelete="RESTRICT"
+            ),
+            nullable=True,
+            info={'colanderalchemy': {'title': _("EditorID")}}
+        )
+
+    dtime = sa.Column(sa.DateTime, nullable=True,
+            info={'colanderalchemy': {'title': _("Deletion Time")}})
+    """Timestamp, deletion time."""
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def deleter_id(cls):
+        """ID of user who tagged this this record as deleted."""
+        return sa.Column(
+            sa.Integer(),
+            sa.ForeignKey(
+                "pym.user.id",
+                onupdate="CASCADE",
+                ondelete="RESTRICT"
+            ),
+            nullable=True,
+            info={'colanderalchemy': {'title': _("DeleterID")}}
+        )
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def deletion_reason(cls):
+        """Optional reason for deletion."""
+        return sa.Column(sa.Unicode(255), nullable=True,
+            info={'colanderalchemy': {'title': _("Deletion Reason")}}
+        )
+
+    def dump(self):
+        from pym.models import todict
+        from pprint import pprint
+        pprint(todict(self))
+
+    @classmethod
+    def find(cls, sess, obj, **filter_args):
+        """
+        Finds given object and returns its instance.
+
+        Input object may be the integer ID of a DB record, or a value that is
+        checked in IDENTITY_COL. If object is already the requested instance,
+        it is returned unchanged.
+
+        Raises NoResultFound if object is unknown.
+        """
+        if isinstance(obj, int):
+            o = sess.query(cls).get(obj)
+            if not o:
+                raise sa.orm.exc.NoResultFound(
+                    "Failed to find {} by integer ID {}".format(
+                        cls.__name__, obj))
+            return o
+        elif isinstance(obj, cls):
+            return obj
+        else:
+            if not cls.IDENTITY_COL and not filter_args:
+                raise TypeError('{} has no IDENTITY_COL and no filter args'
+                                ' given'.format(cls.__name__))
+            if cls.IDENTITY_COL and obj:
+                filter_args[cls.IDENTITY_COL] = obj
+            try:
+                return sess.query(cls).filter_by(**filter_args).one()
+            except sa.orm.exc.NoResultFound:
+                if cls.IDENTITY_COL and obj:
+                    m = "Failed to find {} by identity value '{}' in column {}" \
+                        " and filter {}".format(cls.__name__, obj,
+                        cls.IDENTITY_COL, filter_args)
+                else:
+                    m = "Failed to find {} by filter {}".format(cls.__name__,
+                        cls.IDENTITY_COL, filter_args)
+                raise sa.orm.exc.NoResultFound(m)
+
+    def is_deleted(self):
+        return self.deleter_id is not None
+
+
+@sa.event.listens_for(DefaultMixin, 'before_update', propagate=True)
+def receive_before_update(mapper, connection, target):
+    will_result_in_update_sql = sa.orm.object_session(target).is_modified(
+        target, include_collections=False)
+    if will_result_in_update_sql:
+        # Now check editor_id
+        if target.editor_id is None:
+            raise ValueError('Editor must be set on update for ' + str(target))

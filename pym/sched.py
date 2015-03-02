@@ -17,10 +17,10 @@ import apscheduler.triggers.cron
 import pyramid.util
 import pym.auth
 import pym.auth.models as pam
-from pym.models import DbSession
+from pym.models import DbSession, DefaultMixin
 from pym.auth.const import SYSTEM_UID
 import pym.exc
-from pym.models import DbBase, DefaultMixin
+from pym.models import DbBase
 
 
 mlgg = logging.getLogger(__name__)
