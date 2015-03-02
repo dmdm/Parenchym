@@ -183,18 +183,7 @@ class Worker(object):
         excl = {
             'FsNode': ('content_bin', 'content_text', 'content_json', '_slug')
         }
-        fmap = {
-            'FsNode': {
-                'ctime': lambda e: e.ctime.replace(
-                    tzinfo=dateutil.tz.tzlocal()) if e.ctime else None,
-                'mtime': lambda e: e.mtime.replace(
-                    tzinfo=dateutil.tz.tzlocal()) if e.mtime else None,
-                'dtime': lambda e: e.dtime.replace(
-                    tzinfo=dateutil.tz.tzlocal()) if e.dtime else None
-            }
-        }
-        resp.data = {'rows': dictate_iter(rs, fmap=fmap, excludes=excl,
-            objects_as='flat')}
+        resp.data = {'rows': dictate_iter(rs, excludes=excl, objects_as='flat')}
 
     def rm(self, resp, cur_node, names):
         for n in names:

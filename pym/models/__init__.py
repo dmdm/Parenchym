@@ -39,6 +39,7 @@ from pym.i18n import _
 import pym.lib
 import pym.i18n
 import pym.cache
+from .types import LocalDateTime
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
@@ -660,7 +661,7 @@ class DefaultMixin(object):
         info={'colanderalchemy': {'title': _("ID")}})
     """Primary key of table."""
 
-    ctime = sa.Column(sa.DateTime, server_default=sa.func.current_timestamp(),
+    ctime = sa.Column(LocalDateTime, server_default=sa.func.current_timestamp(),
         nullable=False,
             info={'colanderalchemy': {'title': _("Creation Time")}})
     """Timestamp, creation time."""
@@ -680,7 +681,7 @@ class DefaultMixin(object):
             info={'colanderalchemy': {'title': _("OwnerID")}}
         )
 
-    mtime = sa.Column(sa.DateTime, onupdate=sa.func.current_timestamp(), nullable=True,
+    mtime = sa.Column(LocalDateTime, onupdate=sa.func.current_timestamp(), nullable=True,
             info={'colanderalchemy': {'title': _("Mod Time")}})
     """Timestamp, last edit time."""
 
@@ -699,7 +700,7 @@ class DefaultMixin(object):
             info={'colanderalchemy': {'title': _("EditorID")}}
         )
 
-    dtime = sa.Column(sa.DateTime, nullable=True,
+    dtime = sa.Column(LocalDateTime, nullable=True,
             info={'colanderalchemy': {'title': _("Deletion Time")}})
     """Timestamp, deletion time."""
 

@@ -41,5 +41,6 @@ setup(
       pym-scheduler = pym.scripts.scheduler:main
       pym-import-raw = pym.scripts.import_raw:main
       pym = pym.scripts.pym:main
+      pym-fs = pym.scripts.pym_fs:main
       """,
 )

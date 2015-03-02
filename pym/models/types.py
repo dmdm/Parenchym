@@ -1,4 +1,7 @@
+import datetime
 import colander
+import dateutil.tz
+import pytz
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSON, JSONB
 import sqlalchemy.types
@@ -23,6 +26,46 @@ class CleanUnicode(sa.types.TypeDecorator):
             return None
         value = clean_string(value)
         return value
+
+
+class LocalDateTime(sa.types.TypeDecorator):
+    """
+    Represents DateTime in server's local timezone, preferably UTC.
+
+    On load, replaces timezone of naive DateTime with server's local timezone.
+    On save, mogrifies given timestamp into server's local timezone.
+
+    Rationale:
+
+    We want to store timestamps without timezone information in a canonical
+    timezone, preferably UTC. The data type of the column in the database is
+    DATETIME WITHOUT TIME ZONE.
+
+    Usage::
+
+        LocalDateTime()
+
+    """
+
+    impl = sa.DateTime(timezone=False)
+    # We want the tzinfo object from pytz, not that of dateutil
+    server_tz = pytz.timezone(dateutil.tz.tzlocal()
+        .tzname(datetime.datetime.now()))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        tz = self.__class__.server_tz
+        try:
+            value = tz.normalize(value.astimezone(tz))
+        except ValueError:  # maybe: naive datetime does not have astimezone
+            value = tz.localize(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        return value.replace(tzinfo=self.__class__.server_tz)
 
 
 class TypedJson(sa.types.TypeDecorator):

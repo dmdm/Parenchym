@@ -117,7 +117,9 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         checkType: function (ty) {
             var self = this,
                 i, imax, pat, good;
+            if (! ty) ty = 'application/octet-stream';
             ty = ty.split('/');
+            console.log(ty);
             // Is given mime type allowed?
             good = false;
             for (i=0, imax=self.allow.length; i<imax; i++) {

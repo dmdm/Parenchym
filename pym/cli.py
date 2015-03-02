@@ -1,4 +1,5 @@
 import configparser
+import getpass
 import locale
 import logging
 import logging.config
@@ -12,9 +13,11 @@ import pyramid.request
 import json
 import os
 from prettytable import PrettyTable
+import sqlalchemy as sa
+import sqlalchemy.orm.exc
 import pym.exc
 from pym.security import safepath
-
+import pym.auth.models
 from pym.rc import Rc
 import pym.models
 import pym.lib
@@ -63,6 +66,8 @@ class Cli(object):
 
         self._config = None
         self._sess = None
+        self._actor = None
+        """:type: pym.auth.models.User"""
 
     @staticmethod
     def add_parser_args(parser, which=None):
@@ -71,7 +76,7 @@ class Cli(object):
 
         :param parser: Instance of a parser
         :param which: List of 2-Tuples. 1st elem tells which argument to add,
-            2nd elem tells requiredness True/False
+            2nd elem tells requiredness.
         """
         parser.add_argument(
             '--root-dir',
@@ -83,7 +88,8 @@ class Cli(object):
             help="Directory with config, defaults to ROOT_DIR/etc"
         )
         if not which:
-            which = [('config', True), ('locale', False)]
+            which = [('config', True), ('locale', False), ('actor', True),
+                ('verbose', False)]
         for x in which:
             if x[0] == 'config':
                 parser.add_argument(
@@ -99,8 +105,8 @@ class Cli(object):
                     '--locale',
                     required=x[1],
                     help="""Set the desired locale.
-                        If omitted and output goes directly to console, we automatically use
-                        the console's locale."""
+                        If omitted and output goes directly to console, we
+                        automatically use the console's locale."""
                 )
             elif x[0] == 'alembic-config':
                 parser.add_argument(
@@ -113,6 +119,24 @@ class Cli(object):
                     choices=['yaml', 'json', 'tsv', 'txt'],
                     required=x[1],
                     help="Set format for input and output"
+                )
+            elif x[0] == 'actor':
+                parser.add_argument(
+                    '--actor',
+                    required=x[1],
+                    help="""Principal or ID of user who performs this command.
+                        Becomes OWNER on creates, EDITOR on updates and, DELETER
+                        on deletes. If omitted, we use the login name of the
+                        console user."""
+                )
+                parser.add_argument(
+                    '-v', '--verbose',
+                    action='count',
+                    default=0,
+                    help="""Sets logging level and shows more details, can be
+                        stacked; e.g. -vvv. Typically we log only level warnings
+                        and higher, -v also logs level info, and -vv logs level
+                        debug."""
                 )
 
     def base_init(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
@@ -144,6 +168,11 @@ class Cli(object):
         if lgg:
             self.lgg = lgg
 
+        if args.verbose > 1:
+            lgg.setLevel(logging.DEBUG)
+        if args.verbose > 0:
+            lgg.setLevel(logging.WARN)
+
         self.lang_code, self.encoding = init_cli_locale(args.locale)
         self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
         self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
@@ -172,6 +201,24 @@ class Cli(object):
         )
         self._config.scan('pym')
 
+    def base_init2(self):
+        if self.args.actor:
+            actor = self.args.actor
+            try:
+                try:
+                    actor = int(actor)
+                except ValueError:
+                    self._actor = self._sess.query(pym.auth.models.User).filter(pym.auth.models.User.principal == actor).one()
+                else:
+                    self._actor = self._sess.query(pym.auth.models.User).get(actor)
+                    if not self._actor:
+                        raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+            except sa.orm.exc.NoResultFound:
+                raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+        else:
+            self._actor = getpass.getuser()
+        self.lgg.debug('Actor: {}'.format(self._actor))
+
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
         Initialises Pyramid application for command-line use.
@@ -188,12 +235,15 @@ class Cli(object):
         """
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
+
         pym.models.init(self.settings, 'db.pym.sa.')
         self._sess = pym.models.DbSession()
         pym.init_auth(self.rc)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
         pym.configure_cache_regions(self.rc)
+
+        self.base_init2()
 
     def init_web_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
@@ -208,7 +258,8 @@ class Cli(object):
 
         req = pyramid.request.Request.blank('/',
             base_url='http://localhost:6543')
-        # paster.bootstrap calls the entry point configured in the INI
+        # paster.bootstrap calls the entry point configured in the INI which also
+        # initialises models, session, and cache
         self.env = pyramid.paster.bootstrap(
             os.path.join(
                 self.rc.root_dir,
@@ -218,6 +269,7 @@ class Cli(object):
         )
         self.request = self.env['request']
         self.request.root = self.env['root']
+        self.base_init2()
 
     def impersonate_root(self):
         self.request.user.impersonate('root')
