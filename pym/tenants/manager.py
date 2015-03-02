@@ -134,6 +134,20 @@ def add_user(sess, tenant, user, owner, **kwargs):
     sess.flush()
 
 
+def remove_user(sess, tenant, user):
+    """
+    Removes a user from tenant's group.
+
+    Additionally removes user from all groups that belong specifically to this
+    tenant.
+
+    :param sess: A DB session instance.
+    :param tenant: ID, ``name``, or instance of a tenant.
+    :param user: ID, ``principal``, or instance of a user.
+    """
+    raise NotImplementedError('TODO')  # TODO Implement remove_user()
+
+
 def find_tenant_node(resource):
     """
     Finds the tenant node in the resource path to which ``resource``
