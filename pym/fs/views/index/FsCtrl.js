@@ -43,7 +43,16 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             .then(function (resp) {
                 self.pym.loading = false;
                 if (resp.data.ok) {
-                    self.data = resp.data.data.rows;
+                    var rr = resp.data.data.rows;
+                    angular.forEach(rr, function (r) {
+                        r.ctime = r.ctime ?  new Date(r.ctime) : null;
+                        r.mtime = r.mtime ? new Date(r.mtime) : null;
+                        r.dtime = r.dtime ? new Date(r.dtime) : null;
+                        r.owner2 = function () { return this.owner ? this.owner + ' (' + this.owner_id + ')' : '' };
+                        r.editor2 = function () { return this.editor ? this.editor + ' (' + this.editor_id + ')' : '' };
+                        r.deleter2 = function () { return this.deleter ? this.deleter + ' (' + this.editor_id + ')' : '' };
+                    });
+                    self.data = rr;
                 }
                 else {
                     PYM.growl_ajax_resp(resp.data);
@@ -214,13 +223,22 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         enableCellEditOnFocus: true,
 
         columnDefs: [
-            { field:'id', displayName: 'ID', enableFiltering: false, enableCellEdit: false, width: 50 },
-            { field:'_name', displayName: 'Name', enableCellEdit: true, width: 230 },
-            { field:'_title', displayName: 'Title', enableCellEdit: true, width: 230 },
-            { field:'descr', displayName: 'Description', enableCellEdit: true, width: 230 },
-            { field:'rev', displayName: 'Rev', enableCellEdit: false, width: 40, cellFilter: "number:0", cellClass: "text-right" },
-            { field:'size', displayName: 'Size', enableCellEdit: false, width: 80, cellFilter: "number:0", cellClass: "text-right" },
-            { field:'mime_type', displayName: 'Mime-Type', enableCellEdit: false, width: 150 }
+            { name:'id', displayName: 'ID', enableFiltering: false, enableCellEdit: false, width: 50 },
+            { name:'_name', displayName: 'Name', enableCellEdit: true, width: 230 },
+            { name:'_title', displayName: 'Title', enableCellEdit: true, width: 230 },
+            { name:'_short_title', displayName: 'Short Title', enableCellEdit: true, width: 230 },
+            { name:'descr', displayName: 'Description', enableCellEdit: true, width: 230 },
+            { name:'rev', displayName: 'Rev', enableCellEdit: false, width: 45, cellFilter: "number:0", cellClass: "text-right" },
+            { name:'size', displayName: 'Size', enableCellEdit: false, width: 80, cellFilter: "number:0", cellClass: "text-right" },
+            { name:'nchildren', displayName: 'Children', enableCellEdit: false, width: 80, cellFilter: "number:0", cellClass: "text-right" },
+            { name:'mime_type', displayName: 'Mime-Type', enableCellEdit: false, width: 150 },
+            { name:'ctime', displayName: 'CTime', cellFilter: 'date: "yyyy-MM-dd HH:mm"', enableCellEdit: false, width: 150 },
+            { name:'owner', field: 'owner2()', displayName: 'Owner', enableCellEdit: false, width: 150 },
+            { name:'mtime', displayName: 'MTime', cellFilter: 'date: "yyyy-MM-dd HH:mm"', enableCellEdit: false, width: 150 },
+            { name:'editor', field: 'editor2()', displayName: 'Editor', enableCellEdit: false, width: 150 },
+            { name:'dtime', displayName: 'DTime', cellFilter: 'date: "yyyy-MM-dd HH:mm"', enableCellEdit: false, width: 150 },
+            { name:'deleter', field: 'deleter2()', displayName: 'Deleter', enableCellEdit: false, width: 150 },
+            { name:'deletion_reason', displayName: 'Reason', enableCellEdit: false, width: 150 }
         ],
 
         onRegisterApi: function(gridApi) {

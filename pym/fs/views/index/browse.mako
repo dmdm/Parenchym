@@ -11,7 +11,7 @@ ${parent.styles()}
     font-size: 100%;
     border: 1px solid rgb(212,212,212);
     /*width: 99%;*/
-    height: 76vh;
+    height: 75vh;
 }
 .ui-grid-cell { border-right: none; }
 .drop-box { padding: 0px; border: none; outline: none; height: 76vh; }

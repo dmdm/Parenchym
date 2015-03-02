@@ -1,9 +1,12 @@
 import logging
 import functools
 import os
+from pprint import pprint
+import dateutil.tz
 from pyramid.httpexceptions import HTTPNotFound, HTTPForbidden
 from pyramid.location import lineage
-
+import sqlalchemy as sa
+import sqlalchemy.orm
 from pyramid.view import view_config, view_defaults
 import pyramid.response
 from pym.cache import UploadCache
@@ -155,10 +158,43 @@ class Worker(object):
         if not self.has_permission(Permissions.read.value, context=cur_node):
             resp.error("Forbidden to list")
             return
-        rs = self.sess.query(FsNode).filter(FsNode.parent_id == cur_node.id)
-        excl = ('content_bin', 'content_text', 'content_json', '_slug',
-                '_title', '_short_title')
-        resp.data = {'rows': dictate_iter(rs, excludes=excl)}
+        owner = sa.orm.aliased(pym.auth.models.User, name='owner')
+        editor = sa.orm.aliased(pym.auth.models.User, name='editor')
+        deleter = sa.orm.aliased(pym.auth.models.User, name='deleter')
+        nchildren = self.sess.query(FsNode.parent_id, sa.func.count('*').label(
+            'nchildren')).group_by(FsNode.parent_id).subquery()
+        rs = self.sess.query(
+            FsNode,
+            owner.display_name.label('owner'),
+            editor.display_name.label('editor'),
+            deleter.display_name.label('deleter'),
+            nchildren.c.nchildren
+        ).outerjoin(
+            owner, owner.id == FsNode.owner_id
+        ).outerjoin(
+            editor, editor.id == FsNode.editor_id
+        ).outerjoin(
+            deleter, deleter.id == FsNode.deleter_id
+        ).outerjoin(
+            nchildren, nchildren.c.parent_id == FsNode.id
+        ).filter(
+            FsNode.parent_id == cur_node.id
+        )
+        excl = {
+            'FsNode': ('content_bin', 'content_text', 'content_json', '_slug')
+        }
+        fmap = {
+            'FsNode': {
+                'ctime': lambda e: e.ctime.replace(
+                    tzinfo=dateutil.tz.tzlocal()) if e.ctime else None,
+                'mtime': lambda e: e.mtime.replace(
+                    tzinfo=dateutil.tz.tzlocal()) if e.mtime else None,
+                'dtime': lambda e: e.dtime.replace(
+                    tzinfo=dateutil.tz.tzlocal()) if e.dtime else None
+            }
+        }
+        resp.data = {'rows': dictate_iter(rs, fmap=fmap, excludes=excl,
+            objects_as='flat')}
 
     def rm(self, resp, cur_node, names):
         for n in names:

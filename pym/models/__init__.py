@@ -561,9 +561,12 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
                     fm = None
                 qual += qual_sep
             else:
-                incl = includes
-                excl = excludes
-                fm = fmap
+                incl = includes if not isinstance(includes, dict) else ()
+                excl = excludes if not isinstance(excludes, dict) else ()
+                if fmap:
+                    fm = fmap if not isinstance(list(fmap.values())[0], dict) else {}
+                else:
+                    fm = {}
             return incl, excl, fm, qual
 
         def proc_columns(o, qual, columns, value_getter, lvl):
