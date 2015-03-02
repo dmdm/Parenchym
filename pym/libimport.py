@@ -26,8 +26,8 @@ class ImportHelper():
         self.type2sql = {
             'int': 'integer',
             'float': 'decimal(14, 2)',
-            'str': 'varchar(255)',
-            'NoneType': 'varchar(255)'
+            'str': 'text',
+            'NoneType': 'text'
         }
         self.orig_cols = []
         """List of original column names"""
@@ -51,6 +51,10 @@ class ImportHelper():
         On determining data types, we use this row.
         On importing data, we start at this row.
         """
+        self.null_value = 'NULL'
+        """
+        Value to set as NULL in database.
+        """
 
     def open(self):
         raise NotImplementedError()
@@ -69,8 +73,11 @@ class ImportHelper():
         # If we are reading a data row, i.e. column types are defined
         if self.col_types:
             for i, v in enumerate(row):
-                cast = self.col_types[i]
-                yield cast(v)
+                if v == self.null_value:
+                    yield None
+                else:
+                    cast = self.col_types[i]
+                    yield cast(v)
         # If we are reading the column headers, we do not have types yet
         else:
             for v in row:
@@ -302,6 +309,8 @@ class XlsxImporter(ImportHelper):
             if isinstance(v, str):
                 v = v.strip()
                 if len(v) == 0:
+                    v = None
+                elif v == self.null_value:
                     v = None
             yield v
 
