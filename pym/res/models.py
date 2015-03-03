@@ -341,6 +341,68 @@ class ResourceNode(DbBase, DefaultMixin):
             for n in self.children.values():
                 n.undelete(editor, recursive)
 
+    def rename(self, editor, dst):
+        """
+        Renames current node.
+
+        Takes leaf of ``dst`` as new name, and any preceding parts as path to
+        destination. ``dst`` must not, path to dst, however, must exist.
+
+        If path to dst is the same as the current,
+
+        :param editor: ID, principal or instance of a user.
+        :param dst: Name or path of destination
+
+        :raises pym.exc.PymError:
+            - if current node is root node
+            - if src (current node) and dst are the same
+        :raises pym.exc.ItemExistsError: if dst points to an existing node.
+        :raises ValueError: if dst is invalid.
+        :raises FileNotFoundError: if path to dst does not exist.
+        """
+        if self.is_root():
+            raise pym.exc.PymError("FS root node cannot be renamed or moved")
+        root_node = self.get_root()
+        cls = self.__class__
+        dst = dst.strip(cls.SEP)
+        if not dst:
+            raise ValueError("Dst is empty")
+        is_path_safe(dst, split=True, sep=cls.SEP, raise_error=True)
+        # Ensure, dst does not exist
+        try:
+            n = root_node.find_by_path(dst)
+            raise pym.exc.ItemExistsError("Destination node exists: '{}'"
+                .format(dst), item=n)
+        except FileNotFoundError:
+            pass
+        # Determine src path, dst path and new name
+        dst_pp = dst.split(cls.SEP)
+        dst_path = cls.SEP.join(dst_pp[:-1])
+        new_name = dst_pp[-1]
+        full_src_path = self.get_path()  # path incl. name
+        src_pp = full_src_path.split(cls.SEP)
+        src_path = cls.SEP.join(src_pp[:-1])  # path excl. name
+        dirty = False
+        # Ensure, src is not a parent of dst
+        if dst_path.startswith(full_src_path):
+            raise ValueError('Dst cannot be a child of src')
+        # Move
+        if dst_path != src_path:
+            dst_n = root_node.find_by_path(dst_path)
+            self.parent = dst_n
+            dirty = True
+        # Rename
+        if new_name != self._name:
+            self._name = new_name
+            dirty = True
+        # Set editor
+        if dirty:
+            sess = sa.inspect(self).session
+            editor = pym.auth.models.User.find(sess, editor)
+            self.editor_id = editor.id
+        else:
+            raise pym.exc.PymError('Src and dst are the same')
+
     def has_children(self):
         sess = sa.inspect(self).session
         cls = self.__class__
@@ -400,6 +462,37 @@ class ResourceNode(DbBase, DefaultMixin):
             return True
         except FileNotFoundError:
             return False
+
+    def get_root(self):
+        """
+        Returns the root node of the resource tree.
+
+        Override in child classes if they have a different meaning of 'root',
+        e.g. as :class:`pym.fs.models.FsNode`.
+
+        N.B.: Our property ``root`` *always* points to the root node of the
+        resource tree.
+        """
+        n = self
+        while n.parent:
+            n = n.parent
+        return n
+
+    def get_path(self):
+        """
+        Path to the root node of the resource tree.
+
+        N.B.: If you need the path to a different 'root' in a child class,
+        override :method:`.get_path`.
+        """
+        pp = []
+        n = self
+        while n.parent:
+            pp.append(n.name)
+            n = n.parent
+        if not pp:
+            return self.__class__.SEP
+        return self.__class__.SEP.join(reversed(pp))
 
     @classmethod
     def create_root(cls, sess, owner, name, kind, **kwargs):
@@ -637,10 +730,33 @@ class ResourceNode(DbBase, DefaultMixin):
 
     @property
     def root(self):
+        """
+        Root node of the resource tree.
+
+        N.B.: If you need a different 'root' in a child class, override
+        :method:`.get_root`.
+        """
         n = self
         while n.parent:
             n = n.parent
         return n
+
+    @property
+    def path(self):
+        """
+        Path to the root node of the resource tree.
+
+        N.B.: If you need the path to a different 'root' in a child class,
+        override :method:`.get_path`.
+        """
+        pp = []
+        n = self
+        while n.parent:
+            pp.append(n.name)
+            n = n.parent
+        if not pp:
+            return self.__class__.SEP
+        return self.__class__.SEP.join(reversed(pp))
 
     @property
     def user(self):

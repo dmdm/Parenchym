@@ -9,7 +9,6 @@ import zope.interface
 import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.event
-from pym.decorators import savepoint
 import pym.exc
 import pym.auth.models
 import pym.res.models
@@ -160,7 +159,6 @@ class FsNode(pym.res.models.ResourceNode):
         return self.add_child(owner, name,
             mime_type=self.__class__.MIME_TYPE_DIRECTORY, **kwargs)
 
-    @savepoint
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """
         Creates all nodes needed by given path as directories.
@@ -213,6 +211,41 @@ class FsNode(pym.res.models.ResourceNode):
                 else:
                     n = n.add_directory(owner, p)
         return n
+
+    def get_root(self):
+        """
+        Returns the root node of the resource tree.
+
+        Override in child classes if they have a different meaning of 'root',
+        e.g. as :class:`pym.fs.models.FsNode`.
+
+        N.B.: Our property ``root`` *always* points to the root node of the
+        resource tree.
+        """
+        n = self
+        while n.parent:
+            if not isinstance(n.parent, FsNode):
+                break
+            n = n.parent
+        return n
+
+    def get_path(self):
+        """
+        Path to the root node of the resource tree.
+
+        N.B.: If you need the path to a different 'root' in a child class,
+        override :method:`.get_path`.
+        """
+        pp = []
+        n = self
+        while n.parent:
+            if not isinstance(n.parent, FsNode):
+                break
+            pp.append(n.name)
+            n = n.parent
+        if not pp:
+            return self.__class__.SEP
+        return self.__class__.SEP.join(reversed(pp))
 
     @property
     def rc(self):

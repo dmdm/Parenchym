@@ -130,6 +130,11 @@ class Runner(pym.cli.Cli):
             n = self.fs.fs_root.find_by_path(self.args.path)
             n.undelete(self.fs.actor, recursive=self.args.recursive)
 
+    def cmd_rename(self):
+        with transaction.manager:
+            self.fs.reinit()
+            self.fs.rename(self.args.src, self.args.dst)
+
 
 
 
@@ -371,6 +376,19 @@ def parse_args(app, argv):
         '-r', '--recursive',
         help='Undelete also all children',
         action='store_true'
+    )
+
+    # Parser cmd rename
+    p_rename = subparsers.add_parser('rename',
+        help="Renames node at src path to dst")
+    p_rename.set_defaults(func=app.cmd_rename)
+    p_rename.add_argument(
+        'src',
+        help="Source path"
+    )
+    p_rename.add_argument(
+        'dst',
+        help="Destination path"
     )
 
     # # Parser cmd create

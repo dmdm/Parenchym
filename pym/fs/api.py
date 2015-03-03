@@ -98,7 +98,7 @@ class PymFs(fs.base.FS):
 
     @synchronize
     def listdir(self,
-            path="/",
+            path=FsNode.SEP,
             wildcard=None,
             full=False,
             absolute=False,
@@ -262,3 +262,35 @@ class PymFs(fs.base.FS):
             raise fs.errors.ResourceNotFoundError(str(exc))
         except OSError as exc:
             raise fs.errors.DirectoryNotEmptyError(str(exc))
+
+    def rename(self, src, dst):
+        """
+        Renames a file or directory
+
+        :param src: path to rename
+        :type src: string
+        :param dst: new name
+        :type dst: string
+
+        :raises ResourceInvalidError:
+            - if dst is empty
+            - if dst is a child of src
+        :raises ResourceNotFoundError:
+            - if the src path does not exist
+            - if the path to dst does not exist
+        :raises OperationFailedError:
+            - if src is root node (root cannot be renamed or moved)
+            - if src and dst are the same
+        """
+        try:
+            n = self.fs_root.find_by_path(src)
+            n.rename(editor=self.actor, dst=dst)
+        except ValueError as exc:
+            raise fs.errors.ResourceInvalidError(str(exc))
+        except FileNotFoundError as exc:
+            raise fs.errors.ResourceNotFoundError(str(exc))
+        except pym.exc.ItemExistsError as exc:
+            raise fs.errors.DirectoryNotEmptyError(str(exc))
+        except pym.exc.PymError as exc:
+            raise fs.errors.OperationFailedError(str(exc))
+
