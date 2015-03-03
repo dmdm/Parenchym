@@ -8,7 +8,7 @@
 # http://stackoverflow.com/questions/4617291/how-do-i-get-a-raw-compiled-sql-query-from-a-sqlalchemy-expression
 
 import collections
-
+import datetime
 import sqlalchemy as sa
 import sqlalchemy.event
 from sqlalchemy import engine_from_config
@@ -681,7 +681,7 @@ class DefaultMixin(object):
             info={'colanderalchemy': {'title': _("OwnerID")}}
         )
 
-    mtime = sa.Column(LocalDateTime, onupdate=sa.func.current_timestamp(), nullable=True,
+    mtime = sa.Column(LocalDateTime, nullable=True,
             info={'colanderalchemy': {'title': _("Mod Time")}})
     """Timestamp, last edit time."""
 
@@ -780,5 +780,13 @@ def receive_before_update(mapper, connection, target):
         target, include_collections=False)
     if will_result_in_update_sql:
         # Now check editor_id
-        if target.editor_id is None:
-            raise ValueError('Editor must be set on update for ' + str(target))
+        if target.editor_id is None and target.deleter_id is None:
+            raise ValueError('Either editor or deleter must be set on update for ' + str(target))
+        if target.editor_id:
+            target.mtime = datetime.datetime.now()
+        else:
+            target.mtime = None
+        if target.deleter_id:
+            target.dtime = datetime.datetime.now()
+        else:
+            target.dtime = None

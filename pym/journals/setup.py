@@ -25,12 +25,12 @@ def _setup_resources(sess):
         n_journals = ResourceNode.find(sess, None,
             parent_id=n_tenant.id, name=NODE_NAME_JOURNALS)
     except NoResultFound:
-        n_journals = n_tenant.add_child(sess=sess, owner=SYSTEM_UID,
+        n_journals = n_tenant.add_child(owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_JOURNALS, title='Journals',
             iface='pym.journals.models.IJournalsNode')
     # Grant group 'users' permission 'read' on resource 'journals'.
-    n_journals.allow(sess, SYSTEM_UID, Permissions.read.value, group=USERS_RID)
+    n_journals.allow(SYSTEM_UID, Permissions.read.value, group=USERS_RID)
 
     # # Create child-node for each journal
     # for j in Journals:

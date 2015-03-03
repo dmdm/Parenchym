@@ -412,24 +412,24 @@ def _setup_resources(sess):
     n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
     n_sys = n_root[NODE_NAME_SYS]
 
-    n_sys_auth = n_sys.add_child(sess=sess, owner=SYSTEM_UID, kind="res",
+    n_sys_auth = n_sys.add_child(owner=SYSTEM_UID, kind="res",
         name=NODE_NAME_SYS_AUTH_MGR, title='AuthManager',
         iface='pym.auth.models.IAuthMgrNode')
 
-    n_sys_auth.add_child(sess=sess, owner=SYSTEM_UID,
+    n_sys_auth.add_child(owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_SYS_AUTH_USER_MGR, title='User Manager',
         iface='pym.auth.models.IUserMgrNode')
 
-    n_sys_auth.add_child(sess=sess, owner=SYSTEM_UID,
+    n_sys_auth.add_child(owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_SYS_AUTH_GROUP_MGR, title='Group Manager',
         iface='pym.auth.models.IGroupMgrNode')
 
-    n_sys_auth.add_child(sess=sess, owner=SYSTEM_UID,
+    n_sys_auth.add_child(owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
         title='Group Member Manager',
         iface='pym.auth.models.IGroupMemberMgrNode')
 
-    n_sys_auth.add_child(sess=sess, owner=SYSTEM_UID,
+    n_sys_auth.add_child(owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_SYS_AUTH_PERMISSION_MGR, title='Permission Manager',
         iface='pym.auth.models.IPermissionMgrNode')
 

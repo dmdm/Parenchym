@@ -22,18 +22,18 @@ def _setup_resources(sess):
         n_me = ResourceNode.find(sess, None, parent_id=n_root.id,
             name=NODE_NAME_ME)
     except NoResultFound:
-        n_me = n_root.add_child(sess=sess, owner=SYSTEM_UID,
+        n_me = n_root.add_child(owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_ME, title='Me',
             iface='pym.me.models.IMeNode')
     # Grant group 'users' permission 'write' on resource 'me'.
-    n_me.allow(sess, SYSTEM_UID, Permissions.write.value, group=USERS_RID)
+    n_me.allow(SYSTEM_UID, Permissions.write.value, group=USERS_RID)
 
     try:
         n = ResourceNode.find(sess, None, parent_id=n_me.id,
             name=NODE_NAME_ME_PROFILE)
     except NoResultFound:
-        n_me.add_child(sess=sess, owner=SYSTEM_UID,
+        n_me.add_child(owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_ME_PROFILE, title='Profile',
             iface='pym.me.models.IMeProfileNode')

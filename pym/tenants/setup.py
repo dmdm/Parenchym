@@ -16,8 +16,7 @@ def _setup_resources(sess):
     n_root = ResourceNode.load_root(sess, name=NODE_NAME_ROOT, use_cache=False)
     n_sys_auth = n_root[NODE_NAME_SYS][NODE_NAME_SYS_AUTH_MGR]
 
-    n_sys_auth.add_child(
-        sess=sess, owner=SYSTEM_UID,
+    n_sys_auth.add_child(owner=SYSTEM_UID,
         kind="res", name=NODE_NAME_TENANT_MGR, title='Tenant Manager',
         iface='pym.tenants.models.ITenantMgrNode')
 

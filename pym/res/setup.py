@@ -34,9 +34,9 @@ def _setup_resources(sess):
 
 def _setup_acl(sess, n_root):
     # Grant group 'wheel' all permissions on resource 'root'.
-    n_root.allow(sess, SYSTEM_UID, Permissions.all.value, group=WHEEL_RID)
+    n_root.allow(SYSTEM_UID, Permissions.all.value, group=WHEEL_RID)
     # Grant group 'users' permission 'visit' on resource 'root'.
-    n_root.allow(sess, SYSTEM_UID, Permissions.visit.value, group=USERS_RID)
+    n_root.allow(SYSTEM_UID, Permissions.visit.value, group=USERS_RID)
 
 
 def create_schema(sess, rc):

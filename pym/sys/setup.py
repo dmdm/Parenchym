@@ -21,7 +21,7 @@ def _setup_resources(sess):
         n_sys = ResourceNode.find(sess, None, parent_id=n_root.id,
             name=NODE_NAME_SYS)
     except NoResultFound:
-        n_sys = n_root.add_child(sess=sess, owner=SYSTEM_UID,
+        n_sys = n_root.add_child(owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_SYS, title='Sys',
             iface='pym.sys.models.ISysNode')
@@ -30,7 +30,7 @@ def _setup_resources(sess):
         n = ResourceNode.find(sess, None, parent_id=n_sys.id,
             name=NODE_NAME_SYS_CACHE_MGMT)
     except NoResultFound:
-        n_sys.add_child(sess=sess, owner=SYSTEM_UID,
+        n_sys.add_child(owner=SYSTEM_UID,
             kind="res",
             name=NODE_NAME_SYS_CACHE_MGMT, title='CacheMgmt',
             iface='pym.sys.models.ISysCacheMgmtNode')

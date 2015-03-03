@@ -30,8 +30,8 @@ def _setup_resources(sess):
             name=NODE_NAME_FS, raise_if_exists=True, title='Filesystem')
     # Create group 'fs_writer' with write and delete access to this node
     g = create_group(sess, SYSTEM_UID, 'fs_writer', tenant_id=n_tenant.id)
-    n_fs.allow(sess, SYSTEM_UID, Permissions.write.value, group=g)
-    n_fs.allow(sess, SYSTEM_UID, Permissions.delete.value, group=g)
+    n_fs.allow(SYSTEM_UID, Permissions.write.value, group=g)
+    n_fs.allow(SYSTEM_UID, Permissions.delete.value, group=g)
     # Make group wheel a member of this group
     create_group_member(sess, SYSTEM_UID, g, member_group=WHEEL_RID)
 

@@ -1,4 +1,5 @@
 import collections
+import datetime
 from pyramid.location import lineage
 import pyramid.util
 import pyramid.i18n
@@ -8,7 +9,12 @@ import zope.interface
 import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.event
+from pym.decorators import savepoint
+import pym.exc
+import pym.auth.models
 import pym.res.models
+from pym.security import is_path_safe
+import pym.tenants.models
 
 
 class IFsNode(zope.interface.Interface):
@@ -120,6 +126,93 @@ class FsNode(pym.res.models.ResourceNode):
 
     def is_dir(self):
         return self.mime_type == self.MIME_TYPE_DIRECTORY
+
+    @classmethod
+    def load_root(cls, sess, tenant):
+        """
+        Loads fs root node of given tenant.
+
+        :param sess: A DB session
+        :param tenant: Instance, name or ID of a tenant
+        :return: The fs root node
+
+        :raises FileNotFoundError: if tenant has no filesystem.
+        """
+        ten = pym.tenants.models.Tenant.find(sess, tenant)
+        try:
+            return sess.query(FsNode).filter(FsNode.parent_id == ten.id).one()
+        except sa.orm.exc.NoResultFound:
+            raise FileNotFoundError("Tenant {} has no filesystem".format(ten))
+
+    def add_child(self, owner, name, **kwargs):
+        try:
+            n = self[name]
+            raise pym.exc.ItemExistsError("Child '{}' exists.".format(name),
+                item=n)
+        except KeyError:
+            sess = sa.inspect(self).session
+            owner = pym.auth.models.User.find(sess, owner)
+            n = FsNode(owner_id=owner.id, name=name, **kwargs)
+            n.parent = self
+            return n
+
+    def add_directory(self, owner, name, **kwargs):
+        return self.add_child(owner, name,
+            mime_type=self.__class__.MIME_TYPE_DIRECTORY, **kwargs)
+
+    @savepoint
+    def makedirs(self, owner, path, recursive=False, exist_ok=False):
+        """
+        Creates all nodes needed by given path as directories.
+
+        :param path: Path to create.
+        :type path: string
+        :param recursive: If True, any intermediate directories will also be
+            created.
+        :type recursive: bool
+        :param exist_ok: If False, an existing leaf directory raises an error.
+        :type exist_ok: bool
+
+        :returns: Instance of leaf directory
+        :rtype: FsNode
+
+        :raises pym.exc.ItemExistsError: if the leaf directory exists and
+            exist_ok is False.
+        :raises FileNotFoundError: if a containing directory is missing and
+            recursive is False.
+        """
+        cls = self.__class__
+        path = path.strip(cls.SEP)
+        is_path_safe(path=path, split=True, sep=cls.SEP, raise_error=True)
+
+        if not path:
+            return  # Nothing to do
+
+        try:
+            n = self.fs_root.find_by_path(path)
+        except FileNotFoundError:
+            pass
+        else:
+            if exist_ok:
+                return  # Path exists, we're done.
+            else:
+                raise pym.exc.ItemExistsError("Path exists: '{}'".format(path),
+                    item=n)
+
+        sess = sa.inspect(self).session
+        owner = pym.auth.models.User.find(sess, owner)
+        pp = path.split(cls.SEP)
+        pp_max = len(pp) - 1
+        n = self.fs_root
+        for i, p in enumerate(pp):
+            try:
+                n = n[p]
+            except KeyError:
+                if i < pp_max and not recursive:
+                    raise FileNotFoundError("{}: '{}'".format(n, p))
+                else:
+                    n = n.add_directory(owner, p)
+        return n
 
     @property
     def rc(self):

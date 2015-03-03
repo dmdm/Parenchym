@@ -24,13 +24,17 @@ from zope.sqlalchemy import mark_changed
 from pym.auth.const import SYSTEM_UID
 import pym.cli
 import pym.exc
-import pym.auth.models as pam
-import pym.auth.manager as authmgr
-import pym.res.models as prm
-import pym.tenants.models as ptm
+import pym.auth.models
+import pym.auth.manager
+from pym.fs.api import PymFs
+from pym.fs.const import NODE_NAME_FS
+import pym.res.const
+import pym.res.models
+import pym.tenants.models
 from pprint import pprint
 from pym.models import dictate_iter, dictate, DbEngine
 import pym.fs.models
+import pym.fs.manager
 
 
 def _list_to_tree(data, id_field='id', parent_field='parent_id', name_field='name'):
@@ -57,30 +61,74 @@ class Runner(pym.cli.Cli):
         super().__init__()
         self.parser = None
         self.cache = None
-        self._actor = None
+        self.fs = None
+        ":type: PymFs"
+        self.tenant = None
+        self.fs_root = None
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         super().init_app(args=args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
+        n_root = pym.res.models.ResourceNode.load_root(
+            self.sess,
+            name=pym.res.const.NODE_NAME_ROOT,
+            use_cache=False
+        )
+        self.tenant = n_root[self.args.tenant]
+        self.fs_root = pym.fs.models.FsNode.load_root(self.sess, self.tenant)
+        self.fs = PymFs(self.sess, self.fs_root, self.actor)
 
     def run(self):
         self.parser.print_help()
 
     def cmd_ls(self):
-        e = pym.fs.models.FsNode
-        qry = self.sess.query(e)
-        qry = self._build_query(qry, e)
-        excl = ('content_bin', 'content_text', 'content_json', '_slug')
-        fmap = {
-            'ctime': lambda e: e.ctime.replace(
-                tzinfo=dateutil.tz.tzlocal()) if e.ctime else None,
-            'mtime': lambda e: e.mtime.replace(
-                tzinfo=dateutil.tz.tzlocal()) if e.mtime else None,
-            'dtime': lambda e: e.dtime.replace(
-                tzinfo=dateutil.tz.tzlocal()) if e.dtime else None
-        }
-        data = dictate_iter(qry, fmap=fmap, excludes=excl)
-        self.print(data)
+        if self.args.long:
+            e = pym.fs.models.FsNode
+            start_node = self.fs_root.find_by_path(self.args.path)
+            qry = self.sess.query(e).filter(e.parent_id == start_node.id)
+            qry = self._build_query(qry, e)
+            excl = ('content_bin', 'content_text', 'content_json', '_slug')
+            data = dictate_iter(qry, excludes=excl)
+            self.print(data)
+        else:
+            for p in self.fs.listdir(
+                    path=self.args.path,
+                    wildcard=self.args.wildcard
+            ):
+                print(p)
+
+    def cmd_mkdir(self):
+        with transaction.manager:
+            self.fs.reinit()
+            n = self.fs.makedir(
+                path=self.args.path,
+                recursive=self.args.recursive,
+                allow_recreate=self.args.exist_ok
+            )
+            print('Created', n)
+
+    def cmd_delete(self):
+        with transaction.manager:
+            self.fs.reinit()
+            if self.args.recursive:
+                self.fs.removedir(
+                    path=self.args.path,
+                    force=True,
+                    delete_from_db=self.args.delete_from_db,
+                    deletion_reason=self.args.reason
+                )
+            else:
+                self.fs.remove(
+                    path=self.args.path,
+                    delete_from_db=self.args.delete_from_db,
+                    deletion_reason=self.args.reason
+                )
+
+    def cmd_undelete(self):
+        with transaction.manager:
+            self.fs.reinit()
+            n = self.fs.fs_root.find_by_path(self.args.path)
+            n.undelete(self.fs.actor, recursive=self.args.recursive)
 
 
 
@@ -90,70 +138,6 @@ class Runner(pym.cli.Cli):
 
 
 
-
-
-
-    # def _cmd_ls_users(self):
-    #     e = self.__class__.ENTITIES[self.args.entity]
-    #     qry = self.sess.query(e)
-    #     qry = self._build_query(qry, e)
-    #     data = dictate_iter(qry, excludes=['_rc', '_profile', 'pwd', 'sessionrc'])
-    #     self.print(data)
-    #
-    # def _cmd_ls_groups(self):
-    #     e = self.__class__.ENTITIES[self.args.entity]
-    #     qry = self.sess.query(
-    #         e,
-    #         ptm.Tenant
-    #     ).outerjoin(
-    #         ptm.Tenant, pam.Group.tenant_id == ptm.Tenant.id
-    #     )
-    #     qry = self._build_query(qry, e)
-    #     data = []
-    #     for r in qry:
-    #         e, ten = r
-    #         de = dictate(e)
-    #         d = OrderedDict()
-    #         for k, v in de.items():
-    #             d[k] = v
-    #             if k == 'tenant_id':
-    #                 d['tenant'] = ten.name if ten else None
-    #         data.append(d)
-    #     self.print(data)
-    #
-    # def _cmd_ls_group_members(self):
-    #     e = self.__class__.ENTITIES[self.args.entity]
-    #     member_group = sa.orm.aliased(pam.Group)
-    #     qry = self.sess.query(
-    #         e,
-    #         pam.Group.name.label('group_name'),
-    #         pam.Group.kind.label('group_kind'),
-    #         pam.User.principal,
-    #         member_group.name
-    #     ).join(
-    #         pam.Group, pam.Group.id == e.group_id
-    #     ).outerjoin(
-    #         pam.User, pam.User.id == e.member_user_id
-    #     ).outerjoin(
-    #         member_group, member_group.id == e.member_group_id
-    #     )
-    #     qry = self._build_query(qry, e)
-    #     data = []
-    #     for r in qry:
-    #         e, gr_name, gr_kind, mu_principal, mg_name = r
-    #         de = dictate(e)
-    #         d = OrderedDict()
-    #         for k, v in de.items():
-    #             d[k] = v
-    #             if k == 'group_id':
-    #                 d['group'] = gr_name
-    #                 d['group_kind'] = gr_kind
-    #             elif k == 'member_user_id':
-    #                 d['member_user'] = mu_principal
-    #             elif k == 'member_group_id':
-    #                 d['member_group'] = mg_name
-    #         data.append(d)
-    #     self.print(data)
     #
     # def _cmd_ls_resources(self):
     #     e = self.__class__.ENTITIES[self.args.entity]
@@ -185,21 +169,6 @@ class Runner(pym.cli.Cli):
     #             raise ValueError("Unknown entity: '{}'".format(ent))
     #         self.lgg.info("{} created with ID {}".format(ent, e.id))
     #
-    # def _cmd_create_user(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_create_group(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_create_tenant(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_create_permission(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_create_resource(self):
-    #     raise NotImplementedError('TODO')
-    #
     # def cmd_update(self):
     #     ent = self.args.entity
     #     id_ = self.args.id
@@ -225,27 +194,6 @@ class Runner(pym.cli.Cli):
     #         else:
     #             raise ValueError("Unknown entity: '{}'".format(ent))
     #         self.lgg.info('{} {} updated'.format(ent, id_))
-    #
-    # def _cmd_update_user(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_group(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_group_members(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_tenant(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_permission(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_resource(self):
-    #     raise NotImplementedError('TODO')
-    #
-    # def _cmd_update_ace(self):
-    #     raise NotImplementedError('TODO')
     #
     # def cmd_delete(self):
     #     ent = self.args.entity
@@ -285,33 +233,6 @@ class Runner(pym.cli.Cli):
     #             else:
     #                 raise ValueError("Unknown entity: '{}'".format(ent))
     #             self.lgg.info('{} {} deleted'.format(ent, id_))
-    #
-    # def cmd_allow(self):
-    #     resource_id = int(self.args.resource_id)
-    #     w = {}
-    #     which = self.args.who[:2]
-    #     who = self.args.who[2:]
-    #     try:
-    #         who = int(who)
-    #     except ValueError:
-    #         pass
-    #     if which == 'u:':
-    #         w['user'] = who
-    #     elif which == 'g:':
-    #         w['group'] = who
-    #     else:
-    #         raise ValueError("Invalid prefix: '{}'".format(which))
-    #     try:
-    #         perm = int(self.args.permission)
-    #     except ValueError:
-    #         perm = self.args.permission
-    #     with transaction.manager:
-    #         n = self.sess.query(prm.ResourceNode).get(resource_id)
-    #         if not n:
-    #             raise sa.orm.exc.NoResultFound("Failed to find resource with ID {}".format(resource_id))
-    #         ace = n.allow(self.sess, self._actor, perm, **w)
-    #         self.sess.flush()
-    #         self.lgg.info('ACE created with ID {}'.format(ace.id))
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
@@ -324,76 +245,6 @@ class Runner(pym.cli.Cli):
         if self.args.show_sql:
             print(sqlparse.format(str(qry), reindent=True, keyword_case='upper'))
         return qry
-
-    # def cmd_resource_tree(self):
-    #     sess = self.sess
-    #     out = []
-    #
-    #     def fetch_acl(resource_id):
-    #         rs = sess.query(
-    #             pam.Ace,
-    #             pam.User,
-    #             pam.Group,
-    #             pam.Permission
-    #         ).outerjoin(
-    #             pam.User, pam.Ace.user_id == pam.User.id
-    #         ).outerjoin(
-    #             pam.Group, pam.Ace.group_id == pam.Group.id
-    #         ).outerjoin(
-    #             pam.Permission, pam.Ace.permission_id == pam.Permission.id
-    #         ).filter(
-    #             pam.Ace.resource_id == resource_id,
-    #             pam.Ace.dtime == None
-    #         ).order_by(
-    #             pam.User.principal,
-    #             pam.Group.name,
-    #             pam.Ace.allow
-    #         )
-    #         data = []
-    #         for r in rs:
-    #             ace, usr, grp, perm = r
-    #             p = 'u:' + usr.principal if usr else 'g:' + grp.name
-    #             ad = 'ALLOW' if ace.allow else 'DENY'
-    #             data.append("{} {} {} ({})".format(p, ad, perm.name, ace.id))
-    #         return data
-    #
-    #     def prn(dd, lvl):
-    #         ind = '  ' * lvl
-    #         for d in dd:
-    #             if self.args.verbose:
-    #                 od = OrderedDict()
-    #                 od['Resource'] = "{ind}{} ({})".format(d['_name'], d['id'], ind=ind)
-    #                 if self.args.with_acl:
-    #                     acl = fetch_acl(d['id'])
-    #                     od['ACL'] = "\n".join(acl) if acl else ''
-    #                 od['Interface'] = d['iface']
-    #                 od['Kind'] = d['kind']
-    #                 od['Title'] = d['_title']
-    #                 od['Short Title'] = d['_short_title']
-    #                 od['Slug'] = d['_slug']
-    #                 out.append(od)
-    #             else:
-    #                 print("{ind}{} ({})".format(d['_name'], d['id'], ind=ind))
-    #                 if self.args.with_acl:
-    #                     acl = fetch_acl(d['id'])
-    #                     for ace in acl:
-    #                         print("{ind}  ! {}".format(ace, ind=ind))
-    #             if d['children']:
-    #                 prn(d['children'], lvl + 1)
-    #
-    #     # Do not load deleted records
-    #     rs = self.sess.query(prm.ResourceNode).filter(
-    #         prm.ResourceNode.dtime == None
-    #     ).order_by(
-    #         sa.sql.expression.nullsfirst(prm.ResourceNode.parent_id),
-    #         prm.ResourceNode.sortix,
-    #         prm.ResourceNode.name
-    #     )
-    #     data = dictate_iter(rs)
-    #     pp = _list_to_tree(data)
-    #     prn(pp, 0)
-    #     if out:
-    #         self.print_txt(out)
 
 
 def parse_args(app, argv):
@@ -420,17 +271,33 @@ def parse_args(app, argv):
     )
     app.add_parser_args(parser, (('config', True), ('actor', False),
         ('locale', False), ('format', False), ('verbose', False)))
+    parser.add_argument(
+        '--tenant',
+        required=True,
+        help="""A tenant name. All commands work on the filesystem of this
+            tenant."""
+    )
     subparsers = parser.add_subparsers(title="Commands", dest="subparser_name",
         help="""Type 'pym COMMAND --help'""")
 
     # Parser cmd ls
     p_ls = subparsers.add_parser('ls',
-        help="List all nodes in given path")
+        help="""List all nodes in given path. Due to a limitation of the API of
+            PyFilesystem, the short format does not recognize entries flagged as
+            deleted, and shows them unconditionally. Choose long format (-l) to
+            see the deleted flag.
+        """)
     p_ls.set_defaults(func=app.cmd_ls)
     p_ls.add_argument(
         'path',
         default='/',
         help="Path, default '/'."
+    )
+    p_ls.add_argument(
+        'wildcard',
+        nargs='?',
+        help="Wildcard to filter output. Treated as regex if starts with '/'"
+             " (slash)."
     )
     p_ls.add_argument(
         '--with-deleted',
@@ -442,9 +309,68 @@ def parse_args(app, argv):
         help='String to use as WHERE clause'
     )
     p_ls.add_argument(
-        '--with-acl',
+        '-l', '--long',
         action='store_true',
-        help="""Show ACL of each node"""
+        help='Long format'
+    )
+
+    # Parser cmd mkdir
+    p_mkdir = subparsers.add_parser('mkdir',
+        help="Creates nodes for given path")
+    p_mkdir.set_defaults(func=app.cmd_mkdir)
+    p_mkdir.add_argument(
+        'path',
+        help="Create leaf directory of path."
+    )
+    p_mkdir.add_argument(
+        '-r', '--recursive',
+        help='Create all intermediate-level directories needed to contain the'
+             ' leaf directory.',
+        action='store_true'
+    )
+    p_mkdir.add_argument(
+        '--exist_ok',
+        action='store_true',
+        help='If exist_ok is False (the default), an FileExistsError is raised'
+             ' if the target directory already exists.'
+    )
+
+    # Parser cmd delete
+    p_delete = subparsers.add_parser('delete',
+        help="Removes node at given path")
+    p_delete.set_defaults(func=app.cmd_delete)
+    p_delete.add_argument(
+        'path',
+        help="Leaf node of this path is deleted."
+    )
+    p_delete.add_argument(
+        '-r', '--recursive',
+        help='Delete also all children',
+        action='store_true'
+    )
+    p_delete.add_argument(
+        '--delete-from-db',
+        action='store_true',
+        help='If set, delete nodes from DB, else they are only flagged as deleted.'
+    )
+    p_delete.add_argument(
+        '--reason',
+        required=False,
+        help='Optional reason for deletion.'
+    )
+
+    # Parser cmd undelete
+    p_undelete = subparsers.add_parser('undelete',
+        help="Undeletes node at given path")
+    p_undelete.set_defaults(func=app.cmd_undelete)
+    p_undelete.add_argument(
+        'path',
+        help="Leaf node of this path is undeleted."
+    )
+    p_undelete.add_argument(
+        '-r', '--recursive',
+        help='Undelete also all children',
+        action='store_true'
     )
 
     # # Parser cmd create

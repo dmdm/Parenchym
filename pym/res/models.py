@@ -11,6 +11,7 @@ import zope.interface
 import pym.lib
 import pym.exc
 import pym.cache
+from pym.security import is_string_clean, is_path_safe
 import pym.auth.models as pam
 from pym.models import (DbBase, DefaultMixin, DbSession)
 from pym.models.types import CleanUnicode
@@ -29,9 +30,9 @@ class ISystemNode(zope.interface.Interface):
 
 
 def root_factory(request):
-    #return root_node
+    # return root_node
     sess = DbSession()
-    n = ResourceNode.load_root(sess, 'root')
+    n = ResourceNode.load_root(sess, 'root', use_cache=True)
     return n
 
 
@@ -53,6 +54,9 @@ class ResourceNode(DbBase, DefaultMixin):
     }
 
     IDENTITY_COL = None
+    """Resource nodes do not have single-column identities other than ID."""
+    SEP = '/'
+    """In materialised paths, separate nodes with this."""
 
     # Root resource has parent_id NULL
     parent_id = sa.Column(
@@ -170,7 +174,7 @@ class ResourceNode(DbBase, DefaultMixin):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def _set_ace(self, sess, owner, allow, permission, user=None, group=None,
+    def _set_ace(self, owner, allow, permission, user=None, group=None,
             **kwargs):
         if not user and not group:
             raise pym.exc.PymError("Ace must reference either user or group.")
@@ -178,6 +182,7 @@ class ResourceNode(DbBase, DefaultMixin):
             raise pym.exc.PymError("Ace cannot reference user and group "
                                    "simultaneously.")
 
+        sess = sa.inspect(self).session
         owner = pam.User.find(sess, owner)
         if isinstance(permission, pam.Permissions):
             permission = permission.value
@@ -195,7 +200,8 @@ class ResourceNode(DbBase, DefaultMixin):
 
         try:
             ace = sess.query(pam.Ace).filter(*fil).one()
-            raise pym.exc.ItemExistsError("Ace exists. See attribute 'item'.", item=ace)
+            raise pym.exc.ItemExistsError("Ace exists. See attribute 'item'.",
+                item=ace)
         except NoResultFound:
             ace = pam.Ace()
             ace.owner_id = owner.id
@@ -214,7 +220,7 @@ class ResourceNode(DbBase, DefaultMixin):
         self.acl.append(ace)
         return ace
 
-    def allow(self, sess, owner, permission, user=None, group=None,
+    def allow(self, owner, permission, user=None, group=None,
             **kwargs):
         """
         Allows a permission on this resource to user or group.
@@ -224,17 +230,16 @@ class ResourceNode(DbBase, DefaultMixin):
 
         Either ``user`` or ``group`` must be given, but not both.
 
-        :param sess: A DB session.
         :param owner: Owner of this ACE.
         :param permission: Permission to set.
         :param user: Set permission for this user.
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        return self._set_ace(sess=sess, owner=owner, allow=True, permission=permission,
+        return self._set_ace(owner=owner, allow=True, permission=permission,
             user=user, group=group, **kwargs)
 
-    def deny(self, sess, owner, permission, user=None, group=None,
+    def deny(self, owner, permission, user=None, group=None,
             **kwargs):
         """
         Denies a permission on this resource from user or group.
@@ -244,45 +249,161 @@ class ResourceNode(DbBase, DefaultMixin):
 
         Either ``user`` or ``group`` must be given, but not both.
 
-        :param sess: A DB session.
         :param owner: Owner of this ACE.
         :param permission: Permission to set.
         :param user: Set permission for this user.
         :param group: Set permission for this group.
         :param kwargs: Other parameters suitable for :class:`pym.auth.models.Ace`.
         """
-        return self._set_ace(sess=sess, owner=owner, allow=False, permission=permission,
+        return self._set_ace(owner=owner, allow=False, permission=permission,
             user=user, group=group, **kwargs)
 
-    def add_child(self, sess, owner, kind, name, **kwargs):
-        owner_id = pam.User.find(sess, owner).id
-        n = ResourceNode(owner_id=owner_id, kind=kind, name=name, **kwargs)
-        n.parent = self
+    def add_child(self, owner, kind, name, **kwargs):
+        """
+        Adds child node of given kind.
+
+        :param owner: ID, principal or instance of a user.
+        :param kind: Kind of the new child node.
+        :param name: Name of the new child node.
+        :param kwargs: Stuff.
+        :return: Instance of the new child node.
+
+        :raises ValueError: if name is not clean.
+        :raises pym.exc.ItemExistsError: if a child with this name exists.
+        """
+        is_string_clean(name, raise_error=True)
+        try:
+            n = self[name]
+            raise pym.exc.ItemExistsError("Child '{}' exists.".format(name),
+                item=n)
+        except KeyError:
+            sess = sa.inspect(self).session
+            owner = pam.User.find(sess, owner)
+            n = ResourceNode(owner_id=owner.id, kind=kind, name=name, **kwargs)
+            n.parent = self
+            return n
+
+    def delete(self, deleter, deletion_reason=None, delete_from_db=False,
+            recursive=False):
+        """
+        Deletes current node.
+
+        .. todo:: Implement recursively flagging children as deleted
+
+        :param deleter: ID, ``principal``, or instance of a user.
+        :param deletion_reason: Optional. Reason for deletion.
+        :param delete_from_db: Optional. Defaults to just tag as deleted,
+            set True to physically delete record from DB.
+        :param recursive: If True and node is not empty, deletes also all
+            children.
+
+        :raises OSError: if node is not empty and recursive is False.
+        """
+        if self.has_children() and not recursive:
+            raise OSError("FsNode not empty: {}".format(self))
+        sess = sa.inspect(self).session
+        if delete_from_db:
+            # DB schema must cascade deletion to children
+            sess.delete(self)
+        else:
+            # Do nothing if this node already is deleted.
+            # May occur if we delete a node and a child had been deleted some
+            # time before. We want to keep those timestamp and reason.
+            if self.deleter_id is not None:
+                return
+            deleter = pym.auth.models.User.find(sess, deleter)
+            self.deleter_id = deleter.id
+            self.deletion_reason = deletion_reason
+            # TODO Replace content of unique fields
+            if recursive:
+                for n in self.children.values():
+                    n.delete(
+                        deleter=deleter,
+                        deletion_reason=deletion_reason,
+                        delete_from_db=False,
+                        recursive=True
+                    )
+
+    def undelete(self, editor, recursive=False):
+        """
+        Undeletes current node and, if it has children, them too.
+
+        :param recursive: If True and node is not empty, undeletes also all
+            children.
+        """
+        sess = sa.inspect(self).session
+        editor = pym.auth.models.User.find(sess, editor)
+        self.editor_id = editor.id
+        self.deleter_id = None
+        self.deletion_reason = None
+        # TODO Replace content of unique fields
+        if self.has_children() and recursive:
+            for n in self.children.values():
+                n.undelete(editor, recursive)
+
+    def has_children(self):
+        sess = sa.inspect(self).session
+        cls = self.__class__
+        # TODO Use query cache
+        cnt = sess.query(cls.id).filter(cls.parent_id == self.id).count()
+        return cnt > 0
+
+    def count_children(self):
+        sess = sa.inspect(self).session
+        cls = self.__class__
+        # TODO Use query cache
+        return sess.query(cls.id).filter(cls.parent_id == self.id).count()
+
+    def find_by_path(self, path):
+        """
+        Returns node at given path.
+
+        Uses current node as root for path.
+
+        :param path: Path to wanted node.
+        :type path: string
+
+        :raises FileNotFoundError: if path does not exist.
+        :raises ValueError: if path is not safe.
+        """
+        cls = self.__class__
+        if path == cls.SEP:
+            return self
+        path = path.strip(cls.SEP)
+        is_path_safe(path=path, split=True, sep=cls.SEP, raise_error=True)
+        if not path:
+            return self
+        pp = path.split(cls.SEP)
+        n = self
+        try:
+            for p in pp:
+                n = n[p]
+        except KeyError:
+            raise FileNotFoundError("{}: '{}'".format(n, p))
         return n
-    #
-    # @classmethod
-    # def find(cls, sess, parent, **kwargs):
-    #     """
-    #     Finds a resource node with given attributes.
-    #
-    #     :returns: Instance of found node.
-    #
-    #     :raises sqlalchemy.orm.exc.NoResultFound: If node was not found.
-    #     """
-    #     parent_id = parent if isinstance(parent, int) else parent.id
-    #     super().find(sess, None, parent_id=parent_id, **kwargs)
+
+    def path_exists(self, path):
+        """
+        Checks whether given path exists.
+
+        Uses current node as root for path.
+
+        :param path: Path to check.
+        :type path: string
+
+        :rtype: bool
+
+        :raises ValueError: if path is not safe.
+        """
+        try:
+            self.find_by_path(path)
+            return True
+        except FileNotFoundError:
+            return False
 
     @classmethod
     def create_root(cls, sess, owner, name, kind, **kwargs):
-        if isinstance(owner, int):
-            owner_id = owner
-        elif isinstance(owner, str):
-            o = sess.query(pam.User).filter(
-                pam.User.principal == owner
-            ).one()
-            owner_id = o.id
-        else:
-            owner_id = owner.id
+        owner_id = pam.User.find(sess, owner).id
         try:
             r = cls.load_root(sess, name, use_cache=False)
         except sa.orm.exc.NoResultFound:

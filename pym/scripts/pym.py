@@ -62,28 +62,16 @@ class Runner(pym.cli.Cli):
 
     def __init__(self):
         super().__init__()
+        self.parser = None
         self.cache = None
-        self._actor = None
+        self.actor = None
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         super().init_app(args=args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
-        self.cache = redis.StrictRedis.from_url(
-            **self.rc.get_these('cache.redis'))
-        self._actor = self.args.actor or getpass.getuser()
-        self.lgg.debug('Actor: {}'.format(self._actor))
-
-        try:
-            self.args.id = int(self.args.id)
-        except AttributeError:
-            pass
-        try:
-            self._actor = int(self._actor)
-        except ValueError:
-            pass
 
     def run(self):
-        self.lgg.error("You need to specify a command")
+        self.parser.print_help()
 
     def cmd_ls(self):
         if self.args.entity == 'user':
@@ -195,7 +183,7 @@ class Runner(pym.cli.Cli):
         data = self.parse(self.args.data)
         if 'owner_id' in data:
             del data['owner_id']
-        data['owner'] = self._actor
+        data['owner'] = self.actor
         with transaction.manager:
             if ent == 'user':
                 e = authmgr.create_user(sess=self.sess, **data)
@@ -234,7 +222,7 @@ class Runner(pym.cli.Cli):
         data = self.parse(self.args.data)
         if 'editor_id' in data:
             del data['editor_id']
-        data['editor'] = self._actor
+        data['editor'] = self.actor
         with transaction.manager:
             if ent == 'user':
                 self._cmd_update_user()
@@ -286,7 +274,7 @@ class Runner(pym.cli.Cli):
                     authmgr.delete_user(
                         sess=self.sess,
                         user=id_,
-                        deleter=self._actor,
+                        deleter=self.actor,
                         deletion_reason=self.args.deletion_reason,
                         delete_from_db=self.args.delete_from_db
                     )
@@ -294,7 +282,7 @@ class Runner(pym.cli.Cli):
                     authmgr.delete_group(
                         sess=self.sess,
                         group=id_,
-                        deleter=self._actor,
+                        deleter=self.actor,
                         deletion_reason=self.args.deletion_reason,
                         delete_from_db=self.args.delete_from_db
                     )
@@ -313,7 +301,7 @@ class Runner(pym.cli.Cli):
                     authmgr.delete_ace(
                         sess=self.sess,
                         ace_id=id_,
-                        deleter=self._actor,
+                        deleter=self.actor,
                         delete_from_db=self.args.delete_from_db
                     )
                 else:
@@ -358,7 +346,7 @@ class Runner(pym.cli.Cli):
             n = self.sess.query(prm.ResourceNode).get(resource_id)
             if not n:
                 raise sa.orm.exc.NoResultFound("Failed to find resource with ID {}".format(resource_id))
-            ace = n.allow(self.sess, self._actor, perm, **w)
+            ace = n.allow(self.actor, perm, **w)
             self.sess.flush()
             self.lgg.info('ACE created with ID {}'.format(ace.id))
 
@@ -481,14 +469,8 @@ def parse_args(app, argv):
         help="If given, shows SQL query",
         action='store_true'
     )
-    parser.add_argument(
-        '--actor',
-        help="Principal or ID of user who performs this command. Will be OWNER"
-             "on creates, EDITOR on updates and, DELETER on deletes. If omitted,"
-             "we use the login name of the console user.",
-    )
-    app.add_parser_args(parser, (('config', True),
-        ('locale', False), ('alembic-config', False), ('format', False)))
+    app.add_parser_args(parser, (('config', True), ('actor', False),
+        ('locale', False), ('format', False), ('verbose', False)))
     subparsers = parser.add_subparsers(title="Commands", dest="subparser_name",
         help="""Type 'pym COMMAND --help'""")
 
@@ -619,6 +601,7 @@ def parse_args(app, argv):
              'group with "g:" and user with "u:"'
     )
 
+    app.parser = parser
     return parser.parse_args(argv)
 
 

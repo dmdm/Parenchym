@@ -153,6 +153,17 @@ def safepath(path, split=True, sep=os.path.sep):
     return res
 
 
+def is_path_safe(path, split=True, sep=os.path.sep, raise_error=True):
+    sp = safepath(path, split, sep)
+    if path == sp:
+        return True
+    if raise_error:
+        raise ValueError("Path is not safe: '{}' (should be '{}')".format(
+            path, sp))
+    else:
+        return False
+
+
 def trim_blanks(s):
     """
     Removes leading and trailing whitespace from string.
@@ -160,19 +171,6 @@ def trim_blanks(s):
     s = RE_LEADING_BLANKS.sub('', s)
     s = RE_TRAILING_BLANKS.sub('', s)
     return s
-
-
-def is_string_clean(s):
-    """
-    Checks whether string has leading/trailing whitespace or illegal chars.
-    """
-    if RE_LEADING_BLANKS.search(s):
-        return False
-    if RE_TRAILING_BLANKS.search(s):
-        return False
-    if RE_INVALID_FS_CHARS.search(s):
-        return False
-    return True
 
 
 def clean_string(s):
@@ -184,6 +182,27 @@ def clean_string(s):
     s = RE_BLANKS.sub(' ', s)
     s = RE_INVALID_FS_CHARS.sub('', s)
     return s
+
+
+def is_string_clean(s, raise_error=True):
+    """
+    Checks whether string has leading/trailing whitespace or illegal chars.
+
+    :param s: The string to check
+    :param raise_error: Whether to raise an exception (default) or to return
+        True/False.
+    :rtype: bool
+
+    :raises ValueError: if string is not clean.
+    """
+    cs = clean_string(s)
+    if s == cs:
+        return True
+    if raise_error:
+        raise ValueError("String is not clean: '{}' (should be '{}')".format(
+            s, cs))
+    else:
+        return False
 
 
 def slugify(s, force_ascii=False, **kw):

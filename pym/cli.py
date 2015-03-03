@@ -66,7 +66,7 @@ class Cli(object):
 
         self._config = None
         self._sess = None
-        self._actor = None
+        self.actor = None
         """:type: pym.auth.models.User"""
 
     @staticmethod
@@ -208,16 +208,16 @@ class Cli(object):
                 try:
                     actor = int(actor)
                 except ValueError:
-                    self._actor = self._sess.query(pym.auth.models.User).filter(pym.auth.models.User.principal == actor).one()
+                    self.actor = self._sess.query(pym.auth.models.User).filter(pym.auth.models.User.principal == actor).one()
                 else:
-                    self._actor = self._sess.query(pym.auth.models.User).get(actor)
-                    if not self._actor:
+                    self.actor = self._sess.query(pym.auth.models.User).get(actor)
+                    if not self.actor:
                         raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
             except sa.orm.exc.NoResultFound:
                 raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
         else:
-            self._actor = getpass.getuser()
-        self.lgg.debug('Actor: {}'.format(self._actor))
+            self.actor = getpass.getuser()
+        self.lgg.debug('Actor: {}'.format(self.actor))
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
