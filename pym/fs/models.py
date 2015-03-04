@@ -79,18 +79,28 @@ class FsContent(DbBase, DefaultMixin):
         server_default=sa.text('0')
     )
     """Size of the content in bytes. Reflect this in FsNode.size."""
-    # Load only if needed
-    xattr = sa.orm.deferred(sa.Column(MutableDict.as_mutable(
-        JSONB(none_as_null=True)),
+    xattr = sa.orm.deferred(
+        sa.Column(MutableDict.as_mutable(JSONB(none_as_null=True)),
         nullable=True))
     """Extended attributes"""
-    # Load only if needed
-    data_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
-    # Load only if needed
-    data_json = sa.orm.deferred(sa.Column(JSONB(none_as_null=True),
-        nullable=True))
-    # Load only if needed
+    meta_json = sa.orm.deferred(
+        sa.Column(JSONB(none_as_null=True), nullable=True))
+    """Extracted meta information as JSON"""
+    meta_xmp = sa.orm.deferred(
+        sa.Column(sa.UnicodeText(), nullable=True))
+    """Extracted meta information as XMP"""
     data_bin = sa.orm.deferred(sa.Column(sa.Binary(), nullable=True))
+    """By default, content is stored binarily."""
+    data_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
+    """Certain mime-types allow storing content as text. Also the text rendering
+    of uploaded office documents is stored here."""
+    data_json = sa.orm.deferred(
+        sa.Column(JSONB(none_as_null=True), nullable=True))
+    """Certain mime-types allow storing content as JSON"""
+    data_html_head = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
+    """Head of HTML rendering of office documents."""
+    data_html_body = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
+    """Body of HTML rendering of office documents."""
 
     @property
     def data_attr(self):
@@ -331,6 +341,9 @@ class FsNode(pym.res.models.ResourceNode):
         attributes to handle the data and additional properties like ``xattr``
         and ``local_file_name``.
 
+        We throw an exception if a node with this name already exists. Use
+        :meth:`.update_file` in this case.
+
         :param owner: ID, principal or instance of a user.
         :param name: Name of the new node.
         :param kwargs: Additional attributes.
@@ -346,6 +359,74 @@ class FsNode(pym.res.models.ResourceNode):
         n.content_rows = [c]
         n.content = c
         return n
+
+    def update(self, editor, **kwargs):
+        """
+        Updates current node.
+
+        Updates current node with new settings and/or content. We here apply
+        the kwargs to the attributes of the current node, and, if present,
+        ``filename``, ``mime_type``, ``size`` of the content entity. We also set
+        its editor. Caller may additionally apply new data to the content.
+
+        The revision counter ``rev`` is kept as-is.
+
+        To create a new revision, use :meth:`.revise`.
+
+        :param editor: ID, principal or instance of a user.
+        :param kwargs: Additional attributes.
+        """
+        sess = sa.inspect(self).session
+        editor = pym.auth.models.User.find(sess, editor)
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        for k in ('filename', 'mime_type', 'size'):
+            if k in kwargs:
+                setattr(self.content, k, kwargs[k])
+
+        self.editor_id = editor.id
+        self.content.editor_id = editor.id
+
+    def revise(self, editor, **kwargs):
+        """
+        Revises current node.
+
+        Revises current node with new settings and/or content. We increment the
+        revision counter ``rev`` and apply the kwargs to the attributes of the
+        current node.
+
+        .. todo:: Keep history of the FsNode
+
+        We then add a new, empty instance of FsContent to the collection
+        ``content_rows``, and let attribute ``content`` point to it. If kwargs
+        contain ``filename``, ``mime_type`` and ``size``, we apply them to the
+        new content entity. We also set its owner. Caller may additionally
+        set data to the content.
+
+        To update a node in-place, use :meth:`.update`.
+
+        :param editor: ID, principal or instance of a user.
+        :param kwargs: Additional attributes.
+        """
+        sess = sa.inspect(self).session
+        editor = pym.auth.models.User.find(sess, editor)
+
+        c = FsContent()
+        c.owner_id = editor.id
+        self.content_rows.append(c)
+        self.content = c
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        for k in ('filename', 'mime_type', 'size'):
+            if k in kwargs:
+                setattr(self.content, k, kwargs[k])
+
+        self.rev += 1
+        self.editor_id = editor.id
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """

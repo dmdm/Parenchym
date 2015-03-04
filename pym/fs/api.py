@@ -1,11 +1,13 @@
 import json
 import mimetypes
+import threading
 import magic
 import os
 import sqlalchemy as sa
 import fs.base
 from fs.base import synchronize
 import fs.errors
+import transaction
 
 from .models import FsNode
 import pym.exc
@@ -29,7 +31,7 @@ class PymFs(fs.base.FS):
         'invalid_path_chars': None  # Too many to list. Use pym.security.safepath()
     }
 
-    def __init__(self, sess, fs_root, actor):
+    def __init__(self, lgg, sess, fs_root, actor):
         """
         Parenchym Filesystem for use in ``Pyfilesystem``.
 
@@ -47,6 +49,7 @@ class PymFs(fs.base.FS):
         :param actor: Instance of a user.
         """
         super().__init__(thread_synchronize=True)
+        self.lgg = lgg
         self.sess = sess
         self.fs_root = fs_root
         self.actor = actor
@@ -422,51 +425,84 @@ class PymFs(fs.base.FS):
             'is_directory': n.is_directory()
         }
 
-    def _setcontents(self, path, data, encoding=None, errors=None,
-            chunk_size=1024 * 64, progress_callback=None,
-            finished_callback=None, overwrite=False):
+    def _setcontents(self,
+            path,
+            data,
+            command='add',
+            meta=None,
+            encoding=None,
+            errors=None,
+            chunk_size=1024 * 64,
+            progress_callback=None,
+            finished_callback=None):
         """
-        Create a new node from a string or file-like object.
+        Creates a new node or updates or revises an existing one.
 
-        :param path: Path of the file to create.
-        :param data: String or bytes object containing the contents for the new
-            file.
-        :param encoding: If `data` is a file open in text mode, or a text
-            string, then use this `encoding` to write to the destination file.
-        :param errors: If `data` is a file open in text mode or a text string,
-            then use `errors` when opening the destination file.
-        :param chunk_size: Number of bytes to read in a chunk, if the
-            implementation has to resort to a read / copy loop.
+        :param path: Path of the destination. Depending on ``command``, we create
+            its leaf, or update or revise it.
+        :param data: File-like object. *Strings or bytes are not yet supported.*
+        :param command: One of 'add', 'update' or 'revise'.
+        :param meta: Callable that returns dict with metadata or that dict
+            itself.
+        :param encoding: *Not used*
+        :param errors: *Not used*.
+        :param chunk_size: *Not used*.
+        :param progress_callback: *Not used*
+        :param finished_callback: Callable that is called when we are finished.
         """
         if progress_callback is None:
             progress_callback = lambda bytes_written: None
         if finished_callback is None:
             finished_callback = lambda: None
-
-        m = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
-
         bytes_written = 0
         progress_callback(bytes_written)
 
+        # 1/ Prepare source
+
         # Treat data as filename
         src_fn = data
+
+        # Get mime-type
+        # Try Python's native lib first
         mt, enc = mimetypes.guess_type(src_fn)
+        # It may not find all types, e.g. it returns None for 'text/plain', so
+        # fallback on python-magic.
         if not mt:
+            m = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
             mt = m.from_file(src_fn).decode('ASCII')
-        print('+++++++++++', mt, enc)
         if not enc:
             enc = 'UTF-8'
+        # Get size
         sz = os.path.getsize(src_fn)
-        dst_path = path
-        dst_fn = src_fn
 
-        pn = self.fs_root.find_by_path(dst_path)
-        n = pn.add_file(
-            owner=self.actor,
-            filename=dst_fn,
-            mime_type=mt,
-            size=sz
-        )
+        # 2/ Prepare destination
+        dst_path = path
+        dst_fn = os.path.basename(src_fn)
+
+        # 3/ build general args
+        args = {
+            'filename': dst_fn,
+            'mime_type': mt,
+            'size': sz
+        }
+
+        # 4/ process command
+        if command == 'add':
+            pn = self.fs_root.find_by_path(dst_path)
+            args['owner'] = self.actor
+            n = pn.add_file(**args)
+        elif command == 'update':
+            args['editor'] = self.actor
+            n = self.fs_root.find_by_path(dst_path + FsNode.SEP + dst_fn)
+            n.update(**args)
+        elif command == 'revise':
+            args['editor'] = self.actor
+            n = self.fs_root.find_by_path(dst_path + FsNode.SEP + dst_fn)
+            n.revise(**args)
+        else:
+            raise ValueError("Unknown command: '{}'".format(command))
+
+        # 5/ Store the content data
         attr = n.content.data_attr
         if attr == 'data_bin':
             with open(src_fn, 'rb') as fh:
@@ -480,24 +516,115 @@ class PymFs(fs.base.FS):
                     setattr(n.content, attr, fh.read())
         bytes_written += sz
 
+        # Store the meta data
+        if meta:
+            if callable(meta):
+                self.lgg.debug('Fetching meta data')
+                meta = meta(src_fn)
+            kk = 'meta_json meta_xmp data_text data_html_head data_html_body'.split(' ')
+            for k in kk:
+                setattr(n.content, k, meta.get(k, None))
+            if isinstance(meta['meta_json'], list):
+                x = meta['meta_json'][0]
+            else:
+                x = meta['meta_json']
+            if 'title' in x:
+                n.title = x['title']
+
         finished_callback()
         return bytes_written
 
-    def save(self, src, dst, finished_callback=None):
-        """
-        Create a new node from a string or file-like object.
-
-        :param src: String or bytes object containing the contents for the new
-            file.
-        :param dst: Path of the file to create.
-        """
-        self._setcontents(
-            path=dst,
-            data=src,
+    def setcontents(self,
+            path,
+            data,
+            command='add',
+            meta=None,
             encoding=None,
             errors=None,
-            chunk_size=1024*64,
+            chunk_size=1024 * 64,
             progress_callback=None,
+            finished_callback=None):
+        """
+        Creates a new node or updates or revises an existing one.
+
+        :param path: Path of the destination. Depending on ``command``, we create
+            its leaf, or update or revise it.
+        :param data: File-like object. *Strings or bytes are not yet supported.*
+        :param command: One of 'add', 'update' or 'revise'.
+        :param meta: Meta data
+        :param encoding: *Not used*
+        :param errors: *Not used*.
+        :param chunk_size: *Not used*.
+        :param progress_callback: *Not used*
+        :param finished_callback: Callable that is called when we are finished.
+        """
+        self._setcontents(
+            path=path,
+            data=data,
+            command=command,
+            meta=meta,
+            encoding=encoding,
+            errors=errors,
+            chunk_size=chunk_size,
+            progress_callback=progress_callback,
             finished_callback=finished_callback
         )
+
+    def setcontents_async(self,
+            path,
+            data,
+            command='add',
+            meta=None,
+            encoding=None,
+            errors=None,
+            chunk_size=1024 * 64,
+            progress_callback=None,
+            finished_callback=None,
+            error_callback=None):
+        """
+        Creates a new node or updates or revises an existing one.
+
+        :param path: Path of the destination. Depending on ``command``, we create
+            its leaf, or update or revise it.
+        :param data: File-like object. *Strings or bytes are not yet supported.*
+        :param command: One of 'add', 'update' or 'revise'.
+        :param meta: Meta data
+        :param encoding: *Not used*
+        :param errors: *Not used*.
+        :param chunk_size: *Not used*.
+        :param progress_callback: *Not used*
+        :param finished_callback: Callable that is called when we are finished.
+        :param error_callback: A function that is called with an exception
+            object if any error occurs during the copy process.
+        :returns: An event object that is set when the copy is complete, call
+            the `wait` method of this object to block until the data is written.
+        """
+        finished_event = threading.Event()
+
+        def do_setcontents():
+            try:
+                # New thread needs new transaction and db session
+                with transaction.manager:
+                    self.reinit()
+                    self._setcontents(
+                        path=path,
+                        data=data,
+                        command=command,
+                        meta=meta,
+                        encoding=encoding,
+                        errors=errors,
+                        chunk_size=1024 * 64,
+                        progress_callback=progress_callback,
+                        finished_callback=finished_callback
+                    )
+            except Exception as exc:
+                if error_callback:
+                    error_callback(exc)
+                else:
+                    raise
+            finally:
+                finished_event.set()
+
+        threading.Thread(target=do_setcontents).start()
+        return finished_event
 

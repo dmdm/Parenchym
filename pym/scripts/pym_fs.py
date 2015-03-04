@@ -1,40 +1,28 @@
 #!/usr/bin/env python
 from collections import OrderedDict
-import getpass
 import textwrap
-import dateutil.tz
-from sqlalchemy.engine import reflection
-import sqlparse
-
-import transaction
 import time
 import argparse
 import logging
 import sys
 import os
 import datetime
-import redis
-import sqlalchemy as sa
-import sqlalchemy.sql.expression
-import sqlalchemy.orm
-import sqlalchemy.orm.exc
-import alembic.command
-import alembic.config
-from zope.sqlalchemy import mark_changed
-from pym.auth.const import SYSTEM_UID
+import functools
+
+import sqlparse
+import transaction
+
 import pym.cli
 import pym.exc
 import pym.auth.models
 import pym.auth.manager
 from pym.fs.api import PymFs
-from pym.fs.const import NODE_NAME_FS
 import pym.res.const
 import pym.res.models
 import pym.tenants.models
-from pprint import pprint
-from pym.models import dictate_iter, dictate, DbEngine
+from pym.models import dictate_iter
 import pym.fs.models
-import pym.fs.manager
+import pym.fs.tools
 
 
 def _list_to_tree(data, id_field='id', parent_field='parent_id', name_field='name'):
@@ -74,7 +62,8 @@ class Runner(pym.cli.Cli):
         )
         self.tenant = n_root[self.args.tenant]
         self.fs_root = pym.fs.models.FsNode.load_root(self.sess, self.tenant)
-        self.fs = PymFs(self.sess, self.fs_root, self.actor)
+        self.fs = PymFs(lgg=self.lgg, sess=self.sess, fs_root=self.fs_root,
+            actor=self.actor)
 
     def cmd_ls(self):
         if self.args.long:
@@ -131,113 +120,34 @@ class Runner(pym.cli.Cli):
             self.fs.rename(self.args.src, self.args.dst)
 
     def cmd_save(self):
+
+        def done():
+            self.lgg.info('File saved')
+
+        cmd = 'add'
+        if self.args.update:
+            cmd = 'update'
+        if self.args.revise:
+            # revise is stronger than update
+            cmd = 'revise'
+        meta = functools.partial(
+            pym.fs.tools.fetch_meta,
+            lgg=self.lgg,
+            encoding=self.encoding
+        )
+        args = {
+            'path': self.args.dst,
+            'data': self.args.src,
+            'command': cmd,
+            'meta': meta,
+            'finished_callback': done
+        }
         with transaction.manager:
             self.fs.reinit()
-            self.fs.save(self.args.src, self.args.dst)
-
-
-
-
-
-
-
-
-
-    #
-    # def _cmd_ls_resources(self):
-    #     e = self.__class__.ENTITIES[self.args.entity]
-    #     qry = self.sess.query(e)
-    #     qry = self._build_query(qry, e)
-    #     data = dictate_iter(qry)
-    #     self.print(data)
-    #
-    # def cmd_create(self):
-    #     ent = self.args.entity
-    #     data = self.parse(self.args.data)
-    #     if 'owner_id' in data:
-    #         del data['owner_id']
-    #     data['owner'] = self._actor
-    #     with transaction.manager:
-    #         if ent == 'user':
-    #             e = authmgr.create_user(sess=self.sess, **data)
-    #         elif ent == 'group':
-    #             e = authmgr.create_group(sess=self.sess, **data)
-    #         elif ent == 'group-member':
-    #             e = authmgr.create_group_member(sess=self.sess, **data)
-    #         elif ent == 'tenant':
-    #             self._cmd_create_tenant()
-    #         elif ent == 'permission':
-    #             self._cmd_create_permission()
-    #         elif ent == 'resource':
-    #             self._cmd_create_resource()
-    #         else:
-    #             raise ValueError("Unknown entity: '{}'".format(ent))
-    #         self.lgg.info("{} created with ID {}".format(ent, e.id))
-    #
-    # def cmd_update(self):
-    #     ent = self.args.entity
-    #     id_ = self.args.id
-    #     data = self.parse(self.args.data)
-    #     if 'editor_id' in data:
-    #         del data['editor_id']
-    #     data['editor'] = self._actor
-    #     with transaction.manager:
-    #         if ent == 'user':
-    #             self._cmd_update_user()
-    #         elif ent == 'group':
-    #             self._cmd_update_group()
-    #         elif ent == 'group-member':
-    #             self._cmd_update_group_members()
-    #         elif ent == 'tenant':
-    #             self._cmd_update_tenant()
-    #         elif ent == 'permission':
-    #             self._cmd_update_permission()
-    #         elif ent == 'resource':
-    #             self._cmd_update_resource()
-    #         elif ent == 'ace':
-    #             self._cmd_update_ace()
-    #         else:
-    #             raise ValueError("Unknown entity: '{}'".format(ent))
-    #         self.lgg.info('{} {} updated'.format(ent, id_))
-    #
-    # def cmd_delete(self):
-    #     ent = self.args.entity
-    #     id_ = self.args.id
-    #     answer = 'y' if self.args.yes else input(
-    #         "Are you sure to delete {} {} (y/n)? ".format(ent, id_)).lower()
-    #     if answer == 'y':
-    #         with transaction.manager:
-    #             if ent == 'user':
-    #                 authmgr.delete_user(
-    #                     sess=self.sess,
-    #                     user=id_,
-    #                     deleter=self._actor,
-    #                     deletion_reason=self.args.deletion_reason,
-    #                     delete_from_db=self.args.delete_from_db
-    #                 )
-    #             elif ent == 'group':
-    #                 authmgr.delete_group(
-    #                     sess=self.sess,
-    #                     group=id_,
-    #                     deleter=self._actor,
-    #                     deletion_reason=self.args.deletion_reason,
-    #                     delete_from_db=self.args.delete_from_db
-    #                 )
-    #             elif ent == 'group-member':
-    #                 authmgr.delete_group_member(
-    #                     sess=self.sess,
-    #                     group_member=id_
-    #                 )
-    #             elif ent == 'ace':
-    #                 authmgr.delete_ace(
-    #                     sess=self.sess,
-    #                     ace_id=id_,
-    #                     deleter=self._actor,
-    #                     delete_from_db=self.args.delete_from_db
-    #                 )
-    #             else:
-    #                 raise ValueError("Unknown entity: '{}'".format(ent))
-    #             self.lgg.info('{} {} deleted'.format(ent, id_))
+            if self.args.async:
+                self.fs.setcontents_async(**args)
+            else:
+                self.fs.setcontents(**args)
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
@@ -404,94 +314,21 @@ def parse_args(app, argv):
         'dst',
         help="Destination path"
     )
-
-    # # Parser cmd create
-    # p_create = subparsers.add_parser('create',
-    #     formatter_class=argparse.RawDescriptionHelpFormatter,
-    #     help="Create an entity",
-    #     description=textwrap.dedent('''\
-    #     Examples of data:
-    #
-    #     user: '{is_enabled: bool, principal: str, pwd: str, email: str, display_name: str, groups: [group-names|IDs]}'
-    #     group: '{name: str, tenant_id: None|ID, kind=None|str, descr: str}'
-    #     group-member: '{group: ID|name, member_user|member_group: ID|principal|name}'
-    #
-    #     ''')
-    # )
-    # p_create.set_defaults(func=app.cmd_create)
-    # p_create.add_argument(
-    #     'entity',
-    #     help='Entity',
-    #     choices=list(sorted(Runner.ENTITIES.keys()))
-    # )
-    # p_create.add_argument(
-    #     'data',
-    #     help='Data as YAML or JSON, as set with --format'
-    # )
-    #
-    # # Parser cmd update
-    # p_update = subparsers.add_parser('update',
-    #     help="Update an entity")
-    # p_update.set_defaults(func=app.cmd_update)
-    # p_update.add_argument(
-    #     '--id',
-    #     help='ID of the entity to update',
-    #     required=True
-    # )
-    # p_update.add_argument(
-    #     'entity',
-    #     help='Entity',
-    #     choices=list(sorted(Runner.ENTITIES.keys()))
-    # )
-    # p_update.add_argument(
-    #     'data',
-    #     help='Data as YAML or JSON, as set with --format'
-    # )
-    #
-    # # Parser cmd delete
-    # p_delete = subparsers.add_parser('delete',
-    #     help="Delete an entity")
-    # p_delete.set_defaults(func=app.cmd_delete)
-    # p_delete.add_argument(
-    #     '--delete-from-db',
-    #     action='store_true',
-    #     default=False,
-    #     help='If given, entities are deleted from database, else only marked as'
-    #          ' deleted'
-    # )
-    # p_delete.add_argument(
-    #     '--deletion-reason',
-    #     help='Reason for the deletion',
-    #     default=None
-    # )
-    # ee = sorted(list(Runner.ENTITIES.keys()) + ['ace'])
-    # p_delete.add_argument(
-    #     'entity',
-    #     help='Entity',
-    #     choices=ee
-    # )
-    # p_delete.add_argument(
-    #     'id',
-    #     help='ID of the entity to delete'
-    # )
-    #
-    # # Parser cmd allow
-    # p_allow = subparsers.add_parser('allow',
-    #     help="Allow a permission")
-    # p_allow.set_defaults(func=app.cmd_allow)
-    # p_allow.add_argument(
-    #     'resource_id',
-    #     help='Allow permission on this resource (ID)'
-    # )
-    # p_allow.add_argument(
-    #     'permission',
-    #     help='Allow this permission (name or ID)'
-    # )
-    # p_allow.add_argument(
-    #     'who',
-    #     help='Allow to this group (name or ID) or user (principal or ID). Prefix'
-    #          'group with "g:" and user with "u:"'
-    # )
+    p_save.add_argument(
+        '--update',
+        action='store_true',
+        help='Update existing node'
+    )
+    p_save.add_argument(
+        '--revise',
+        action='store_true',
+        help='Revise existing node'
+    )
+    p_save.add_argument(
+        '--async',
+        action='store_true',
+        help='Run asynchronously'
+    )
 
     return parser.parse_args(argv)
 
