@@ -1,3 +1,5 @@
+import os
+import magic
 import sqlalchemy as sa
 import fs.base
 from fs.base import synchronize
@@ -5,11 +7,25 @@ import fs.errors
 
 from .models import FsNode
 import pym.exc
-from pym.decorators import savepoint
 from pym.models import DbSession
 
 
 class PymFs(fs.base.FS):
+
+    _meta = {
+        'read_only': False,
+        'thread_safe': True,
+        'network': True,
+        'unicode_paths': True,
+        'case_insensitive_paths': False,
+        'atomic.makedir': True,
+        'atomic.rename': True,
+        'atomic.setcontents': True,
+        'free_space': None,
+        'total_space': None,
+        'virtual': False,
+        'invalid_path_chars': None  # Too many to list. Use pym.security.safepath()
+    }
 
     def __init__(self, sess, fs_root, actor):
         """
@@ -147,7 +163,7 @@ class PymFs(fs.base.FS):
         ).order_by(FsNode.sortix, FsNode._name)
         if pattern:
             qry = qry.params(re=pattern)
-        return (x.name for x in qry)
+        return (x.get_path() if full else x.name for x in qry)
 
     @synchronize
     def makedir(self, path, recursive=False, allow_recreate=False):
@@ -290,7 +306,188 @@ class PymFs(fs.base.FS):
         except FileNotFoundError as exc:
             raise fs.errors.ResourceNotFoundError(str(exc))
         except pym.exc.ItemExistsError as exc:
-            raise fs.errors.DirectoryNotEmptyError(str(exc))
+            raise fs.errors.DestinationExistsError(str(exc))
         except pym.exc.PymError as exc:
             raise fs.errors.OperationFailedError(str(exc))
+
+    def move(self, src, dst, overwrite=False, chunk_size=1024 * 64):
+        """
+        Moves a node from src to dst.
+
+        :param src: The source path
+        :type src: string
+        :param dst: The destination path
+        :type dst: string
+        :param overwrite: If dst exists, allow to overwrite
+        :type overwrite: bool
+        :param chunk_size: size of chunks to use if a simple copy is required
+        (defaults to 64K). *NOT APPLICABLE IN PymFS*
+        :type chunk_size: int
+        """
+        try:
+            n = self.fs_root.find_by_path(src)
+            n.move(editor=self.actor, dst=dst, overwrite=overwrite)
+        except ValueError as exc:
+            raise fs.errors.ResourceInvalidError(str(exc))
+        except FileNotFoundError as exc:
+            raise fs.errors.ResourceNotFoundError(str(exc))
+        except pym.exc.ItemExistsError as exc:
+            raise fs.errors.DestinationExistsError(str(exc))
+        except pym.exc.PymError as exc:
+            raise fs.errors.OperationFailedError(str(exc))
+
+    def movedir(self, src, dst, overwrite=False, ignore_errors=False,
+            chunk_size=16384):
+        """
+        Moves a directory from one location to another.
+
+        In PymFs this is the same as :meth:`.move`.
+        """
+        return self.move(src=src, dst=dst, overwrite=overwrite,
+            chunk_size=chunk_size)
+
+    def copy(self, src, dst, overwrite=False, chunk_size=1024 * 64):
+        """
+        Copies a node from src to dst.
+
+        :param src: the source path
+        :type src: string
+        :param dst: the destination path
+        :type dst: string
+        :param overwrite: if True, then an existing file at the destination may
+        be overwritten; If False then DestinationExistsError
+        will be raised.
+        :type overwrite: bool
+        :param chunk_size: size of chunks to use if a simple copy is required
+        (defaults to 64K). *NOT APPLICABLE IN PymFS*
+        :type chunk_size: int
+        """
+        raise NotImplementedError('TODO')
+
+    def copydir(self, src, dst, overwrite=False, ignore_errors=False,
+            chunk_size=16384):
+        """
+        Copies a directory from one location to another.
+
+        In PymFs this is the same as :meth:`.copy`.
+        """
+        return self.copy(src=src, dst=dst, overwrite=overwrite,
+            chunk_size=chunk_size)
+
+    def get_size(self, path):
+        try:
+            n = self.fs_root.find_by_path(path)
+        except FileNotFoundError as exc:
+            raise fs.errors.ResourceNotFoundError(str(exc))
+        return n.size
+
+    def getinfo(self, path):
+        """
+        Returns information for a node as a dictionary.
+
+        * "size" - Number of bytes
+        * "created_time" - A datetime object containing the time the resource was created
+        * "accessed_time" - A datetime object containing the time the resource was last accessed
+        * "modified_time" - A datetime object containing the time the resource was modified
+        * ``rev`` - Revision
+        * ``mime_type`` - Mime-Type
+        * ``ctime``, ``mtime``, ``dtime``
+        * ``n_children``
+
+        :param path: A path to retrieve information for
+        :type path: string
+
+        :rtype: dict
+
+        :raises `fs.errors.ResourceNotFoundError`: if the path does not exist
+        """
+        try:
+            n = self.fs_root.find_by_path(path)
+        except FileNotFoundError as exc:
+            raise fs.errors.ResourceNotFoundError(str(exc))
+        return {
+            'size': n.size,
+            'rev': n.rev,
+            'mime_type': n.mime_type,
+            'created_time': n.ctime,
+            'accessed_time': n.mtime,
+            'modified_time': n.mtime,
+            'ctime': n.ctime,
+            'mtime': n.mtime,
+            'dtime': n.dtime,
+            'n_children': n.count_children(),
+            'is_file': n.is_file(),
+            'is_directory': n.is_directory()
+        }
+
+    def _setcontents(self, path, data, encoding=None, errors=None,
+            chunk_size=1024 * 64, progress_callback=None,
+            finished_callback=None, overwrite=False):
+        """
+        Create a new node from a string or file-like object.
+
+        :param path: Path of the file to create.
+        :param data: String or bytes object containing the contents for the new
+            file.
+        :param encoding: If `data` is a file open in text mode, or a text
+            string, then use this `encoding` to write to the destination file.
+        :param errors: If `data` is a file open in text mode or a text string,
+            then use `errors` when opening the destination file.
+        :param chunk_size: Number of bytes to read in a chunk, if the
+            implementation has to resort to a read / copy loop.
+        """
+        if progress_callback is None:
+            progress_callback = lambda bytes_written: None
+        if finished_callback is None:
+            finished_callback = lambda: None
+
+        m = magic.Magic(mime=True, mime_encoding=True)
+
+        bytes_written = 0
+        progress_callback(bytes_written)
+
+        # Treat data as filename
+        src_fn = data
+        mt = m.from_file(src_fn).decode('ASCII')
+        print('+++++++++++', mt, type(mt))
+        sz = os.path.getsize(src_fn)
+        dst_path = path
+        dst_fn = src_fn
+
+        pn = self.fs_root.find_by_path(dst_path)
+        n = pn.add_file(
+            owner=self.actor,
+            filename=dst_fn,
+            mime_type=mt,
+            size=sz
+        )
+        attr = n.content.data_attr
+        if attr == 'data_bin':
+            with open(src_fn, 'rb') as fh:
+                setattr(n.content, attr, fh.read())
+        else:
+            with open(src_fn, 'rt', encoding='utf-8') as fh:
+                setattr(n.content, attr, fh.read())
+        bytes_written += sz
+
+        finished_callback()
+        return bytes_written
+
+    def save(self, src, dst, finished_callback=None):
+        """
+        Create a new node from a string or file-like object.
+
+        :param src: String or bytes object containing the contents for the new
+            file.
+        :param dst: Path of the file to create.
+        """
+        self._setcontents(
+            path=dst,
+            data=src,
+            encoding=None,
+            errors=None,
+            chunk_size=1024*64,
+            progress_callback=None,
+            finished_callback=finished_callback
+        )
 

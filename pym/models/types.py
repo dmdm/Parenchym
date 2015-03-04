@@ -70,7 +70,7 @@ class LocalDateTime(sa.types.TypeDecorator):
 
 class TypedJson(sa.types.TypeDecorator):
 
-    impl = JSON
+    impl = JSON(none_as_null=True)
 
     def __init__(self, *arg, **kw):
         """
@@ -109,4 +109,4 @@ class TypedJson(sa.types.TypeDecorator):
 
 class TypedJsonB(TypedJson):
 
-    impl = JSONB
+    impl = JSONB(none_as_null=True)

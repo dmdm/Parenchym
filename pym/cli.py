@@ -67,6 +67,7 @@ class Cli(object):
         self._config = None
         self._sess = None
         self.actor = None
+        self.parser = None
         """:type: pym.auth.models.User"""
 
     @staticmethod
@@ -129,6 +130,7 @@ class Cli(object):
                         on deletes. If omitted, we use the login name of the
                         console user."""
                 )
+            elif x[0] == 'verbose':
                 parser.add_argument(
                     '-v', '--verbose',
                     action='count',
@@ -138,6 +140,8 @@ class Cli(object):
                         and higher, -v also logs level info, and -vv logs level
                         debug."""
                 )
+            else:
+                raise ValueError("Unknown: '{}'".format(x[0]))
 
     def base_init(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
@@ -170,8 +174,8 @@ class Cli(object):
 
         if args.verbose > 1:
             lgg.setLevel(logging.DEBUG)
-        if args.verbose > 0:
-            lgg.setLevel(logging.WARN)
+        elif args.verbose > 0:
+            lgg.setLevel(logging.INFO)
 
         self.lang_code, self.encoding = init_cli_locale(args.locale)
         self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
@@ -202,7 +206,7 @@ class Cli(object):
         self._config.scan('pym')
 
     def base_init2(self):
-        if self.args.actor:
+        if hasattr(self.args, 'actor') and self.args.actor:
             actor = self.args.actor
             try:
                 try:
@@ -270,6 +274,10 @@ class Cli(object):
         self.request = self.env['request']
         self.request.root = self.env['root']
         self.base_init2()
+
+    def run(self):
+        """Override in child class if necessary"""
+        self.parser.print_help()
 
     def impersonate_root(self):
         self.request.user.impersonate('root')

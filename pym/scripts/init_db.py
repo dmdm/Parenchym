@@ -28,13 +28,11 @@ import pym.journals.setup
 class Runner(pym.cli.Cli):
     def __init__(self):
         super().__init__()
-        self.cache = None
+        self.parser = None
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         super().init_app(args=args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
-        self.cache = redis.StrictRedis.from_url(
-            **self.rc.get_these('cache.redis'))
 
     def run(self):
         root_pwd = self.rc.g('auth.user_root.pwd')
@@ -82,7 +80,7 @@ class Runner(pym.cli.Cli):
 
             mark_changed(sess)
         # Clear redis cache
-        self.cache.flushall()
+        self.cache.flushdb()
 
     @staticmethod
     def _create_schema(sess):
@@ -94,8 +92,9 @@ def parse_args(app):
     parser = argparse.ArgumentParser(
         description="InitialiseDb command-line interface."
     )
-    app.add_parser_args(parser, (('config', True),
-        ('locale', False), ('alembic-config', False)))
+    app.parser = parser
+    app.add_parser_args(parser, (('config', True), ('locale', False),
+        ('alembic-config', False), ('verbose', False)))
     parser.add_argument(
         '--schema-only',
         action='store_true',
@@ -117,13 +116,14 @@ def main(argv=None):
         runner = Runner()
         args = parse_args(runner)
         runner.init_app(args, lgg=lgg, setup_logging=True)
+        lgg.info('Started.')
         if hasattr(args, 'func'):
             args.func()
         else:
             runner.run()
     except Exception as exc:
         lgg.exception(exc)
-        lgg.fatal('Program aborted!')
+        lgg.fatal('Aborted!')
     else:
         lgg.info('Finished.')
     finally:

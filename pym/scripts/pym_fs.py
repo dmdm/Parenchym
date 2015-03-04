@@ -59,8 +59,6 @@ class Runner(pym.cli.Cli):
 
     def __init__(self):
         super().__init__()
-        self.parser = None
-        self.cache = None
         self.fs = None
         ":type: PymFs"
         self.tenant = None
@@ -77,9 +75,6 @@ class Runner(pym.cli.Cli):
         self.tenant = n_root[self.args.tenant]
         self.fs_root = pym.fs.models.FsNode.load_root(self.sess, self.tenant)
         self.fs = PymFs(self.sess, self.fs_root, self.actor)
-
-    def run(self):
-        self.parser.print_help()
 
     def cmd_ls(self):
         if self.args.long:
@@ -134,6 +129,11 @@ class Runner(pym.cli.Cli):
         with transaction.manager:
             self.fs.reinit()
             self.fs.rename(self.args.src, self.args.dst)
+
+    def cmd_save(self):
+        with transaction.manager:
+            self.fs.reinit()
+            self.fs.save(self.args.src, self.args.dst)
 
 
 
@@ -264,6 +264,7 @@ def parse_args(app, argv):
 
         pym -c development.ini --format yaml create group '{name: fs_writer, descr: Can write files via FS, tenant_id: 1}'
         '''))
+    app.parser = parser
     parser.add_argument(
         '--yes',
         help="Answer all prompts with YES, useful for scripting",
@@ -391,6 +392,19 @@ def parse_args(app, argv):
         help="Destination path"
     )
 
+    # Parser cmd save
+    p_save = subparsers.add_parser('save',
+        help="Saves src file to dst path")
+    p_save.set_defaults(func=app.cmd_save)
+    p_save.add_argument(
+        'src',
+        help="Source file"
+    )
+    p_save.add_argument(
+        'dst',
+        help="Destination path"
+    )
+
     # # Parser cmd create
     # p_create = subparsers.add_parser('create',
     #     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -479,7 +493,6 @@ def parse_args(app, argv):
     #          'group with "g:" and user with "u:"'
     # )
 
-    app.parser = parser
     return parser.parse_args(argv)
 
 
@@ -504,8 +517,6 @@ def main(argv=None):
         lgg.exception(exc)
         lgg.fatal('Program aborted!')
     else:
-        # Clear redis cache
-        runner.cache.flushall()
         lgg.info('Finished.')
     finally:
         lgg.info('Time taken: {}'.format(

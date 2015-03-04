@@ -1,3 +1,4 @@
+from pyramid.decorator import reify
 import pyramid.util
 import sqlalchemy as sa
 import sqlalchemy.event
@@ -360,9 +361,9 @@ class ResourceNode(DbBase, DefaultMixin):
         :raises ValueError: if dst is invalid.
         :raises FileNotFoundError: if path to dst does not exist.
         """
-        if self.is_root():
-            raise pym.exc.PymError("FS root node cannot be renamed or moved")
         root_node = self.get_root()
+        if self == root_node:
+            raise pym.exc.PymError("Root node cannot be renamed or moved")
         cls = self.__class__
         dst = dst.strip(cls.SEP)
         if not dst:
@@ -403,20 +404,38 @@ class ResourceNode(DbBase, DefaultMixin):
         else:
             raise pym.exc.PymError('Src and dst are the same')
 
-    def has_children(self):
-        sess = sa.inspect(self).session
-        cls = self.__class__
-        # TODO Use query cache
-        cnt = sess.query(cls.id).filter(cls.parent_id == self.id).count()
+    def move(self, editor, dst, overwrite=False):
+        root_node = self.get_root()
+        dst += self.__class__.SEP + self.name
+        try:
+            n_dst = root_node.find_by_path(dst, include_deleted=False)
+            if overwrite:
+                n_dst.delete(deleter=editor)
+            else:
+                raise pym.exc.ItemExistsError('Dst node exists', item=n_dst)
+        except FileNotFoundError:
+            pass
+        self.rename(editor, dst)
+
+    def copy(self, owner, path, overwrite=False):
+        # TODO Use links instead of copies
+        raise NotImplementedError('TODO')
+
+    def has_children(self, include_deleted=False):
+        cnt = self.count_children(include_deleted)
         return cnt > 0
 
-    def count_children(self):
+    def count_children(self, include_deleted=False):
         sess = sa.inspect(self).session
         cls = self.__class__
-        # TODO Use query cache
-        return sess.query(cls.id).filter(cls.parent_id == self.id).count()
+        fil = [
+            cls.parent_id == self.id
+        ]
+        if not include_deleted:
+            fil.append(cls.deleter_id == None)
+        return sess.query(cls.id).filter(*fil).count()
 
-    def find_by_path(self, path):
+    def find_by_path(self, path, include_deleted=False):
         """
         Returns node at given path.
 
@@ -440,11 +459,13 @@ class ResourceNode(DbBase, DefaultMixin):
         try:
             for p in pp:
                 n = n[p]
+                if n.is_deleted() and not include_deleted:
+                    raise KeyError(p)
         except KeyError:
             raise FileNotFoundError("{}: '{}'".format(n, p))
         return n
 
-    def path_exists(self, path):
+    def path_exists(self, path, include_deleted=False):
         """
         Checks whether given path exists.
 
@@ -458,11 +479,12 @@ class ResourceNode(DbBase, DefaultMixin):
         :raises ValueError: if path is not safe.
         """
         try:
-            self.find_by_path(path)
+            self.find_by_path(path, include_deleted=False)
             return True
         except FileNotFoundError:
             return False
 
+    @reify
     def get_root(self):
         """
         Returns the root node of the resource tree.
@@ -478,6 +500,7 @@ class ResourceNode(DbBase, DefaultMixin):
             n = n.parent
         return n
 
+    @reify
     def get_path(self):
         """
         Path to the root node of the resource tree.

@@ -1,19 +1,24 @@
 import collections
-import datetime
+
+from pyramid.decorator import reify
 from pyramid.location import lineage
 import pyramid.util
 import pyramid.i18n
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 import zope.interface
 import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.event
+
 import pym.exc
 import pym.auth.models
+from pym.models import DbBase, DefaultMixin
+from pym.models.types import CleanUnicode
 import pym.res.models
 from pym.security import is_path_safe
 import pym.tenants.models
+from .const import NODE_NAME_FS, MIME_TYPE_DEFAULT
 
 
 class IFsNode(zope.interface.Interface):
@@ -24,7 +29,108 @@ class IFsNode(zope.interface.Interface):
     pass
 
 
-# TODO Put file content in separate class and table. Otherwise it might get cached in redis, what is not wanted! Maybe deferred() is sufficient to prevent caching. TEST IT!
+class FsContent(DbBase, DefaultMixin):
+    __tablename__ = "fs_content"
+    __table_args__ = (
+        {'schema': 'pym'}
+    )
+
+    IDENTITY_COL = None
+    """Has no single-column identities other than ID."""
+
+    fs_node_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            'pym.fs_node.id',
+            onupdate='CASCADE',
+            ondelete='CASCADE',
+            name='fs_content_fs_node_id_fk'
+        ),
+        nullable=False
+    )
+    """ID of the containing FsNode"""
+    filename = sa.Column(CleanUnicode(255), nullable=False)
+    """
+    Original filename.
+
+    If the node and content is created for the first time, use this as name of
+    the node.
+    """
+    local_filename = sa.Column(CleanUnicode(255), nullable=True)
+    """
+    Name of the file locally on the server, e.g. in the cache, relative to the
+    cache's root dir.
+    """
+    mime_type = sa.Column(sa.Unicode(255), nullable=False,
+        server_default=sa.text("'" + MIME_TYPE_DEFAULT + "'"))
+    """Mime type. Reflect this in FsNode.mime_type."""
+
+    # noinspection PyUnusedLocal
+    @sa.orm.validates('mime_type')
+    def validate_mime_type(self, key, mime_type):
+        mime_type = mime_type.lower()
+        assert '/' in mime_type
+        return mime_type
+
+    size = sa.Column(
+        sa.Integer(),
+        sa.CheckConstraint('size>=0'),
+        nullable=False,
+        server_default=sa.text('0')
+    )
+    """Size of the content in bytes. Reflect this in FsNode.size."""
+    # Load only if needed
+    xattr = sa.orm.deferred(sa.Column(MutableDict.as_mutable(
+        JSONB(none_as_null=True)),
+        nullable=True))
+    """Extended attributes"""
+    # Load only if needed
+    data_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
+    # Load only if needed
+    data_json = sa.orm.deferred(sa.Column(JSONB(none_as_null=True),
+        nullable=True))
+    # Load only if needed
+    data_bin = sa.orm.deferred(sa.Column(sa.Binary(), nullable=True))
+
+    @property
+    def data_attr(self):
+        """
+        Attribute that contains the data according to the mime-type.
+        """
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            return 'data_text'
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            return 'data_json'
+        else:
+            return 'data_bin'
+
+    @property
+    def data(self):
+        """
+        The data. Internally gets/sets the attribute specific to the mime-type.
+        """
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            return self.data_text
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            return self.data_json
+        else:
+            return self.data_bin
+
+    @data.setter
+    def data(self, v):
+        if pym.lib.match_mime_types(self.mime_type,
+                ['text/*', '*/.*yaml']):
+            self.data_text = v
+        elif pym.lib.match_mime_types(self.mime_type,
+                ['application/json', 'text/x-json']):
+            self.data_json = v
+        else:
+            self.data_bin = v
+
 
 class FsNode(pym.res.models.ResourceNode):
     """
@@ -49,10 +155,6 @@ class FsNode(pym.res.models.ResourceNode):
         'polymorphic_identity': 'fs'
     }
 
-    MIME_TYPE_DIRECTORY = 'inode/directory'
-    MIME_TYPE_JSON = 'application/json'
-    MIME_TYPE_DEFAULT = 'application/octet-stream'
-
     RC_KEYS_QUOTA = ('min_size', 'max_size', 'max_total_size', 'max_children',
         'allow', 'deny')
     """
@@ -71,20 +173,43 @@ class FsNode(pym.res.models.ResourceNode):
         primary_key=True,
         nullable=False
     )
-    local_filename = sa.Column(sa.Unicode(), nullable=True)
-    """
-    Name of the file locally on the server, e.g. in the cache, relative to the
-    cache's root dir.
-    """
     rev = sa.Column(sa.Integer(), nullable=False, default=1)
     """Latest revision."""
+    # http://docs.sqlalchemy.org/en/latest/orm/relationship_persistence.html#rows-that-point-to-themselves-mutually-dependent-rows
+    fs_content_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            'pym.fs_content.id',
+            onupdate='CASCADE',
+            ondelete='CASCADE',
+            name='fs_node_fs_content_id_fk',
+            use_alter=True
+        ),
+        nullable=True
+    )
+    """ID of a FsContent record that has content of current revision. May be
+    None if this node/rev has no content, e.g. if it is a directory."""
+    content_rows = sa.orm.relationship(
+        FsContent,
+        primaryjoin=id == FsContent.fs_node_id
+    )
+    """List of content rows of all revisions. Relationship from here (1) to
+    there (n)."""
+    content = sa.orm.relationship(
+        FsContent,
+        primaryjoin=fs_content_id == FsContent.id,
+        post_update=True
+    )
+    """FsContent record that has content of current revision. May be
+    None if this node/rev has no content, e.g. if it is a directory.
+    Relationship from here (1) to there (1)."""
     mime_type = sa.Column(sa.Unicode(255), nullable=False,
         server_default=sa.text("'" + MIME_TYPE_DEFAULT + "'"))
     """
     Mime type.
 
-    If it's a directory, use 'inode/directory', ``size``=0 and all content
-    fields are empty.
+    If it's a directory, use 'inode/directory' and ``size``=0. Also directories
+    do not have a FsContent record.
     """
 
     # noinspection PyUnusedLocal
@@ -102,19 +227,10 @@ class FsNode(pym.res.models.ResourceNode):
     )
     """Size of the content of this node in bytes."""
     # Load only if needed
-    xattr = sa.orm.deferred(sa.Column(MutableDict.as_mutable(JSON()),
+    # TODO Convert rc column into TypedJson
+    _rc = sa.orm.deferred(sa.Column('rc', MutableDict.as_mutable(
+        JSONB(none_as_null=True)),
         nullable=True))
-    """Extended attributes"""
-    # Load only if needed
-    _rc = sa.orm.deferred(sa.Column('rc', MutableDict.as_mutable(JSON()),
-        nullable=True))
-    # Load only if needed
-    content_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
-    # Load only if needed
-    content_json = sa.orm.deferred(sa.Column(JSON(), nullable=True))
-    # Load only if needed
-    content_bin = sa.orm.deferred(sa.Column(sa.Binary(), nullable=True))
-    """Optional description."""
     # Load description only if needed
     descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
     """Optional description."""
@@ -125,6 +241,29 @@ class FsNode(pym.res.models.ResourceNode):
 
     def is_dir(self):
         return self.mime_type == self.MIME_TYPE_DIRECTORY
+
+    @classmethod
+    def create_root(cls, sess, owner, tenant):
+        """
+        Creates fs root node for given tenant.
+
+        If given tenant already has a fs root node, that one is returned.
+
+        :param sess: A DB session
+        :param owner: ID, principal or instance of a user.
+        :param tenant: Instance, name or ID of a tenant.
+        :return: The fs root node.
+        """
+        owner = pym.auth.models.User.find(sess, owner)
+        tenant = pym.tenants.models.Tenant.find(sess, tenant)
+        try:
+            n = pym.res.models.ResourceNode.find(
+                sess, None, parent_id=tenant.id, name=NODE_NAME_FS)
+        except sa.orm.exc.NoResultFound:
+            n = cls(owner_id=owner.id, parent_id=tenant.id,
+                name=NODE_NAME_FS, title='Filesystem')
+            sess.add(n)
+        return n
 
     @classmethod
     def load_root(cls, sess, tenant):
@@ -144,6 +283,16 @@ class FsNode(pym.res.models.ResourceNode):
             raise FileNotFoundError("Tenant {} has no filesystem".format(ten))
 
     def add_child(self, owner, name, **kwargs):
+        """
+        Generic method to add a child node.
+
+        It does not handle node content!
+
+        :param owner: ID, principal or instance of a user.
+        :param name: Name of the new node.
+        :param kwargs: Additional attributes.
+        :return: Instance of the new node.
+        """
         try:
             n = self[name]
             raise pym.exc.ItemExistsError("Child '{}' exists.".format(name),
@@ -156,8 +305,46 @@ class FsNode(pym.res.models.ResourceNode):
             return n
 
     def add_directory(self, owner, name, **kwargs):
+        """
+        Adds a directory as child node.
+
+        A directory is a plain FsNode without content and mime-type
+        'inode/directory'.
+
+        :param owner: ID, principal or instance of a user.
+        :param name: Name of the new node.
+        :param kwargs: Additional attributes.
+        :return: Instance of the new node.
+        """
         return self.add_child(owner, name,
             mime_type=self.__class__.MIME_TYPE_DIRECTORY, **kwargs)
+
+    def add_file(self, owner, filename, mime_type, size, **kwargs):
+        """
+        Adds a file as child node.
+
+        A file is a FsNode with corresponding content. This method creates the
+        node and and the content entity, but does not upload the content data.
+        The returned node instance will have an initialised attribute
+        ``content`` (:class:`~pym.fs.models.FsContent`). Use its methods and
+        attributes to handle the data and additional properties like ``xattr``
+        and ``local_file_name``.
+
+        :param owner: ID, principal or instance of a user.
+        :param name: Name of the new node.
+        :param kwargs: Additional attributes.
+        :return: Instance of the new node.
+        """
+        n = self.add_child(owner, name=filename, mime_type=mime_type,
+            size=size, **kwargs)
+        c = FsContent()
+        c.owner_id = n.owner_id
+        c.filename = filename
+        c.mime_type = mime_type
+        c.size = size
+        n.content_rows = [c]
+        n.content = c
+        return n
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """
@@ -212,6 +399,7 @@ class FsNode(pym.res.models.ResourceNode):
                     n = n.add_directory(owner, p)
         return n
 
+    @reify
     def get_root(self):
         """
         Returns the root node of the resource tree.
@@ -229,6 +417,7 @@ class FsNode(pym.res.models.ResourceNode):
             n = n.parent
         return n
 
+    @reify
     def get_path(self):
         """
         Path to the root node of the resource tree.
@@ -284,39 +473,6 @@ class FsNode(pym.res.models.ResourceNode):
             deny=[]
         ))
         return collections.ChainMap(*maps)
-
-    @property
-    def content_attr(self):
-        if pym.lib.match_mime_types(self.mime_type,
-                ['text/*', '*/.*yaml']):
-            return 'content_text'
-        elif pym.lib.match_mime_types(self.mime_type,
-                ['application/json', 'text/x-json']):
-            return 'content_json'
-        else:
-            return 'content_bin'
-
-    @property
-    def content(self):
-        if pym.lib.match_mime_types(self.mime_type,
-                ['text/*', '*/.*yaml']):
-            return self.content_text
-        elif pym.lib.match_mime_types(self.mime_type,
-                ['application/json', 'text/x-json']):
-            return self.content_json
-        else:
-            return self.content_bin
-
-    @content.setter
-    def content(self, v):
-        if pym.lib.match_mime_types(self.mime_type,
-                ['text/*', '*/.*yaml']):
-            self.content_text = v
-        elif pym.lib.match_mime_types(self.mime_type,
-                ['application/json', 'text/x-json']):
-            self.content_json = v
-        else:
-            self.content_bin = v
 
     def __repr__(self):
         return "<{name}(id={id}, parent_id={p}, name='{n}', rev={rev}'>".format(
