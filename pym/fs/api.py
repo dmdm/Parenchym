@@ -1,5 +1,7 @@
-import os
+import json
+import mimetypes
 import magic
+import os
 import sqlalchemy as sa
 import fs.base
 from fs.base import synchronize
@@ -448,9 +450,12 @@ class PymFs(fs.base.FS):
 
         # Treat data as filename
         src_fn = data
-        mt = m.from_file(src_fn)
-        print('+++++++++++', mt, type(mt))
-        mt = mt.decode('ASCII')
+        mt, enc = mimetypes.guess_type(src_fn)
+        if not mt:
+            mt = m.from_file(src_fn).decode('ASCII')
+        print('+++++++++++', mt, enc)
+        if not enc:
+            enc = 'UTF-8'
         sz = os.path.getsize(src_fn)
         dst_path = path
         dst_fn = src_fn
@@ -467,8 +472,12 @@ class PymFs(fs.base.FS):
             with open(src_fn, 'rb') as fh:
                 setattr(n.content, attr, fh.read())
         else:
-            with open(src_fn, 'rt', encoding='utf-8') as fh:
-                setattr(n.content, attr, fh.read())
+            with open(src_fn, 'rt', encoding=enc) as fh:
+                if attr == 'data_json':
+                    setattr(n.content, attr,
+                        json.load(fh, cls=pym.lib.JsonDecoder))
+                else:
+                    setattr(n.content, attr, fh.read())
         bytes_written += sz
 
         finished_callback()
