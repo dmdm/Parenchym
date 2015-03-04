@@ -226,7 +226,7 @@ class PymFs(fs.base.FS):
         :raises `fs.errors.DirectoryNotEmptyError`: if the resource is not empty.
         """
         try:
-            n = self.fs_root.find_by_path(path)
+            n = self.fs_root.find_by_path(path, include_deleted=delete_from_db)
             n.delete(deleter=self.actor, deletion_reason=deletion_reason,
                 delete_from_db=delete_from_db, recursive=False)
         except FileNotFoundError as exc:
@@ -441,15 +441,16 @@ class PymFs(fs.base.FS):
         if finished_callback is None:
             finished_callback = lambda: None
 
-        m = magic.Magic(mime=True, mime_encoding=True)
+        m = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
 
         bytes_written = 0
         progress_callback(bytes_written)
 
         # Treat data as filename
         src_fn = data
-        mt = m.from_file(src_fn).decode('ASCII')
+        mt = m.from_file(src_fn)
         print('+++++++++++', mt, type(mt))
+        mt = mt.decode('ASCII')
         sz = os.path.getsize(src_fn)
         dst_path = path
         dst_fn = src_fn

@@ -191,7 +191,8 @@ class FsNode(pym.res.models.ResourceNode):
     None if this node/rev has no content, e.g. if it is a directory."""
     content_rows = sa.orm.relationship(
         FsContent,
-        primaryjoin=id == FsContent.fs_node_id
+        primaryjoin=id == FsContent.fs_node_id,
+        cascade="all, delete-orphan"
     )
     """List of content rows of all revisions. Relationship from here (1) to
     there (n)."""
