@@ -89,7 +89,7 @@ class FsContent(DbBase, DefaultMixin):
     meta_xmp = sa.orm.deferred(
         sa.Column(sa.UnicodeText(), nullable=True))
     """Extracted meta information as XMP"""
-    data_bin = sa.orm.deferred(sa.Column(sa.Binary(), nullable=True))
+    data_bin = sa.orm.deferred(sa.Column(sa.LargeBinary(), nullable=True))
     """By default, content is stored binarily."""
     data_text = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
     """Certain mime-types allow storing content as text. Also the text rendering

@@ -10,6 +10,7 @@ import yaml
 import pyramid.paster
 import pyramid.config
 import pyramid.request
+import pyramid.testing
 import json
 import os
 from prettytable import PrettyTable
@@ -57,7 +58,7 @@ class Cli(object):
         self.rc_key = None
         self.args = None
         self.env = None
-        self.request = None
+        self.request = pyramid.testing.DummyRequest()
         self.unit_tester = None
         self.settings = None
         self.lang_code = None
@@ -172,14 +173,11 @@ class Cli(object):
         if lgg:
             self.lgg = lgg
 
-        if args.verbose > 1:
-            lgg.setLevel(logging.DEBUG)
-        elif args.verbose > 0:
-            lgg.setLevel(logging.INFO)
-
-        self.lang_code, self.encoding = init_cli_locale(args.locale)
-        self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
-        self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
+        if hasattr(args, 'verbose'):
+            if args.verbose > 1:
+                lgg.setLevel(logging.DEBUG)
+            elif args.verbose > 0:
+                lgg.setLevel(logging.INFO)
 
         p = configparser.ConfigParser()
         p.read(fn_config)
@@ -187,6 +185,14 @@ class Cli(object):
         if 'environment' not in settings:
             raise KeyError('Missing key "environment" in config. Specify '
                 'environment in INI file "{}".'.format(args.config))
+
+        self.lang_code, self.encoding = init_cli_locale(
+            args.locale if hasattr(args, 'locale') else None,
+            detach_stdout=settings['environment'] != 'testing'
+        )
+        self.lgg.debug("TTY? {}".format(sys.stdout.isatty()))
+        self.lgg.debug("Locale? {}, {}".format(self.lang_code, self.encoding))
+
         if not rc:
             if not args.etc_dir:
                 args.etc_dir = os.path.join(args.root_dir, 'etc')
@@ -206,6 +212,8 @@ class Cli(object):
         self._config.scan('pym')
 
     def base_init2(self):
+        self._sess = pym.models.DbSession()
+        pym.init_auth(self.rc)
         if hasattr(self.args, 'actor') and self.args.actor:
             actor = self.args.actor
             try:
@@ -241,8 +249,6 @@ class Cli(object):
             setup_logging=setup_logging)
 
         pym.models.init(self.settings, 'db.pym.sa.')
-        self._sess = pym.models.DbSession()
-        pym.init_auth(self.rc)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
         pym.configure_cache_regions(self.rc)
@@ -503,7 +509,7 @@ def compile_sass(in_, out):
     return resp
 
 
-def init_cli_locale(locale_name):
+def init_cli_locale(locale_name, detach_stdout=True):
     """
     Initialises CLI locale and encoding.
 
@@ -511,6 +517,10 @@ def init_cli_locale(locale_name):
     it is send directly to a console or piped.
 
     :param locale_name: A locale name, e.g. "de_DE.utf8".
+    :param detach_stdout: If True (default), and we are not in a TTY (meaning,
+        output is piped somewhere), we replace original STDOUT with a writer
+        from the codecs module. If you do not want that (e.g. in PyCharm test
+        runner), set this to False.
     :return: active locale as 2-tuple (lang_code, encoding)
     """
     # Set the locale
@@ -525,7 +535,7 @@ def init_cli_locale(locale_name):
     lang_code, encoding = locale.getlocale(locale.LC_CTYPE)
     # If output goes to pipe, detach stdout to allow writing binary data.
     # See http://docs.python.org/3/library/sys.html#sys.stdout
-    if not sys.stdout.isatty():
+    if detach_stdout and not sys.stdout.isatty():
         import codecs
         sys.stdout = codecs.getwriter(encoding)(sys.stdout.detach())
     return lang_code, encoding

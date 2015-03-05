@@ -1,14 +1,8 @@
 import logging
-import os
 import sqlalchemy as sa
 import sqlalchemy.orm.exc
-import pyramid.paster
-import pyramid.config
 from pym.auth.const import UNIT_TESTER_UID, SYSTEM_UID
 import pym.auth.models as pam
-from pym.rc import Rc
-import pym
-import pym.models
 
 
 mlgg = logging.getLogger(__name__)
@@ -18,38 +12,6 @@ class TestingArgs(object):
     config = 'testing.ini'
     root_dir = '.'
     etc_dir = None
-
-
-def init_app(args, setup_logging=True):
-    """
-    Inits Pyramid app for testing environment
-
-    :param args: Class with args
-    :return: Dict with ``DbEngine``, ``DbSession`` and ``DbBase``.
-    """
-    if setup_logging:
-        pyramid.paster.setup_logging(args.config)
-        settings = pyramid.paster.get_appsettings(args.config)
-        if 'environment' not in settings:
-            raise KeyError('Missing key "environment" in config. Specify '
-                'environment in INI file "{}".'.format(args.config))
-        if not args.etc_dir:
-            args.etc_dir = os.path.join(args.root_dir, 'etc')
-        rc = Rc(
-            environment=settings['environment'],
-            root_dir=args.root_dir,
-            etc_dir=args.etc_dir
-        )
-        rc.load()
-        settings.update(rc.data)
-        settings['rc'] = rc
-        result = {'settings': settings}
-        pym.init_auth(rc)
-
-        #pym.models.init_unscoped(settings, 'db.pym.sa.')
-        pym.models.init(settings, 'db.pym.sa.')
-
-        return result
 
 
 def create_unit_tester(lgg, sess):
@@ -67,12 +29,12 @@ def create_unit_tester(lgg, sess):
         p = sess.query(pam.User).filter(
             pam.User.id == UNIT_TESTER_UID
         ).one()
-        lgg.debug('Principal ' + p.principal + ' loaded')
+        lgg.debug('User ' + p.principal + ' loaded')
     except sa.orm.exc.NoResultFound:
         # noinspection PyArgumentList
         p = pam.User(owner=SYSTEM_UID, **pf)
         sess.add(p)
-        lgg.debug('Principal ' + p.principal + ' added')
+        lgg.debug('User ' + p.principal + ' added')
     sess.flush()
     return p
 

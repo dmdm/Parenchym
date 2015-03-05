@@ -1,28 +1,36 @@
+import logging
 import pyramid.testing
 
+import pym.cli
 import pym.testing
 import pym.models
 
 
+class App(pym.cli.Cli):
+    pass
+
+
 def before_all(context):
+    lgg = logging.getLogger('testing')
     args = pym.testing.TestingArgs
-    app = pym.testing.init_app(args, setup_logging=True)
-    # This essentially sets properties:
-    # settings, DbEngine, DbSession, DbBase
-    for k, v in app.items():
-        setattr(context, k, v)
+    app = App()
+    #app.init_app(args, lgg=lgg, setup_logging=True)
+    app.init_web_app(args, lgg=lgg, setup_logging=True)
+    context.app = app
+    pass
 
 
 # noinspection PyUnusedLocal
 def before_scenario(context, scenario):
     context.configurator = pyramid.testing.setUp(
-        request=pyramid.testing.DummyRequest(),
-        settings=context.settings
+        request=context.app.request,
+        settings=context.app.settings
     )
-    context.sess = pym.models.DbSession()
+    pass
 
 
 # noinspection PyUnusedLocal
 def after_scenario(context, scenario):
     pyramid.testing.tearDown()
     #context.sess.remove()
+    pass

@@ -1,14 +1,11 @@
 import os.path
 
-from pkg_resources import resource_filename
 from pyramid.config import Configurator
 from pyramid_beaker import session_factory_from_settings
 from pyramid.authentication import SessionAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
-from pyramid.threadlocal import get_current_request
-from pyramid.i18n import get_localizer, TranslationStringFactory
-import deform
 from pyramid_mailer import Mailer
+
 import pym.duh_view
 import pym.i18n
 import pym.models
@@ -17,7 +14,6 @@ import pym.res.models
 import pym.auth.manager
 import pym.lib
 import pym.resp
-
 from .rc import Rc
 
 
