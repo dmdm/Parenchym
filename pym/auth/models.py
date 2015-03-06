@@ -590,7 +590,7 @@ class Permission(DbBase, DefaultMixin):
         # This query returns all permissions with their parents.
         # Some permissions may have no parents.
         q = sa.text("SELECT id, name, parents "
-            "FROM pym.vw_permissions_with_parents") \
+            "FROM pym.vw_permission_tree") \
             .columns(
                 id=sa.Integer(), name=sa.Unicode(),
                 parents=ARRAY(sa.Unicode, dimensions=2)

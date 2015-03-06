@@ -1,7 +1,7 @@
 import datetime
 import enum
 import functools
-from json.decoder import WHITESPACE
+import os
 import re
 import json
 import decimal
@@ -15,6 +15,34 @@ import pym.exc
 
 ENV_DEVELOPMENT = 'development'
 ENV_PRODUCTION = 'production'
+
+
+def install_db_scripts(lgg, sess, root_dir, scripts):
+    """
+    Executes SQL scripts.
+
+    Scripts reside in 'ROOT_DIR/install/db' (hence this function name), and are
+    mainly used in module's setup.
+
+    :param lgg: Instance of a logger
+    :param sess: Instance of a DB session
+    :param root_dir: The root directory of this project
+    :param scripts: Iterable of 2-elem-iterable: 0=schema, 1=object name.
+        E.g. ('foo', 'vw_bar') will create DB object 'vw_bar' in DB schema 'foo'
+        and is loaded from file 'foo.vw_bar.sql'.
+    """
+    for scr in scripts:
+        fn = os.path.join(root_dir, 'install', 'db',
+            scr[0] + '.' + scr[1] + '.sql')
+        if pym.models.exists(sess, name=scr[1], schema=scr[0]):
+            lgg.debug('{}.{} exists. Skipping {}'.format(scr[0], scr[1], fn))
+            continue
+        lgg.debug('Running SQL script: {}'.format(fn))
+        with open(fn, 'rt', encoding='utf-8') as fh:
+            q = fh.read()
+        # Prevent SQLAlchemy from parsing the statement and e.g. trying to
+        # bind parameters if it finds a ':'.
+        sess.connection().execute(q)
 
 
 def match_mime_types(a, b):
@@ -56,7 +84,18 @@ class Enum(enum.Enum):
         Returns members as list of 2-tuples suitable as choices for HTML select
         lists.
 
-        Tuple[0] is the name of the member as string, and tuple[1] is its value.
+        The presence of a translation function determines whether tuple[0] is
+        this member's name or its value.
+
+        Huh? If no translation function is given, we assume, the member name is
+        the more speaking variant, and its value is the actual value. Thus, in a
+        select box on the UI you would use the value as the (invisible) ID and
+        the name as the visible text of an entry.
+
+        If caller gives us a translation function, we assume the value is in
+        fact a translation string, and the member's name an ID for it.
+        Consequently, on the UI you would then use the name as the invisible ID
+        and the translated string as the text of an entry in a select box.
 
         :param translate: Optional translation function. Assumes, member's value
             is a translation string.
@@ -66,11 +105,30 @@ class Enum(enum.Enum):
             return [(name, translate(member.value))
                 for name, member in cls.__members__.items()]
         else:
-            return [(name, member.value)
+            return [(member.value, name)
                 for name, member in cls.__members__.items()]
 
     @classmethod
     def by_val(cls, v):
+        """
+        Returns first found member with given value.
+
+        Python's enums allow you to access a member by its name via dict-access.
+        This method is the other wa around, it gives you a member by looking at
+        the value.
+
+        It comes in handy if e.g. you want to translate a value stored in the DB
+        back to its enum member.
+
+        .. note:: Enums may allow you to specify more than one members with the
+            same value. This method returns the first one encountered. And
+            since ``__members__`` is a dict, order of its items is not
+            determined.
+
+        :param v: Value to look up
+        :return: First found member with given value.
+        :raises KeyError: if no member with given value exists.
+        """
         for m in cls.__members__.values():
             if m.value == v:
                 return m
@@ -274,41 +332,41 @@ def rreplace(s, old, new, occurrence):
     return new.join(li)
 
 
-class BaseNode(dict):
-    __parent__ = None
-    __name__ = None
-    __acl__ = []
-
-    def __init__(self, parent):
-        super().__init__()
-        self.__parent__ = parent
-        self._title = None
-
-    def __setitem__(self, name, other):
-        other.__parent__ = self
-        other.__name__ = name
-        super().__setitem__(name, other)
-
-    def __delitem__(self, name):
-        other = self[name]
-        if hasattr(other, '__parent__'):
-            del other.__parent__
-        if hasattr(other, '__name__'):
-            del other.__name__
-        super().__delitem__(name)
-        return other
-
-    def __str__(self):
-        s = self.__name__ if self.__name__ else '/'
-        o = self.__parent__
-        while o:
-            s = (o.__name__ if o.__name__ else '') + '/' + s
-            o = o.__parent__
-        return str(type(self)).replace('>', ": '{}'>".format(s))
-
-    @property
-    def title(self):
-        return self._title if self._title else self.__name__
+# class BaseNode(dict):
+#     __parent__ = None
+#     __name__ = None
+#     __acl__ = []
+#
+#     def __init__(self, parent):
+#         super().__init__()
+#         self.__parent__ = parent
+#         self._title = None
+#
+#     def __setitem__(self, name, other):
+#         other.__parent__ = self
+#         other.__name__ = name
+#         super().__setitem__(name, other)
+#
+#     def __delitem__(self, name):
+#         other = self[name]
+#         if hasattr(other, '__parent__'):
+#             del other.__parent__
+#         if hasattr(other, '__name__'):
+#             del other.__name__
+#         super().__delitem__(name)
+#         return other
+#
+#     def __str__(self):
+#         s = self.__name__ if self.__name__ else '/'
+#         o = self.__parent__
+#         while o:
+#             s = (o.__name__ if o.__name__ else '') + '/' + s
+#             o = o.__parent__
+#         return str(type(self)).replace('>', ": '{}'>".format(s))
+#
+#     @property
+#     def title(self):
+#         return self._title if self._title else self.__name__
 
 
 def build_breadcrumbs(request):
@@ -338,7 +396,7 @@ def build_breadcrumbs(request):
 
 def flash_ok(*args, **kw):
     kw['kind'] = 'success'
-    if not 'title' in kw:
+    if 'title' not in kw:
         kw['title'] = 'Success'
     flash(*args, **kw)
 
@@ -392,9 +450,9 @@ def build_growl_msgs_nojs(request):
             msg = m
         else:
             msg = dict(kind="notice", text=m)
-        if not 'kind' in msg:
+        if 'kind' not in msg:
             msg['kind'] = 'notice'
-        if not 'title' in msg:
+        if 'title' not in msg:
             msg['title'] = msg['kind']
         # Put timestamp into title
         # We get time as UTC
@@ -432,7 +490,7 @@ def build_growl_msgs_nojs(request):
         elif k == 's':
             icon = 'ui-icon ui-icon-check'
             msg['type'] = 'success'
-        if not 'icon' in msg:
+        if 'icon' not in msg:
             msg['icon'] = icon
 
         mq.append(msg)

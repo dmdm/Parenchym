@@ -12,17 +12,9 @@ mlgg = logging.getLogger(__name__)
 
 def _create_views(sess, rc):
     scripts = (
-        ('pym', 'vw_resource_acl_browse'),
+        ('pym', 'vw_resource_tree'),
     )
-    for scr in scripts:
-        if pym.models.exists(sess, name=scr[1], schema=scr[0]):
-            continue
-        fn = os.path.join(rc.root_dir, 'install', 'db',
-            scr[0] + '.' + scr[1] + '.sql')
-        mlgg.debug('Running SQL script: {}'.format(fn))
-        with open(fn, 'rt', encoding='utf-8') as fh:
-            q = fh.read()
-        sess.execute(q)
+    pym.lib.install_db_scripts(mlgg, sess, rc.root_dir, scripts)
 
 
 def _setup_resources(sess):

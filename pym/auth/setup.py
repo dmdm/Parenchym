@@ -1,3 +1,6 @@
+import logging
+import os
+import pym.models
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from pym.sys.const import NODE_NAME_SYS
@@ -6,196 +9,19 @@ from .const import *
 from .models import Permission, Permissions
 
 
-SQL_VW_USER_BROWSE = """
-CREATE OR REPLACE VIEW pym.vw_user_browse AS
-(
-    SELECT "user".id                      AS id,
-           "user".is_enabled              AS is_enabled,
-           "user".disable_reason          AS disable_reason,
-           "user".is_blocked              AS is_blocked,
-           "user".blocked_since           AS blocked_since,
-           "user".blocked_until           AS blocked_until,
-           "user".block_reason            AS block_reason,
-           "user".principal               AS principal,
-           "user".pwd                     AS pwd,
-           "user".pwd_expires             AS pwd_expires,
-           "user".identity_url            AS identity_url,
-           "user".email                   AS email,
-           "user".first_name              AS first_name,
-           "user".last_name               AS last_name,
-           "user".display_name            AS display_name,
-           "user".login_time              AS login_time,
-           "user".login_ip                AS login_ip,
-           "user".access_time             AS access_time,
-           "user".kick_session            AS kick_session,
-           "user".kick_reason             AS kick_reason,
-           "user".logout_time             AS logout_time,
-           "user".descr                   AS descr,
-           "user".mtime                   AS mtime,
-           "user".editor_id                  AS editor_id,
-           e.display_name               AS editor_display_name,
-           "user".ctime                   AS ctime,
-           "user".owner_id                   AS owner_id,
-           o.display_name               AS owner_display_name
-    FROM      pym."user"
-    JOIN      pym."user" AS o ON pym."user".owner_id = o.id
-    LEFT JOIN pym."user" AS e ON pym."user".editor_id = e.id
-);"""
-
-
-SQL_VW_GROUP_BROWSE = """
-CREATE OR REPLACE VIEW pym.vw_group_browse AS
-(
-    SELECT "group".id                      AS id,
-           "group".tenant_id               AS tenant_id,
-           t.name                        AS tenant_name,
-           "group".name                    AS name,
-           "group".kind                    AS kind,
-           "group".descr                   AS descr,
-           "group".mtime                   AS mtime,
-           "group".editor_id                  AS editor_id,
-           e.display_name                AS editor_display_name,
-           "group".ctime                   AS ctime,
-           "group".owner_id                   AS owner_id,
-           o.display_name                AS owner_display_name
-    FROM      pym."group"
-    JOIN      pym."user" AS o ON pym."group".owner_id = o.id
-    LEFT JOIN pym."user" AS e ON pym."group".editor_id = e.id
-    LEFT JOIN pym.resource_tree AS t ON pym."group".tenant_id = t.id AND t.kind='tenant'
-);"""
-
-SQL_VW_GROUP_MEMBER_BROWSE = """
-CREATE OR REPLACE VIEW pym.vw_group_member_browse AS
-(
-    SELECT gm.id                        AS id,
-           gr.id                        AS group_id,
-           t.id                         AS tenant_id,
-           t.name                       AS tenant_name,
-           gr.name                      AS group_name,
-           mu.id                        AS member_user_id,
-           mu.principal                 AS member_user_principal,
-           mu.email                     AS member_user_email,
-           mu.display_name              AS member_user_display_name,
-           mgr.id                       AS member_group_id,
-           mgr.name                     AS member_group_name,
-           gm.ctime                     AS ctime,
-           gm.owner_id                  AS owner_id,
-           o.display_name               AS owner_display_name
-    FROM      pym.group_member gm
-    JOIN      pym."user"  AS o      ON gm.owner_id        = o.id
-    JOIN      pym."group" AS gr     ON gm.group_id        = gr.id
-    LEFT JOIN pym."user"  AS mu     ON gm.member_user_id  = mu.id
-    LEFT JOIN pym."group" AS mgr    ON gm.member_group_id = mgr.id
-    LEFT JOIN pym.resource_tree t   ON gr.tenant_id       = t.id AND t.kind='tenant'
-);"""
-
-# -- List all permissions with their respective parent path.
-# -- Root permissions (i.e. without parent) are also listed.
-# id    name       parents
-# 1      *         NULL
-# 2    visit       NULL
-# 3    read        {{2,visit}}
-# 4    admin       {{2,visit}}
-# 5    delete      {{2,visit}}
-# 6    write       {{2,visit},{3,read}}
-# 7    admin_auth  {{2,visit},{4,admin}}
-# 8    admin_res   {{2,visit},{4,admin}}
-SQL_VW_PERMISSIONS_WITH_PARENTS = """
-CREATE OR REPLACE VIEW pym.vw_permissions_with_parents AS
-(
-    WITH RECURSIVE other AS
-    (
-      -- non-recursive term
-      SELECT
-        ARRAY [ARRAY [p.id :: TEXT, p.name :: TEXT]] AS path,
-        NULL :: TEXT []                              AS parents,
-        p.id,
-        p.parent_id,
-        p.name
-      FROM pym.permission_tree p
-      WHERE p.parent_id IS NULL
-
-      UNION ALL
-
-      -- recursive term
-      SELECT
-        other.path || ARRAY [p.id :: TEXT, p.name :: TEXT] AS path,
-        path [0 : array_upper(path, 1) + 1]                 AS parents,
-        p.id,
-        p.parent_id,
-        p.name
-      FROM
-        pym.permission_tree AS p
-        JOIN other AS other
-          ON (p.parent_id = other.id)
-    )
-    SELECT
-      id,
-      name,
-      parents
-    FROM other
-    ORDER BY parents NULLS FIRST
-)
-"""
-
-# -- List all permissions with their children.
-# -- CAVEAT: Permissions without children do not appear in result!
-# id    name    children
-# 4    admin    {{7,admin_auth}}
-# 4    admin    {{8,admin_res}}
-# 3    read     {{6,write}}
-# 2    visit    {{3,read}}
-# 2    visit    {{3,read},{6,write}}
-# 2    visit    {{4,admin}}
-# 2    visit    {{4,admin},{7,admin_auth}}
-# 2    visit    {{4,admin},{8,admin_res}}
-# 2    visit    {{5,delete}}
-SQL_VW_PERMISSIONS_WITH_CHILDREN = """
-CREATE OR REPLACE VIEW pym.vw_permissions_with_children AS
-(
-    WITH RECURSIVE other AS
-    (
-      -- non-recursive term
-      SELECT
-        ARRAY [ARRAY [p.id :: TEXT, p.name :: TEXT]] AS path,
-        NULL :: TEXT []                              AS children,
-        p.id,
-        p.parent_id,
-        name
-      FROM pym.permission_tree p
-      WHERE p.parent_id IS NOT NULL
-
-      UNION ALL
-
-      -- recursive term
-      SELECT
-        ARRAY [p.id :: TEXT, p.name :: TEXT] || other.path AS path,
-        path [1 : array_upper(path, 1)]                     AS children,
-        p.id,
-        p.parent_id,
-        p.name
-      FROM
-        pym.permission_tree AS p
-        JOIN other AS other
-          ON (p.id = other.parent_id)
-    )
-    SELECT
-      id,
-      name,
-      children
-    FROM other
-    WHERE array_length(children, 1) > 0
-    ORDER BY name, children
-)
-"""
+mlgg = logging.getLogger(__name__)
 
 
 def _create_views(sess, rc):
-    sess.execute(SQL_VW_USER_BROWSE)
-    sess.execute(SQL_VW_GROUP_BROWSE)
-    sess.execute(SQL_VW_GROUP_MEMBER_BROWSE)
-    sess.execute(SQL_VW_PERMISSIONS_WITH_PARENTS)
-    sess.execute(SQL_VW_PERMISSIONS_WITH_CHILDREN)
+    scripts = (
+        ('pym', 'vw_user_browse'),
+        ('pym', 'vw_group_browse'),
+        ('pym', 'vw_group_member_browse'),
+        ('pym', 'vw_permissions_with_children'),
+        ('pym', 'vw_permission_tree'),
+        ('pym', 'vw_resource_acl_browse'),
+    )
+    pym.lib.install_db_scripts(mlgg, sess, rc.root_dir, scripts)
 
 
 def _setup_users(sess, root_pwd):
