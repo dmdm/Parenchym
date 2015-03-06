@@ -26,10 +26,10 @@
         <%block name="require_config">
             ## List the minimal libs that require has to load
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'angular-moment', 'ng-ui-bs', 'ui-select'];
+            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'angular-moment', 'ng-ui-bs', 'ui-select', 'ui-layout'];
             ## List the minimal libs that anular has to inject.
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_INJECTS = ['angularMoment', 'ui.bootstrap', 'ui.select', 'ngSanitize'];
+            var PYM_APP_INJECTS = ['angularMoment', 'ui.bootstrap', 'ui.select', 'ngSanitize', 'ui.layout'];
             var require = {
                   baseUrl: '${request.resource_url(request.root)}'
                 , deps: [
@@ -45,13 +45,14 @@
                     , 'pnotify':         'static-pym/vendor/pnotify/pnotify.core'
                     , 'pnotify.buttons': 'static-pym/vendor/pnotify/pnotify.buttons'
                     , 'select2':         'static-pym/vendor/select2/select2.min'
-                    , 'ng':              'static-pym/vendor/angular/angular.min'
+                    , 'ng':              'static-pym/vendor/angular/angular'
                     , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
                     , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
                     , 'ng-messages':     'static-pym/vendor/angular/angular-messages.min'
                     , 'ng-grid':         'static-pym/vendor/angular-grid/build/ng-grid.min'
                     , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
                     , 'ui-select':       'static-pym/vendor/ui-select/select.min'
+                    , 'ui-layout':       'static-pym/vendor/ui-layout/ui-layout.min'
                     , 'ng-ui':           'static-pym/vendor/angular-ui/build/angular-ui.min'
                     , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
                     , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls.min'
@@ -77,6 +78,7 @@
                     , 'ng-grid':                              ['ng']
                     , 'ui-select':                            ['ng', 'ng-sanitize']
                     , 'ui-grid':                              ['ng']
+                    , 'ui-layout':                            ['ng']
                     , 'ng-ui':                                ['ng']
                     , 'ng-ui-select2':                        ['ng', 'select2']
                     , 'ng-ui-bs':                             ['ng']
