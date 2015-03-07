@@ -306,3 +306,32 @@ body > footer {
     background-color: $dropdown-link-hover-bg;
   }
 }
+
+
+
+
+/*
+ * ui-tree
+ */
+.angular-ui-tree-handle {
+    padding: 0;
+    font-weight: 400;
+    color: $link-color;
+}
+.angular-ui-tree-handle:hover {
+    color: $link-hover-color;
+    background: #f4f6f7;
+    border-color: #dce2e8;
+}
+.angular-ui-tree-placeholder {
+    background: #f0f9ff;
+    border: 1px dashed #bed2db;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.group-title {
+    background-color: #687074 !important;
+    color: #FFF !important;
+}
+

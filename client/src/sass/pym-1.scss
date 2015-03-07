@@ -1,11 +1,12 @@
 @import "pym-variables";
 
-// Core and mixins
+// Core variables and mixins
 @import "sass-bootstrap/mixins";
 
-// Reset
+// Reset and dependencies
 @import "sass-bootstrap/normalize";
 @import "sass-bootstrap/print";
+@import "sass-bootstrap/glyphicons";
 
 // Core CSS
 @import "sass-bootstrap/scaffolding";
@@ -17,37 +18,37 @@
 @import "sass-bootstrap/buttons";
 
 //// Components
-//@import "sass-bootstrap/component-animations";
-@import "sass-bootstrap/glyphicons";
+@import "sass-bootstrap/component-animations";
 @import "sass-bootstrap/dropdowns";
-//@import "sass-bootstrap/button-groups";
-//@import "sass-bootstrap/input-groups";
+@import "sass-bootstrap/button-groups";
+  //@import "sass-bootstrap/input-groups";
 @import "sass-bootstrap/navs";
-//@import "sass-bootstrap/navbar";
-//@import "sass-bootstrap/breadcrumbs";
+  //@import "sass-bootstrap/navbar";
+  //@import "sass-bootstrap/breadcrumbs";
 @import "sass-bootstrap/pagination";
-//@import "sass-bootstrap/pager";
-//@import "sass-bootstrap/labels";
-//@import "sass-bootstrap/badges";
-//@import "sass-bootstrap/jumbotron";
-//@import "sass-bootstrap/thumbnails";
+  //@import "sass-bootstrap/pager";
+  //@import "sass-bootstrap/labels";
+  //@import "sass-bootstrap/badges";
+  //@import "sass-bootstrap/jumbotron";
+  //@import "sass-bootstrap/thumbnails";
 @import "sass-bootstrap/alerts";
-//@import "sass-bootstrap/progress-bars";
-//@import "sass-bootstrap/media";
-//@import "sass-bootstrap/list-group";
+  //@import "sass-bootstrap/progress-bars";
+  //@import "sass-bootstrap/media";
+  //@import "sass-bootstrap/list-group";
 @import "sass-bootstrap/panels";
-//@import "sass-bootstrap/wells";
-//@import "sass-bootstrap/close";
+@import "sass-bootstrap/responsive-embed";
+  //@import "sass-bootstrap/wells";
+  //@import "sass-bootstrap/close";
 
 //// Components w/ JavaScript
 @import "sass-bootstrap/modals";
-//@import "sass-bootstrap/tooltip";
-//@import "sass-bootstrap/popovers";
-//@import "sass-bootstrap/carousel";
+  //@import "sass-bootstrap/tooltip";
+  //@import "sass-bootstrap/popovers";
+  //@import "sass-bootstrap/carousel";
 
 // Utility classes
 @import "sass-bootstrap/utilities";
-//@import "sass-bootstrap/responsive-utilities";
+  //@import "sass-bootstrap/responsive-utilities";
 
 
 /*!
@@ -70,11 +71,12 @@
 /*!
  *   Vendor
  */
+@import "vendor_always_used/pnotify.custom";
 @import "vendor_always_used/select2-bootstrap";
-@import "vendor_always_used/angular-ui-layout";
+@import "vendor_always_used/angular-ui-select";
+//@import "vendor_always_used/flexy-layout";
 
 /*!
  *   Parenchym
  */
 @import "pym-styles";
-

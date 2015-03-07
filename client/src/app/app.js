@@ -22,7 +22,8 @@ function (angular, PYM) {
                  *
                  * See https://docs.angularjs.org/guide/production
                  */
-                $compileProvider.debugInfoEnabled(false);
+                // WTF: Need debug info because of ui-tree: https://github.com/angular-ui-tree/angular-ui-tree/issues/403
+                //$compileProvider.debugInfoEnabled(false);
                 /**
                  * Intercept HTTP errors to growl
                  */
