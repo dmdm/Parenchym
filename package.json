@@ -1,0 +1,32 @@
+{
+  "name": "Parenchym",
+  "version": "0.0.3",
+  "description": "Wherever you go, there you are (Buckaroo Banzai)",
+  "main": "gulpfile.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "gulp-minify-css": "^0.5.1",
+    "gulp-util": "^3.0.4"
+  },
+  "scripts": {
+    "test": "test",
+    "gulp": "^3.8.11",
+    "gulp-concat": "^2.5.2",
+    "gulp-rename": "^1.2.0",
+    "gulp-sourcemaps": "^1.5.0",
+    "gulp-uglify": "^1.1.0",
+    "gulp-strip-debug": "^1.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dmdm/Parenchym.git"
+  },
+  "author": "Dirk Makowski",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/dmdm/Parenchym/issues"
+  }
+}

@@ -1,6 +1,14 @@
 var FsCtrl = PymApp.controller('FsCtrl',
-        ['$scope', '$http', '$q', '$window', '$upload', 'RC', 'T', 'PymApp.GridTools', 'uiGridConstants',
-function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,          uiGridConstants) {
+        ['$scope', '$http', '$q', '$window', '$upload', 'RC', 'T', 'PymApp.GridTools', 'uiGridConstants', '$timeout',
+function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,          uiGridConstants,   $timeout) {
+
+    $scope.fsResized = function (ghostPosition, length) {
+        console.log('triggered', ghostPosition, length);
+        $timeout(
+            $scope.FileBrowser.api.core.handleWindowResize,
+            100
+        );
+    };
 
     $scope.model = $scope.model || {};
 
@@ -245,6 +253,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
         onRegisterApi: function(gridApi) {
             $scope.FileBrowser.api = gridApi;
+            $timeout(gridApi.core.handleWindowResize, 100);
             gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
                 console.log('edited row id:' + rowEntity.id + ' Column:' + colDef.name + ' newValue:' + newValue + ' oldValue:' + oldValue);
             });

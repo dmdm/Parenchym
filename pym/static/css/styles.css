@@ -6202,3 +6202,14 @@ body > footer {
 .group-title {
   background-color: #687074 !important;
   color: #FFF !important; }
+
+/*
+ * flexy-layout
+ */
+.flexy-layout .block.splitter {
+  background: #eeeeee; }
+.flexy-layout .block.splitter:hover {
+  background: #777777; }
+.flexy-layout .ghost {
+  background: #777777;
+  opacity: 0.5; }

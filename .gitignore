@@ -52,3 +52,5 @@ Pym.egg-info
 _tmp*
 priv/*
 .idea
+
+node_modules

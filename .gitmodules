@@ -1,0 +1,3 @@
+[submodule "client/src/app/flexy-layout"]
+	path = client/src/app/flexy-layout
+	url = https://github.com/dmdm/flexy-layout

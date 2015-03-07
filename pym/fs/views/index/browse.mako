@@ -3,13 +3,20 @@
 <%block name="styles">
 ${parent.styles()}
 <link rel="stylesheet" href="${request.static_url('pym:static/vendor/ui-grid/ui-grid.min.css')}">
+<link rel="stylesheet" href="${request.static_url('pym:static/app/flexy-layout/flexy-layout.css')}">
 <link rel="stylesheet" href="${request.static_url('pym:static/bower_components/angular-ui-tree/dist/angular-ui-tree.min.css')}">
 <style>
+.flexy-outer-container {
+    height: 75vh;
+}
+#fs-tree-root { overflow: auto; }
+#fs-tree-root ol { padding-right: 2em; }
+#fs-tree-root li { white-space: nowrap; }
 .align-right { text-align: right; }
 .grid {
     font-size: 85%;
-    border: 1px solid rgb(212,212,212);
-    height: 100%;
+    /*border: 1px solid rgb(212,212,212);*/
+    height: 99%;
     /*width: 99%;*/
 }
 .ui-grid-cell { border-right: none; }
@@ -34,13 +41,15 @@ ${parent.styles()}
         'ng-fup',
         'ui-grid',
         'ng-ui-router',
-        'ui-tree'
+        'ui-tree',
+        'flexy-layout'
     );
     PYM_APP_INJECTS.push(
         'angularFileUpload',
         'ui.grid', 'ui.grid.selection', 'ui.grid.resizeColumns', 'ui.grid.edit', 'ui.grid.rowEdit', 'ui.grid.cellNav',
         'ui.router',
-        'ui.tree'
+        'ui.tree',
+        'flexyLayout'
     );
 </%block>
 <%block name="scripts">
@@ -140,39 +149,55 @@ ${parent.scripts()}
             </span>
     </div>
 
+    <p></p>
+    
+    <div class="outer-gutter flexy-outer-container">
+        <flexy-layout>
+            <block-container>
+                <div ui-tree id="fs-tree-root">
+                    <ol ui-tree-nodes="" ng-model="tree">
+                        <li ng-repeat="node in tree"
+                            ui-tree-node
+                            ng-include="'nodes_renderer.html'">
+                        </li>
+                    </ol>
+                </div>
+            </block-container>
+            <block-splitter on-splitter-stop="fsResized" size="5"></block-splitter>
+            <block-container>
+                <div ng-file-drop ng-file-change="FileBrowser.upload()"
+                     ng-model="FileBrowser.files"
+                     ng-rejected-file-model="FileBrowser.rejectedFiles"
+                     ng-multiple="true"
+                     allow-dir="true"
+                     accept="*/*"
+                     class="drop-box form-control"
+                     drag-over-class="{accept:'dragover', reject:'dragover-err', delay:100}"
+                    >
+                    <div ui-grid="FileBrowser.options"
+                         ui-grid-selection
+                         ui-grid-resize-columns
+                         ui-grid-edit
+                         ui-grid-row-edit
+                         ui-grid-cellNav
+                         class="grid"
+                        >
+                    </div>
+                </div>
+            </block-container>
+        </flexy-layout>
+    </div>
+    
+    
+    
+    <p></p>
+    
     <div class="row" style="margin-top: 1ex; height: 75vh;">
         <div class="col-md-2">
 
-            <div ui-tree id="tree-root">
-                <ol ui-tree-nodes="" ng-model="tree">
-                    <li ng-repeat="node in tree"
-                        ui-tree-node
-                        ng-include="'nodes_renderer.html'">
-                    </li>
-                </ol>
-            </div>
 
         </div>
         <div class="col-md-10">
-            <div ng-file-drop ng-file-change="FileBrowser.upload()"
-                 ng-model="FileBrowser.files"
-                 ng-rejected-file-model="FileBrowser.rejectedFiles"
-                 ng-multiple="true"
-                 allow-dir="true"
-                 accept="*/*"
-                 class="drop-box form-control"
-                 drag-over-class="{accept:'dragover', reject:'dragover-err', delay:100}"
-                >
-                <div ui-grid="FileBrowser.options"
-                     ui-grid-selection
-                     ui-grid-resize-columns
-                     ui-grid-edit
-                     ui-grid-row-edit
-                     ui-grid-cellNav
-                     class="grid"
-                    >
-                </div>
-            </div>
         </div>
     </div>
 

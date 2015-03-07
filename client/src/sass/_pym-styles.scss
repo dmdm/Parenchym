@@ -335,3 +335,19 @@ body > footer {
     color: #FFF !important;
 }
 
+
+/*
+ * flexy-layout
+ */
+.flexy-layout {
+  .block.splitter {
+    background: $gray-lighter;
+  }
+  .block.splitter:hover {
+    background: $gray-light;
+  }
+  .ghost {
+    background: $gray-light;
+    opacity: 0.5;
+  }
+}

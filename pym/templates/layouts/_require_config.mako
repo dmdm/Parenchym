@@ -3,6 +3,7 @@ var require = {
     , deps: [
         '${request.static_url('pym:static/app/plugins.js')}',
         '${request.static_url('pym:static/app/boot-ng.js')}'
+##        '${request.static_url('pym:static/app/app.min.js')}'
     ]
     , paths: {
           'jquery':          'static-pym/vendor/jquery/dist/jquery.min'
@@ -20,7 +21,7 @@ var require = {
         , 'ui-grid':         'static-pym/vendor/ui-grid/ui-grid.min'
         , 'ui-select':       'static-pym/vendor/ui-select/select.min'
         , 'ui-tree':         'static-pym/bower_components/angular-ui-tree/dist/angular-ui-tree.min'
-        , 'flexy-layout':    'static-pym/vendor/flexy-layout/flexy-layout.min'
+        , 'flexy-layout':    'static-pym/app/flexy-layout/flexy-layout'
         , 'ng-ui':           'static-pym/vendor/angular-ui/build/angular-ui.min'
         , 'ng-ui-select2':   'static-pym/vendor/angular-ui-select2/src/select2'
         , 'ng-ui-bs':        'static-pym/vendor/angular-bootstrap/ui-bootstrap-tpls-0.12.1.min'
