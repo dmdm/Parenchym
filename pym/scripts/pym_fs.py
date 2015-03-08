@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from collections import OrderedDict
+from pprint import pprint
 import textwrap
 import time
 import argparse
@@ -8,6 +9,8 @@ import sys
 import os
 import datetime
 import functools
+import zipfile
+import io
 
 import sqlparse
 import transaction
@@ -130,11 +133,22 @@ class Runner(pym.cli.Cli):
         if self.args.revise:
             # revise is stronger than update
             cmd = 'revise'
-        meta = functools.partial(
-            pym.fs.tools.fetch_meta,
-            lgg=self.lgg,
-            encoding=self.encoding
-        )
+        if self.args.meta:
+            host = self.args.meta
+            if host == 'pipe':
+                meta = functools.partial(
+                    pym.fs.tools.fetch_meta,
+                    lgg=self.lgg,
+                    encoding=self.encoding
+                )
+            else:
+                if ':' in host:
+                    host, port = host.split(':')
+                else:
+                    port = 9998
+                srv = pym.fs.tools.TikaServer(host, port)
+        else:
+            meta = None
         args = {
             'path': self.args.dst,
             'data': self.args.src,
@@ -148,6 +162,52 @@ class Runner(pym.cli.Cli):
                 self.fs.setcontents_async(**args)
             else:
                 self.fs.setcontents(**args)
+
+    def cmd_tika(self):
+        host = self.args.host
+        if '/' in host:
+            meta = functools.partial(
+                pym.fs.tools.fetch_meta,
+                lgg=self.lgg,
+                encoding=self.encoding,
+                cmd=host
+            )
+            m = meta(self.args.src)
+            pprint(m)
+        else:
+            if ':' in host:
+                host, port = host.split(':')
+            else:
+                port = 9998
+            srv = pym.fs.tools.TikaServer(host, port)
+            res = self.args.resource
+            if res == 'pym':
+                meta = functools.partial(
+                    srv.fetch_meta,
+                )
+                m = meta(self.args.src)
+                pprint(m)
+            else:
+                if res in ('detect', 'rmeta'):
+                    m = getattr(srv, res)(self.args.src)
+                    pprint(m)
+                elif res == 'unpack':
+                    f = getattr(srv, res)(self.args.src, self.args.type == 'all')
+                    if sys.stdout.isatty():
+                        if not f:
+                            print('File is compound document to unpack')
+                        with zipfile.ZipFile(f) as zh:
+                            infs = zh.infolist()
+                            for i, inf in enumerate(infs):
+                                print(i, inf.filename, inf.compress_size, inf.file_size)
+                    else:
+                        # STDOUT might have been modified by init_cli_locale().
+                        # Get the original stream back.
+                        sys.stdout = sys.stdout.detach()
+                        sys.stdout.write(f.read())
+                else:
+                    m = getattr(srv, res)(self.args.src, self.args.type)
+                    pprint(m)
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
@@ -328,6 +388,38 @@ def parse_args(app, argv):
         '--async',
         action='store_true',
         help='Run asynchronously'
+    )
+    p_save.add_argument(
+        '--meta',
+        required=False,
+        help='Host:port of TIKA server, or "pipe" to use pipe.'
+    )
+
+    # Parser cmd tika
+    p_tika = subparsers.add_parser('tika',
+        help="Extract meta data and content with TIKA")
+    p_tika.set_defaults(func=app.cmd_tika)
+    p_tika.add_argument(
+        'src',
+        help="Source file"
+    )
+    p_tika.add_argument(
+        '--host',
+        help='"Host:port" of TIKA server, or path/to/cmd to use pipe.'
+    )
+    p_tika.add_argument(
+        '--resource',
+        required=False,
+        choices=('meta', 'tika', 'rmeta', 'detect', 'unpack', 'pym'),
+        help="""Use this resource of TIKA server. If you use 'unpack', we print
+            out the TOC of the resulting ZIP file. Pipe to file to save as ZIP
+            file."""
+    )
+    p_tika.add_argument(
+        '--type',
+        required=False,
+        choices=('csv', 'json', 'xmp', 'text', 'html', 'all'),
+        help='Resource shall return info in this type.'
     )
 
     return parser.parse_args(argv)

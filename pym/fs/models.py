@@ -64,6 +64,8 @@ class FsContent(DbBase, DefaultMixin):
     mime_type = sa.Column(sa.Unicode(255), nullable=False,
         server_default=sa.text("'" + MIME_TYPE_DEFAULT + "'"))
     """Mime type. Reflect this in FsNode.mime_type."""
+    encoding = sa.Column(sa.Unicode(255), nullable=True)
+    """Encoding, if content is text."""
 
     # noinspection PyUnusedLocal
     @sa.orm.validates('mime_type')
@@ -237,6 +239,8 @@ class FsNode(pym.res.models.ResourceNode):
         server_default=sa.text('0')
     )
     """Size of the content of this node in bytes."""
+    encoding = sa.Column(sa.Unicode(255), nullable=True)
+    """Encoding, if content is text."""
     # Load only if needed
     # TODO Convert rc column into TypedJson
     _rc = sa.orm.deferred(sa.Column('rc', MutableDict.as_mutable(
@@ -350,7 +354,7 @@ class FsNode(pym.res.models.ResourceNode):
         :return: Instance of the new node.
         """
         n = self.add_child(owner, name=filename, mime_type=mime_type,
-            size=size, **kwargs)
+            encoding=None, size=size, **kwargs)
         c = FsContent()
         c.owner_id = n.owner_id
         c.filename = filename
@@ -382,7 +386,7 @@ class FsNode(pym.res.models.ResourceNode):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        for k in ('filename', 'mime_type', 'size'):
+        for k in ('filename', 'mime_type', 'encoding', 'size'):
             if k in kwargs:
                 setattr(self.content, k, kwargs[k])
 
@@ -421,7 +425,7 @@ class FsNode(pym.res.models.ResourceNode):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        for k in ('filename', 'mime_type', 'size'):
+        for k in ('filename', 'mime_type', 'encoding', 'size'):
             if k in kwargs:
                 setattr(self.content, k, kwargs[k])
 

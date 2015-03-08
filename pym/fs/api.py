@@ -613,7 +613,7 @@ class PymFs(fs.base.FS):
                         meta=meta,
                         encoding=encoding,
                         errors=errors,
-                        chunk_size=1024 * 64,
+                        chunk_size=chunk_size,
                         progress_callback=progress_callback,
                         finished_callback=finished_callback
                     )

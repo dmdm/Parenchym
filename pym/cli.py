@@ -535,6 +535,7 @@ def init_cli_locale(locale_name, detach_stdout=True):
     lang_code, encoding = locale.getlocale(locale.LC_CTYPE)
     # If output goes to pipe, detach stdout to allow writing binary data.
     # See http://docs.python.org/3/library/sys.html#sys.stdout
+    global PREV_STDOUT
     if detach_stdout and not sys.stdout.isatty():
         import codecs
         sys.stdout = codecs.getwriter(encoding)(sys.stdout.detach())
