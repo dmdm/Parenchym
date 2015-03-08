@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from collections import OrderedDict
+import fnmatch
+import glob
 from pprint import pprint
 import textwrap
 import time
@@ -17,13 +19,14 @@ import transaction
 
 import pym.cli
 import pym.exc
+import pym.security
 import pym.auth.models
 import pym.auth.manager
 from pym.fs.api import PymFs
 import pym.res.const
 import pym.res.models
 import pym.tenants.models
-from pym.models import dictate_iter
+from pym.models import dictate_iter, DbSession
 import pym.fs.models
 import pym.fs.tools
 
@@ -163,51 +166,192 @@ class Runner(pym.cli.Cli):
             else:
                 self.fs.setcontents(**args)
 
-    def cmd_tika(self):
-        host = self.args.host
-        if '/' in host:
-            meta = functools.partial(
-                pym.fs.tools.fetch_meta,
-                lgg=self.lgg,
-                encoding=self.encoding,
-                cmd=host
-            )
-            m = meta(self.args.src)
-            pprint(m)
+    def _build_tika_runner(self, host):
+        if '/' in host or host == 'tika':
+            return pym.fs.tools.TikaCli(host)
         else:
             if ':' in host:
                 host, port = host.split(':')
             else:
                 port = 9998
-            srv = pym.fs.tools.TikaServer(host, port)
-            res = self.args.resource
-            if res == 'pym':
-                meta = functools.partial(
-                    srv.fetch_meta,
-                )
-                m = meta(self.args.src)
-                pprint(m)
-            else:
-                if res in ('detect', 'rmeta'):
-                    m = getattr(srv, res)(self.args.src)
-                    pprint(m)
-                elif res == 'unpack':
-                    f = getattr(srv, res)(self.args.src, self.args.type == 'all')
-                    if sys.stdout.isatty():
-                        if not f:
-                            print('File is compound document to unpack')
+            return pym.fs.tools.TikaServer(host, port)
+
+    def cmd_tika(self):
+        src = self.args.src
+        if isinstance(src, str):
+            src = [src]
+        host = self.args.host
+        res = self.args.resource
+        tika = self._build_tika_runner(host)
+        for fn in src:
+            if res == 'unpack':
+                if isinstance(tika, pym.fs.tools.TikaCli):
+                    raise NotImplementedError(
+                        'Unpack is not implemented using the CLI')
+                f = getattr(tika, res)(fn, self.args.type == 'all')
+                # If we are in interactive mode, print the TOC of the ZIP
+                if sys.stdout.isatty():
+                    if f:
                         with zipfile.ZipFile(f) as zh:
                             infs = zh.infolist()
                             for i, inf in enumerate(infs):
-                                print(i, inf.filename, inf.compress_size, inf.file_size)
+                                print(i, inf.filename, inf.compress_size,
+                                    inf.file_size)
                     else:
-                        # STDOUT might have been modified by init_cli_locale().
-                        # Get the original stream back.
-                        sys.stdout = sys.stdout.detach()
-                        sys.stdout.write(f.read())
+                        self.lgg.warn('Failed to unpack file (maybe no compound'
+                                      ' document): {}'.format(fn))
                 else:
-                    m = getattr(srv, res)(self.args.src, self.args.type)
-                    pprint(m)
+                    # We are piped into another file: create the ZIP as file.
+                    # STDOUT might have been modified by init_cli_locale().
+                    # Get the original stream back.
+                    sys.stdout = sys.stdout.detach()
+                    sys.stdout.write(f.read())
+            elif res in ('detect', 'rmeta', 'pym'):
+                m = getattr(tika, res)(fn)
+                pprint(m)
+            else:
+                m = getattr(tika, res)(fn, self.args.type)
+                pprint(m)
+
+    def cmd_bulk_save(self):
+        src = self.args.src
+        if isinstance(src, str):
+            src = [src]
+        root_dir = self.rc.root_dir
+        ff = []
+        for fn in src:
+            ff += self._collect_files(root_dir, fn, self.args.recursive)
+
+        root_node = self.fs.fs_root.find_by_path(self.args.dst)
+
+        with transaction.manager:
+            for f in ff:
+                self._save_thing(
+                    actor=self.fs.actor,
+                    root_dir=pym.security.safepath(
+                        os.path.join(root_dir, self.args.src)),
+                    fn=f,
+                    root_node=root_node,
+                    update=self.args.update,
+                    revise=self.args.revise
+                )
+
+    def _save_thing(self, actor, root_dir, fn, root_node, update=False,
+            revise=False):
+        lrd = len(root_dir)
+        dst_path = fn[lrd:]
+        sess = DbSession()
+        root_node = sess.merge(root_node)
+        actor = sess.merge(actor)
+        if os.path.isdir(fn):
+            self._save_dir(
+                actor=actor,
+                fn=fn,
+                root_node=root_node,
+                dst_path=dst_path,
+                update=update,
+                revise=revise
+            )
+        else:
+            self._save_file(
+                actor=actor,
+                fn=fn,
+                root_node=root_node,
+                dst_path=dst_path,
+                update=update,
+                revise=revise
+            )
+        # sess.flush()
+
+    def _save_dir(self, actor, fn, root_node, dst_path, update, revise):
+        self.lgg.debug("Trying to save dir '{}'".format(dst_path))
+        name = os.path.basename(dst_path)
+        try:
+            dst_n = root_node.find_by_path(dst_path)
+        except FileNotFoundError:
+            # Destination does not exist:
+            # In parent of destination, add a directory
+            dst_n = root_node.find_by_path(os.path.dirname(dst_path))
+            self.lgg.debug("Adding subdir '{}' to {}".format(name, dst_n))
+            dst_n.add_directory(owner=actor, name=name)
+        else:
+            # Destination does exist:
+            # Set new name, keep all other attributes
+            if update:
+                self.lgg.debug("Updating name '{}' of {}".format(name, dst_n))
+                dst_n.update(editor=actor, name=name)
+            elif revise:
+                self.lgg.debug("Revising name '{}' of {}".format(name, dst_n))
+                dst_n.revise(editor=actor, name=name)
+            else:
+                raise pym.exc.ItemExistsError(
+                    "Destination exists and neither update nor revise were"
+                    " allowed: {}".format(dst_path))
+
+    def _save_file(self, actor, fn, root_node, dst_path, update, revise):
+        self.lgg.debug("Trying to save file '{}'".format(dst_path))
+        name = os.path.basename(dst_path)
+
+        size = os.path.getsize(fn)
+        if self.args.tika:
+            tika = self._build_tika_runner(self.args.tika)
+            meta = tika.pym(fn)
+            mime_type = meta['mime_type']
+            enc = None
+        else:
+            meta = None
+            mime_type, enc = pym.fs.tools.guess_mime_type(fn)
+        kwargs = {
+            'size': size,
+            'mime_type': mime_type,
+            'encoding': enc
+        }
+        if meta:
+            kwargs.update(meta)
+
+        self.lgg.debug("Trying to save file '{}'".format(dst_path))
+        try:
+            dst_n = root_node.find_by_path(dst_path)
+        except FileNotFoundError:
+            # Destination does not exist:
+            # In parent of destination, add a file
+            dst_n = root_node.find_by_path(os.path.dirname(dst_path))
+            self.lgg.debug("Adding file '{}' to {}".format(name, dst_n))
+            n = dst_n.add_file(owner=actor, filename=name, **kwargs)
+        else:
+            # Destination does exist:
+            # Set new name, keep all other attributes
+            if update:
+                self.lgg.debug("Updating name '{}' of {}".format(name, dst_n))
+                dst_n.update(editor=actor, name=name, **kwargs)
+                n = dst_n
+            elif revise:
+                self.lgg.debug("Revising name '{}' of {}".format(name, dst_n))
+                dst_n.revise(editor=actor, name=name, **kwargs)
+                n = dst_n
+            else:
+                raise pym.exc.ItemExistsError(
+                    "Destination exists and neither update nor revise were"
+                    " allowed: {}".format(dst_path))
+        n.content.from_file(fn)
+
+    def _collect_files(self, root_dir, fn, recursive=False):
+        start_dir = os.path.sep + pym.security.safepath(os.path.join(root_dir, fn))
+        if recursive:
+            if any(c in '?*[]{}' for c in start_dir):
+                pat = os.path.basename(start_dir)
+                start_dir = os.path.dirname(start_dir)
+            else:
+                pat = '*'
+            ff = []
+            self.lgg.debug('Recursing {}, pattern {}'.format(start_dir, pat))
+            for rd, files, dirs in os.walk(start_dir):
+                ff += [os.path.join(rd, x)
+                    for x in fnmatch.filter(files + dirs, pat)]
+            return ff
+        else:
+            self.lgg.debug('Globbing ' + start_dir)
+            return glob.glob(start_dir)
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
@@ -405,7 +549,7 @@ def parse_args(app, argv):
     )
     p_tika.add_argument(
         '--host',
-        help='"Host:port" of TIKA server, or path/to/cmd to use pipe.'
+        help='"Host:port" of TIKA server, or path/to/cmd or "tika" to use pipe.'
     )
     p_tika.add_argument(
         '--resource',
@@ -420,6 +564,46 @@ def parse_args(app, argv):
         required=False,
         choices=('csv', 'json', 'xmp', 'text', 'html', 'all'),
         help='Resource shall return info in this type.'
+    )
+
+    # Parser cmd bulk_save
+    p_bulk_save = subparsers.add_parser('bulk-save',
+        help="bulk_saves src files to dst path")
+    p_bulk_save.set_defaults(func=app.cmd_bulk_save)
+    p_bulk_save.add_argument(
+        'src',
+        help="Source file"
+    )
+    p_bulk_save.add_argument(
+        'dst',
+        help="Destination path"
+    )
+    p_bulk_save.add_argument(
+        '--update',
+        action='store_true',
+        help='Update existing node'
+    )
+    p_bulk_save.add_argument(
+        '--revise',
+        action='store_true',
+        help='Revise existing node'
+    )
+    p_bulk_save.add_argument(
+        '-j', '--jobs',
+        type=int,
+        default=1,
+        required=False,
+        help='Number of concurrent jobs'
+    )
+    p_bulk_save.add_argument(
+        '-r', '--recursive',
+        action='store_true',
+        help='Recursively collect files'
+    )
+    p_bulk_save.add_argument(
+        '--tika',
+        required=False,
+        help='"Host:port" of TIKA server, or path/to/cmd or "tika" to use pipe.'
     )
 
     return parser.parse_args(argv)

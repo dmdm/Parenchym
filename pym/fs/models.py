@@ -1,5 +1,5 @@
 import collections
-
+import json
 from pyramid.decorator import reify
 from pyramid.location import lineage
 import pyramid.util
@@ -18,7 +18,7 @@ from pym.models.types import CleanUnicode
 import pym.res.models
 from pym.security import is_path_safe
 import pym.tenants.models
-from .const import NODE_NAME_FS, MIME_TYPE_DEFAULT
+from .const import NODE_NAME_FS, MIME_TYPE_DEFAULT, MIME_TYPE_DIRECTORY
 
 
 class IFsNode(zope.interface.Interface):
@@ -103,6 +103,24 @@ class FsContent(DbBase, DefaultMixin):
     """Head of HTML rendering of office documents."""
     data_html_body = sa.orm.deferred(sa.Column(sa.UnicodeText(), nullable=True))
     """Body of HTML rendering of office documents."""
+
+    def from_file(self, fn):
+        attr = self.data_attr
+        if attr == 'data_bin':
+            with open(fn, 'rb') as fh:
+                setattr(self, attr, fh.read())
+        else:
+            with open(fn, 'rt', encoding=self.encoding) as fh:
+                if attr == 'data_json':
+                    setattr(self, attr,
+                        json.load(fh, cls=pym.lib.JsonDecoder))
+                else:
+                    setattr(self, attr, fh.read())
+
+    def set_meta(self, meta):
+        kk = 'meta_json meta_xmp data_text data_html_head data_html_body'.split(' ')
+        for k in kk:
+            setattr(self, k, meta.get(k, None))
 
     @property
     def data_attr(self):
@@ -332,9 +350,9 @@ class FsNode(pym.res.models.ResourceNode):
         :return: Instance of the new node.
         """
         return self.add_child(owner, name,
-            mime_type=self.__class__.MIME_TYPE_DIRECTORY, **kwargs)
+            mime_type=MIME_TYPE_DIRECTORY, **kwargs)
 
-    def add_file(self, owner, filename, mime_type, size, **kwargs):
+    def add_file(self, owner, filename, mime_type, size, encoding=None, **kwargs):
         """
         Adds a file as child node.
 
@@ -354,7 +372,7 @@ class FsNode(pym.res.models.ResourceNode):
         :return: Instance of the new node.
         """
         n = self.add_child(owner, name=filename, mime_type=mime_type,
-            encoding=None, size=size, **kwargs)
+            size=size, encoding=encoding, **kwargs)
         c = FsContent()
         c.owner_id = n.owner_id
         c.filename = filename
@@ -363,6 +381,17 @@ class FsNode(pym.res.models.ResourceNode):
         n.content_rows = [c]
         n.content = c
         return n
+
+    def set_meta(self, meta):
+        if self.content:
+            self.content.set_meta(meta)
+        if 'meta_json' in meta:
+            if isinstance(meta['meta_json'], list):
+                x = meta['meta_json'][0]
+            else:
+                x = meta['meta_json']
+            if 'title' in x:
+                self.fs_node.title = x['title']
 
     def update(self, editor, **kwargs):
         """
@@ -385,13 +414,13 @@ class FsNode(pym.res.models.ResourceNode):
 
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-        for k in ('filename', 'mime_type', 'encoding', 'size'):
-            if k in kwargs:
-                setattr(self.content, k, kwargs[k])
-
         self.editor_id = editor.id
-        self.content.editor_id = editor.id
+
+        if self.content:
+            for k in ('filename', 'mime_type', 'encoding', 'size'):
+                if k in kwargs:
+                    setattr(self.content, k, kwargs[k])
+            self.content.editor_id = editor.id
 
     def revise(self, editor, **kwargs):
         """
@@ -417,20 +446,21 @@ class FsNode(pym.res.models.ResourceNode):
         sess = sa.inspect(self).session
         editor = pym.auth.models.User.find(sess, editor)
 
-        c = FsContent()
-        c.owner_id = editor.id
-        self.content_rows.append(c)
-        self.content = c
-
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-        for k in ('filename', 'mime_type', 'encoding', 'size'):
-            if k in kwargs:
-                setattr(self.content, k, kwargs[k])
-
         self.rev += 1
         self.editor_id = editor.id
+
+        # If we had a content entry, create a new one for the new revision
+        if self.content:
+            c = FsContent()
+            self.content_rows.append(c)
+            self.content = c
+
+            for k in ('filename', 'mime_type', 'encoding', 'size'):
+                if k in kwargs:
+                    setattr(self.content, k, kwargs[k])
+            c.owner_id = editor.id
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """

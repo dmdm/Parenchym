@@ -1,8 +1,7 @@
 import json
-import mimetypes
 import threading
-import magic
 import os
+
 import sqlalchemy as sa
 import fs.base
 from fs.base import synchronize
@@ -12,6 +11,7 @@ import transaction
 from .models import FsNode
 import pym.exc
 from pym.models import DbSession
+from .tools import guess_mime_type
 
 
 class PymFs(fs.base.FS):
@@ -463,15 +463,7 @@ class PymFs(fs.base.FS):
         src_fn = data
 
         # Get mime-type
-        # Try Python's native lib first
-        mt, enc = mimetypes.guess_type(src_fn)
-        # It may not find all types, e.g. it returns None for 'text/plain', so
-        # fallback on python-magic.
-        if not mt:
-            m = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
-            mt = m.from_file(src_fn).decode('ASCII')
-        if not enc:
-            enc = 'UTF-8'
+        mt, enc = guess_mime_type(src_fn)
         # Get size
         sz = os.path.getsize(src_fn)
 
@@ -502,18 +494,7 @@ class PymFs(fs.base.FS):
         else:
             raise ValueError("Unknown command: '{}'".format(command))
 
-        # 5/ Store the content data
-        attr = n.content.data_attr
-        if attr == 'data_bin':
-            with open(src_fn, 'rb') as fh:
-                setattr(n.content, attr, fh.read())
-        else:
-            with open(src_fn, 'rt', encoding=enc) as fh:
-                if attr == 'data_json':
-                    setattr(n.content, attr,
-                        json.load(fh, cls=pym.lib.JsonDecoder))
-                else:
-                    setattr(n.content, attr, fh.read())
+        n.content.from_file(src_fn)
         bytes_written += sz
 
         # Store the meta data
@@ -521,16 +502,7 @@ class PymFs(fs.base.FS):
             if callable(meta):
                 self.lgg.debug('Fetching meta data')
                 meta = meta(src_fn)
-            kk = 'meta_json meta_xmp data_text data_html_head data_html_body'.split(' ')
-            for k in kk:
-                setattr(n.content, k, meta.get(k, None))
-            if isinstance(meta['meta_json'], list):
-                x = meta['meta_json'][0]
-            else:
-                x = meta['meta_json']
-            if 'title' in x:
-                n.title = x['title']
-
+            n.set_meta(meta)
         finished_callback()
         return bytes_written
 
