@@ -1,6 +1,6 @@
 var FsController = PymApp.controller('FsController',
-        ['$scope', '$http', '$q', '$window', '$upload', 'RC', 'T', 'PymApp.GridTools', 'uiGridConstants', '$timeout', '$log',
-function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,          uiGridConstants,   $timeout,   $log) {
+        ['$scope', '$http', '$q', '$window', '$upload', 'RC', 'T', 'PymApp.GridTools', 'uiGridConstants', '$timeout', '$log', '$modal',
+function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,          uiGridConstants,   $timeout,   $log,   $modal) {
 
     "use strict";
     
@@ -27,8 +27,49 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             });
         },
 
-        loadItems: function (path) {
-            var httpConfig = {params: {path: path}};
+        deleteItems: function (path, names, reason) {
+            var httpConfig = {
+                params: {
+                    path: path,
+                    names: names,
+                    reason: reason
+                }
+            };
+            return $http.delete(RC.urls.delete_items, httpConfig)
+            .then(function (resp) {
+                if (resp.data.ok) {
+                    // NOOP
+                }
+                PYM.growl_ajax_resp(resp.data);
+                return resp;
+            }, function (result) {
+                return result;
+            });
+        },
+
+        undeleteItems: function (path, names) {
+            var httpConfig = {},
+                putData = {
+                    path: path,
+                    names: names
+                };
+            return $http.put(RC.urls.undelete_items, putData, httpConfig)
+            .then(function (resp) {
+                if (resp.data.ok) {
+                    // NOOP
+                }
+                PYM.growl_ajax_resp(resp.data);
+                return resp;
+            }, function (result) {
+                return result;
+            });
+        },
+
+        loadItems: function (path, includeDeleted) {
+            var httpConfig = {params: {
+                path: path,
+                incdel: includeDeleted
+            }};
             return $http.get(RC.urls.load_items, httpConfig)
             .then(function (resp) {
                 if (resp.data.ok) {
@@ -66,19 +107,167 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             );
         },
 
+        loadFsProperties: function () {
+            var httpConfig = {params: {}};
+            return $http.get(RC.urls.load_fs_properties, httpConfig)
+            .then(
+                function (resp) {
+                    if (resp.data.ok) {
+                        return resp;
+                    }
+                    else {
+                        PYM.growl_ajax_resp(resp.data);
+                        return false;
+                    }
+                },
+                function (result) {
+                    return result;
+                }
+            );
+        },
 
+        loadItemProperties: function (path, name) {
+            var httpConfig = {params: {
+                path: path,
+                name: name
+            }};
+            return $http.get(RC.urls.load_item_properties, httpConfig)
+            .then(
+                function (resp) {
+                    if (resp.data.ok) {
+                        return resp;
+                    }
+                    else {
+                        PYM.growl_ajax_resp(resp.data);
+                        return false;
+                    }
+                },
+                function (result) {
+                    return result;
+                }
+            );
+        }
+    };
+
+    ctrl.canDeleteItems = false;
+    ctrl.canUndeleteItems = false;
+    ctrl.canOpenNode = false;
+
+    ctrl.GlobalOptions = {
+        minSize: RC.min_size,
+        maxSize: RC.max_size,
+        allow: RC.allow,
+        deny: RC.deny,
+
+        includeDeleted: false,
+        overwrite: false
+    };
+
+
+    ctrl.toggleIncludeDeleted = function () {
+        this.GlobalOptions.includeDelete = !this.GlobalOptions.includeDelete;
+        ctrl.FileTree.includeDeleted = this.GlobalOptions.includeDelete;
+        ctrl.FileBrowser.includeDeleted = this.GlobalOptions.includeDelete;
+        ctrl.FileTree.refresh();
+        ctrl.FileBrowser.refresh();
     };
 
 
     ctrl.createDirectory = function () {
-        var dirName = $window.prompt(T.prompt_dir_name);
+        var path = pathToStr(ctrl.FileTree.path),
+            dirName = $window.prompt(T.prompt_dir_name);
         if (! dirName ) {return;}
-        FsService.createDirectory(pathToStr(ctrl.FileTree.path), dirName)
+        FsService.createDirectory(path, dirName)
         .then(
             function () {
                 ctrl.FileTree.refresh();
                 ctrl.FileBrowser.refresh();
             });
+    };
+
+
+    ctrl.deleteItems = function () {
+        var path = pathToStr(ctrl.FileTree.path),
+            names = [],
+            reason = $window.prompt(T.prompt_delete_items);
+        if (! reason) { return; }
+        // Collect selected rows
+        angular.forEach(ctrl.FileBrowser.api.selection.getSelectedRows(), function (r) {
+            names.push(r._name);
+        });
+        if (! names ) {return;}
+        FsService.deleteItems(path, names, reason)
+        .then(
+            function () {
+                ctrl.FileTree.refresh();
+                ctrl.FileBrowser.refresh();
+            });
+    };
+
+
+    ctrl.undeleteItems = function () {
+        var path = pathToStr(ctrl.FileTree.path),
+            names = [];
+        if (! $window.confirm(T.confirm_undelete_items)) { return; }
+        // Collect selected rows
+        angular.forEach(ctrl.FileBrowser.api.selection.getSelectedRows(), function (r) {
+            names.push(r._name);
+        });
+        if (! names ) {return;}
+        FsService.undeleteItems(path, names)
+        .then(
+            function () {
+                ctrl.FileTree.refresh();
+                ctrl.FileBrowser.refresh();
+            });
+    };
+
+
+    ctrl.openNode = function () {
+        var sel = ctrl.FileBrowser.api.selection.getSelectedRows();
+        if (! sel.length) { return; }
+        ctrl.FileTree.setPathById(sel[0].id);
+    };
+
+
+    ctrl.openFsPropertiesDlg = function () {
+        var modalInstance = $modal.open({
+            templateUrl: 'FsPropertiesDlgTpl.html',
+            controller: 'FsPropertiesDlgController as dlg',
+            size: null, // 'sm', 'lg'
+            resolve: {
+                loadResp: function () { return FsService.loadFsProperties(); }
+            }
+        });
+        modalInstance.result
+        .then(function (data) {
+                $log.info('Data to save: ', data);
+            }, function () {
+                $log.info('Modal dismissed at: ' + new Date());
+            }
+        );
+    };
+
+
+    ctrl.openItemPropertiesDlg = function () {
+        var path = pathToStr(ctrl.FileTree.path);
+        var name = ctrl.FileBrowser.api.selection.getSelectedRows()[0]._name;
+        var modalInstance = $modal.open({
+            templateUrl: 'ItemPropertiesDlgTpl.html',
+            controller: 'ItemPropertiesDlgController as dlg',
+            size: 'lg', // 'sm', 'lg'
+            resolve: {
+                loadResp: function () { return FsService.loadItemProperties(path, name); },
+                path: function () { return path; }
+            }
+        });
+        modalInstance.result
+        .then(function (data) {
+                $log.info('Data to save: ', data);
+            }, function () {
+                $log.info('Modal dismissed at: ' + new Date());
+            }
+        );
     };
 
 
@@ -90,18 +279,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         return pp.join('/');
     }
 
-    ctrl.GlobalOptions = {
-        MIME_TYPE_DIRECTORY: RC.MIME_TYPE_DIRECTORY,
-
-        minSize: RC.min_size,
-        maxSize: RC.max_size,
-        allow: RC.allow,
-        deny: RC.deny,
-
-        includeDeleted: 1,
-        overwrite: false
-    };
-
 
     /*
      * Tools menu
@@ -110,11 +287,14 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         isOpen: false,
         isDisabled: false,
 
-        rm: function () {
+        deleteItems: function () {
+            ctrl.deleteItems();
             this.isOpen = false;
-            if (ctrl.FileBrowser.api.selection.getSelectedRows().length === 0) {return;}
-            if (! $window.confirm(T.confirm_rm_files)) {return;}
-            ctrl.FileBrowser.rm();
+        },
+
+        undeleteItems: function () {
+            ctrl.undeleteItems();
+            this.isOpen = false;
         },
 
         createDirectory: function () {
@@ -123,9 +303,35 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         },
 
         openNode: function () {
+            ctrl.openNode();
             this.isOpen = false;
-            if (ctrl.FileBrowser.api.selection.getSelectedRows().length === 0) {return;}
-            ctrl.FileBrowser.openNode();
+        },
+
+        openFsPropertiesDlg: function () {
+            ctrl.openFsPropertiesDlg();
+            this.isOpen = false;
+        },
+
+        openItemPropertiesDlg: function () {
+            ctrl.openItemPropertiesDlg();
+            this.isOpen = false;
+        }
+    };
+
+
+    ctrl.cbOnRowSelectionChanged = function (row) {
+        var sel = this.FileBrowser.api.selection.getSelectedRows();
+        if (sel.length) {
+            this.canDeleteItems = true;
+            this.canUndeleteItems = true;
+            this.canOpenNode = true;
+            this.canOpenItemPropertiesDlg = true;
+        }
+        else {
+            this.canDeleteItems = false;
+            this.canUndeleteItems = false;
+            this.canOpenNode = false;
+            this.canOpenItemPropertiesDlg = false;
         }
     };
 
@@ -133,11 +339,11 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
     ctrl.FileBrowser = {
         rc: {},
         path: [],
+        includeDeleted: false,
         files: [],
         rejectedFiles: [],
         data: [],
         api: null,
-        cntSelected: 0,
 
         cbWindowResized: function (ghostPosition, length) {
             if (this.api) {
@@ -165,7 +371,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         loadItems: function (path) {
             var self = this;
             self.pym.loading = true;
-            FsService.loadItems(path)
+            FsService.loadItems(path, self.includeDeleted)
             .then(function (resp) {
                 self.pym.loading = false;
                 if (resp.data.ok) {
@@ -181,28 +387,33 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             this.loadItems(pathToStr(this.path));
         },
 
-        rm: function () {
-            var httpConfig = {
-                params: {}
-            };
-            var self = this, names = [];
-            // Collect selected rows
-            angular.forEach(self.api.selection.getSelectedRows(), function (r) {
-                names.push(r._name);
+        saveRow: function () {
+            // TODO
+        },
+
+        cbOnRegisterApi: function (gridApi) {
+            var self = this;
+            self.api = gridApi;
+            $timeout(gridApi.core.handleWindowResize, 100);
+            gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
+                $log.log('edited row id:' + rowEntity.id + ' Column:' + colDef.name + ' newValue:' + newValue + ' oldValue:' + oldValue);
             });
-            httpConfig.params.path = self.pathToStr();
-            httpConfig.params.names = names;
-            $http.delete(RC.urls.rm, httpConfig)
-            .then(function (resp) {
-                if (resp.data.ok) {
-                    // NOOP
-                }
-                self.ls();
-                PYM.growl_ajax_resp(resp.data);
-            }, function (result) {
-                // NOOP
+            gridApi.rowEdit.on.saveRow($scope, ctrl.FileBrowser.saveRow);
+
+            gridApi.selection.on.rowSelectionChanged($scope, function (row) {
+                self.rc.onRowSelectionChanged(row);
             });
         },
+
+        init: function (rc) {
+            this.rc = rc;
+            this.options.onRegisterApi = angular.bind(this, this.cbOnRegisterApi);
+            this.indexColumnDefs();
+            // Just load the items, our path is set by the FileTree
+            this.loadItems(rc.rootPath);
+            this.windowResized = angular.bind(this, this.cbWindowResized);
+        },
+
         /**
          * Checks given mime-type against pattern from ``allow`` and ``deny``
          * and returns true if mime-type is allowed, false otherwise.
@@ -312,7 +523,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
     var nodeIdTpl = '<div class="ui-grid-cell-contents"><span tooltip-trigger="click" tooltip-append-to-body="true" tooltip-html-unsafe="{{row.entity.id}}">{{row.entity.id}}</span></div>';
     var aggNumTpl = '<div class="ui-grid-cell-contents" style="text-align: right;">{{grid.getColumn("size").getAggregationValue()|number:0}}</div>';
-    ctrl.nodeCommands = 'foo <b>bar</b> {{row.entity.id}}';
 
     ctrl.FileBrowser.options = {
         data: ctrl.FileBrowser.data,
@@ -353,37 +563,13 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             { name:'dtime', displayName: 'DTime', cellFilter: 'date: "yyyy-MM-dd HH:mm"', enableCellEdit: false, width: 150 },
             { name:'deleter', field: 'deleter2()', displayName: 'Deleter', enableCellEdit: false, width: 150 },
             { name:'deletion_reason', displayName: 'Reason', enableCellEdit: false, width: 150 }
-        ],
-
-        onRegisterApi: function(gridApi) {
-            ctrl.FileBrowser.api = gridApi;
-            $timeout(gridApi.core.handleWindowResize, 100);
-            gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
-                $log.log('edited row id:' + rowEntity.id + ' Column:' + colDef.name + ' newValue:' + newValue + ' oldValue:' + oldValue);
-            });
-            gridApi.rowEdit.on.saveRow($scope, ctrl.FileBrowser.saveRow);
-
-            gridApi.selection.on.rowSelectionChanged($scope, function (row) {
-                ctrl.FileBrowser.cntSelected = gridApi.selection.getSelectedRows().length;
-            });
-        }
-    };
-    ctrl.FileBrowser.saveRow = function () {
-        // TODO
-    };
-
-    ctrl.FileBrowser.init = function (rc) {
-        this.rc = rc;
-        this.indexColumnDefs();
-        // Just load the items, our path is set by the FileTree
-        this.loadItems(rc.rootPath);
-        this.windowResized = angular.bind(this, this.cbWindowResized);
+        ]
     };
 
 
     ctrl.FileTree = {
         rc: {},
-        globalOptions: {},
+        includeDeleted: false,
         data: [],
         dataById: {},
         /**
@@ -487,7 +673,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         loadItems: function (rootPath, dst) {
             var self = this;
             self.loading = true;
-            return FsService.loadTree(rootPath, self.filter, self.rc.globalOptions.includeDeleted)
+            return FsService.loadTree(rootPath, self.filter, self.includeDeleted)
             .then(
                 function (resp) {
                     var j, jmax;
@@ -510,7 +696,10 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
          */
         refresh: function () {
             var foo = [];
-            this.loadItems(this.rc.rootPath, foo).then($timeout(angular.bind(this, this.expandPath), 1000));
+            this.loadItems(this.rc.rootPath, foo)
+            .then(
+                $timeout(angular.bind(this, this.expandPath), 1000)
+            );
             this.data = foo;
         },
 
@@ -634,7 +823,8 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         ctrl.FileBrowser.init({
             tree: ctrl.FileTree,
             globalOptions: ctrl.GlobalOptions,
-            rootPath: RC.path
+            rootPath: RC.path,
+            onRowSelectionChanged: angular.bind(ctrl, ctrl.cbOnRowSelectionChanged)
         });
         ctrl.FileTree.init({
             browser: ctrl.FileBrowser,

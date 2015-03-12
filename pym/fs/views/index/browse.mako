@@ -58,6 +58,10 @@ ${parent.scripts()}
 <%block name="meta_title">${_("Filesystem")}</%block>
 
 
+<%include file="FsPropertiesDlgTpl.mako" args="parent=self" />
+<%include file="ItemPropertiesDlgTpl.mako" args="parent=self" />
+
+
 <script type="text/ng-template" id="nodes_renderer.html">
     <div ui-tree-handle class="tree-node tree-node-content" ng-class="{'selected': (fs.FileTree.selected.id == node.id)}">
             <span ng-if="node.nodes && node.nodes.length > 0"
@@ -101,9 +105,14 @@ ${parent.scripts()}
                             <i class="fa fa-fw fa-upload"></i> ${_("Upload")}
                         </div>
                     </li>
-                    <li ng-class="{'disabled':fs.FileBrowser.cntSelected<1}">
-                        <a href="#" ng-click="fs.ToolsMenu.rm()">
+                    <li ng-class="{'disabled':!fs.canDeleteItems}">
+                        <a href="#" ng-click="fs.ToolsMenu.deleteItems()">
                             <i class="fa fa-fw fa-trash-o"></i> ${_("Delete")}
+                        </a>
+                    </li>
+                    <li ng-class="{'disabled':!fs.canUndeleteItems}">
+                        <a href="#" ng-click="fs.ToolsMenu.undeleteItems()">
+                            <i class="fa fa-fw fa-trash-o fa-rotate-180"></i> ${_("Undelete")}
                         </a>
                     </li>
                     <li>
@@ -111,7 +120,7 @@ ${parent.scripts()}
                             <i class="fa fa-fw fa-asterisk"></i> ${_("Create Directory")}
                         </a>
                     </li>
-                    <li ng-class="{'disabled':FileBrowser.cntSelected<1}">
+                    <li ng-class="{'disabled':!fs.canOpenNode}">
                         <a href="#" ng-click="fs.ToolsMenu.openNode()">
                             <i class="fa fa-fw fa-folder-open-o"></i> ${_("Open Node")}
                         </a>
@@ -124,8 +133,20 @@ ${parent.scripts()}
                     </li>
                     <li>
                         <label class="anchor">
-                            <input type="checkbox" name="include_deleted" ng-model="fs.GlobalOptions.includeDeleted" ng-true-value="1" ng-false-value="0"> ${_("Show deleted")}
+                            <input type="checkbox" name="include_deleted" ng-model="fs.GlobalOptions.includeDeleted" ng-click="fs.toggleIncludeDeleted()" ng-true-value="true" ng-false-value="false"> ${_("Show deleted")}
                         </label>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                    <li>
+                        <a href="#" ng-click="fs.ToolsMenu.openFsPropertiesDlg()">
+                            <i class="fa fa-fw"></i> ${_("Fs Properties")}
+                        </a>
+                    </li>
+                    <li ng-class="{'disabled':!fs.canOpenItemPropertiesDlg}">
+                        <a href="#" ng-click="fs.ToolsMenu.openItemPropertiesDlg()">
+                            <i class="fa fa-fw"></i> ${_("Item Properties")}
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -210,12 +231,15 @@ function( doc,                   angular,  PYM,       PymApp) {
 
     PymApp.constant('RC', ${h.json_serializer(rc)|n});
     PymApp.constant('T', {
-        confirm_rm_files: '${_("Do you really want to delete the selected files and all of their children?")}',
+        prompt_delete_items: '${_("Do you really want to delete the selected items and all of their children? Specify a reason or »YES«, leave empty to cancel.")}',
+        confirm_undelete_items: '${_("Do you really want to undelete the selected items and all of their children?")}',
         prompt_dir_name: '${_("Enter a name for the directory")}'
     });
 
 
 
+    <%include file="FsPropertiesDlgController.js" args="parent=self" />
+    <%include file="ItemPropertiesDlgController.js" args="parent=self" />
     <%include file="FsController.js" args="parent=self" />
 
     return FsController;

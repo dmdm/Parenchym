@@ -19,7 +19,7 @@ import pym.security
 import pym.validator
 from pym.i18n import _
 from pym.auth.models import Permissions
-from pym.models import DbSession, dictate_iter
+from pym.models import DbSession, dictate_iter, dictate
 
 
 class Validator(pym.validator.Validator):
@@ -29,19 +29,9 @@ class Validator(pym.validator.Validator):
         self.fs_root = fs_root
 
     @property
-    def cur_node(self):
+    def path(self):
         p = self.fetch('path', required=True, multiple=False)
-        if p == 'fs':
-            return self.fs_root
-        pp = p.split('/')
-        if pp[0] == 'fs':
-            pp = pp[1:]
-        p = '/'.join(pp)
-        try:
-            n = self.fs_root.find_by_path(p)
-        except KeyError:
-            raise pym.exc.ValidationError("Invalid path: '{}".format(p))
-        return n
+        return pym.security.safepath(p)
 
     @property
     def ids(self):
@@ -50,13 +40,23 @@ class Validator(pym.validator.Validator):
 
     @property
     def names(self):
-        v = self.fetch('names', required=True, multiple=True)
+        if hasattr(self.inp, 'getall'):
+            # from multidict
+            v = self.fetch('names', required=True, multiple=True)
+        else:
+            # from json_body, that is a regular dict
+            v = self.fetch('names', required=True, multiple=False)
         return v
 
     @property
     def name(self):
         v = self.fetch('name', required=True, multiple=False)
         return pym.security.safepath(v, split=False)
+
+    @property
+    def reason(self):
+        v = self.fetch('reason', required=True, multiple=False)
+        return v
 
     @property
     def fil(self):
@@ -91,7 +91,8 @@ class Worker(object):
         for k in self.cache.keys("ResourceNode:children:*{}".format(parent_id)):
             self.cache.delete(k)
 
-    def upload(self, resp, cur_node, data, overwrite):
+    def upload(self, resp, path, data, overwrite):
+        cur_node = self.fs_root.find_by_path(path)
         upload_cache = self.__class__.init_upload_cache()
         upload_cache.fs_node = cur_node
 
@@ -164,13 +165,19 @@ class Worker(object):
 
             self.del_cached_children(cur_node.id)
 
-    def ls(self, resp, cur_node):
+    def ls(self, resp, path, include_deleted):
+        cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
         if not self.has_permission(Permissions.read.value, context=cur_node):
             resp.error("Forbidden to list")
             return
         owner = sa.orm.aliased(pym.auth.models.User, name='owner')
         editor = sa.orm.aliased(pym.auth.models.User, name='editor')
         deleter = sa.orm.aliased(pym.auth.models.User, name='deleter')
+        fil = [
+            FsNode.parent_id == cur_node.id
+        ]
+        if not include_deleted:
+            fil.append(FsNode.deleter_id == None)
         nchildren = self.sess.query(FsNode.parent_id, sa.func.count('*').label(
             'nchildren')).group_by(FsNode.parent_id).subquery()
         rs = self.sess.query(
@@ -187,30 +194,46 @@ class Worker(object):
             deleter, deleter.id == FsNode.deleter_id
         ).outerjoin(
             nchildren, nchildren.c.parent_id == FsNode.id
-        ).filter(
-            FsNode.parent_id == cur_node.id
-        )
+        ).filter(*fil)
         excl = {
             'FsNode': ('content_bin', 'content_text', 'content_json', '_slug')
         }
         resp.data = {'rows': dictate_iter(rs, excludes=excl, objects_as='flat')}
 
-    def rm(self, resp, cur_node, names):
+    def delete_items(self, resp, path, names, reason):
+        cur_node = self.fs_root.find_by_path(path, include_deleted=True)
+        if reason == 'YES':
+            reason = None
         for n in names:
             this_node = cur_node[n]
             if not self.has_permission(Permissions.delete.value, context=this_node):
                 resp.error(_("Forbidden to delete '{}'").format(n))
                 continue
-            pym.fs.manager.delete_fs_node(
-                self.sess,
-                fs_node=this_node,
+            this_node.delete(
                 deleter=self.owner_id,
-                delete_from_db=True
+                deletion_reason=reason,
+                delete_from_db=False,
+                recursive=True
             )
         # remove cache keys for children of cur_node
         self.del_cached_children(cur_node.id)
 
-    def create_directory(self, resp, cur_node, name):
+    def undelete_items(self, resp, path, names):
+        cur_node =self.fs_root.find_by_path(path, include_deleted=True)
+        for n in names:
+            this_node = cur_node[n]
+            if not self.has_permission(Permissions.write.value, context=this_node):
+                resp.error(_("Forbidden to undelete '{}'").format(n))
+                continue
+            this_node.undelete(
+                editor=self.owner_id,
+                recursive=True
+            )
+        # remove cache keys for children of cur_node
+        self.del_cached_children(cur_node.id)
+
+    def create_directory(self, resp, path, name):
+        cur_node =self.fs_root.find_by_path(path, include_deleted=False)
         if not self.has_permission(Permissions.write.value, context=cur_node):
             resp.error(_("Forbidden to create directory '{}'").format(name))
             return
@@ -221,7 +244,6 @@ class Worker(object):
         # remove cache keys for children of cur_node
         self.del_cached_children(cur_node.id)
 
-    # cur_node not yet implemented # def load_tree(self, resp, cur_node, filter):
     def load_tree(self, resp, fil, include_deleted):
 
         def _load_twig(n, twig):
@@ -243,6 +265,50 @@ class Worker(object):
         """:type: FsNode"""
         _load_twig(cur_node, data)
         resp.data = data
+
+    def load_fs_properties(self, resp):
+        resp.data = dict(self.fs_root.rc)
+
+    def load_item_properties(self, resp, path, name):
+        path += '/' + name
+        cur_node = self.fs_root.find_by_path(path, include_deleted=False)
+        if not self.has_permission(Permissions.read.value, context=cur_node):
+            resp.error("Forbidden to read")
+            return
+        owner = sa.orm.aliased(pym.auth.models.User, name='owner')
+        editor = sa.orm.aliased(pym.auth.models.User, name='editor')
+        deleter = sa.orm.aliased(pym.auth.models.User, name='deleter')
+        fil = [
+            FsNode.id == cur_node.id,
+            FsNode.deleter_id == None
+        ]
+        rs = self.sess.query(
+            FsNode,
+            owner.display_name.label('owner'),
+            editor.display_name.label('editor'),
+            deleter.display_name.label('deleter')
+        ).outerjoin(
+            owner, owner.id == FsNode.owner_id
+        ).outerjoin(
+            editor, editor.id == FsNode.editor_id
+        ).outerjoin(
+            deleter, deleter.id == FsNode.deleter_id
+        ).filter(
+            *fil
+        ).one()
+        excl = {
+            'FsNode': ('content_bin', '_slug')
+        }
+        fmap = {
+            'FsNode': {
+                'rc': lambda it: dict(it.rc),
+                'meta_json': lambda it: it.content.meta_json,
+                'meta_xmp': lambda it: it.content.meta_xmp,
+                'data_text': lambda it: it.content.data_text,
+                'data_html_body': lambda it: it.content.data_html_body,
+            }
+        }
+        resp.data = dictate(rs, fmap=fmap, excludes=excl, objects_as='flat')
 
 
 @view_defaults(
@@ -280,9 +346,12 @@ class FsView(object):
             index=request.resource_url(context),
             upload=request.resource_url(context, '@@_ul_'),
             load_items=request.resource_url(context, '@@_ls_'),
-            rm=request.resource_url(context, '@@_rm_'),
+            delete_items=request.resource_url(context, '@@_rm_'),
+            undelete_items=request.resource_url(context, '@@_unrm_'),
             create_directory=request.resource_url(context, '@@_crd_'),
             load_tree=request.resource_url(context, '@@_load_tree_'),
+            load_fs_properties=request.resource_url(context, '@@_load_fs_properties_'),
+            load_item_properties=request.resource_url(context, '@@_load_item_properties_'),
         )
 
     @view_config(
@@ -340,7 +409,7 @@ class FsView(object):
         data = self.request.POST
         self.validator.inp = data
         overwrite = data.get('overwrite', False)
-        keys = ('cur_node', )
+        keys = ('path', )
         func = functools.partial(
             self.worker.upload,
             data=data,
@@ -362,7 +431,7 @@ class FsView(object):
         request_method='GET'
     )
     def ls(self):
-        keys = ('cur_node', )
+        keys = ('path', 'include_deleted')
         func = functools.partial(
             self.worker.ls
         )
@@ -381,10 +450,31 @@ class FsView(object):
         renderer='string',
         request_method='DELETE'
     )
-    def rm(self):
-        keys = ('cur_node', 'names')
+    def delete_items(self):
+        keys = ('path', 'names', 'reason')
         func = functools.partial(
-            self.worker.rm
+            self.worker.delete_items
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_unrm_',
+        renderer='string',
+        request_method='PUT'
+    )
+    def undelete_items(self):
+        self.validator.inp = self.request.json_body
+        keys = ('path', 'names')
+        func = functools.partial(
+            self.worker.undelete_items
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,
@@ -403,7 +493,7 @@ class FsView(object):
     )
     def create_directory(self):
         self.validator.inp = self.request.json_body
-        keys = ('cur_node', 'name')
+        keys = ('path', 'name')
         func = functools.partial(
             self.worker.create_directory
         )
@@ -426,6 +516,46 @@ class FsView(object):
         keys = ('fil', 'include_deleted')
         func = functools.partial(
             self.worker.load_tree
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_load_fs_properties_',
+        renderer='string',
+        request_method='GET'
+    )
+    def load_fs_properties(self):
+        keys = ()
+        func = functools.partial(
+            self.worker.load_fs_properties
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_load_item_properties_',
+        renderer='string',
+        request_method='GET'
+    )
+    def load_item_properties(self):
+        keys = ('path', 'name')
+        func = functools.partial(
+            self.worker.load_item_properties
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

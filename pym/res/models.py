@@ -126,7 +126,7 @@ class ResourceNode(DbBase, DefaultMixin):
         # individually.
         lazy='select',
         ##lazy='joined',
-        ##join_depth=1,
+        join_depth=1,
 
         # many to one + adjacency list - remote_side
         # is required to reference the 'remote'
@@ -300,7 +300,7 @@ class ResourceNode(DbBase, DefaultMixin):
 
         :raises OSError: if node is not empty and recursive is False.
         """
-        if self.has_children() and not recursive:
+        if self.has_children(include_deleted=False) and not recursive:
             raise OSError("FsNode not empty: {}".format(self))
         sess = sa.inspect(self).session
         if delete_from_db:
@@ -332,13 +332,15 @@ class ResourceNode(DbBase, DefaultMixin):
         :param recursive: If True and node is not empty, undeletes also all
             children.
         """
+        # Do nothing if this node is not deleted
+        if not self.deleter_id:
+            return
         sess = sa.inspect(self).session
         editor = pym.auth.models.User.find(sess, editor)
         self.editor_id = editor.id
         self.deleter_id = None
         self.deletion_reason = None
-        # TODO Replace content of unique fields
-        if self.has_children() and recursive:
+        if self.has_children(include_deleted=True) and recursive:
             for n in self.children.values():
                 n.undelete(editor, recursive)
 
@@ -455,8 +457,20 @@ class ResourceNode(DbBase, DefaultMixin):
         if not path:
             return self
         pp = path.split(cls.SEP)
-        n = self
+        # Shortcut in case first node in path is us
         try:
+            if pp[0] == self.name:
+                # Error if we are deleted and should not be included
+                if self.is_deleted() and not include_deleted:
+                    raise KeyError(pp[0])
+                else:
+                    # Just us
+                    if len(pp) == 1:
+                        return self
+                    # Process remaining path starting with our children
+                    else:
+                        pp = pp[1:]
+            n = self
             for p in pp:
                 n = n[p]
                 if n.is_deleted() and not include_deleted:
@@ -552,7 +566,8 @@ class ResourceNode(DbBase, DefaultMixin):
         """
 
         # CAVEAT: Setup fails if we use cache here!
-        if use_cache:
+        ##if use_cache:
+        if False:
             r = sess.query(
                 cls
             ).options(
