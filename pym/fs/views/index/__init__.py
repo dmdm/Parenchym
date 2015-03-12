@@ -12,6 +12,7 @@ import pyramid.response
 from pym.cache import UploadCache
 from pym.lib import json_serializer
 from ...models import IFsNode, FsNode
+from ...const import MIME_TYPE_DIRECTORY
 import pym.exc
 import pym.fs.manager
 import pym.security
@@ -29,20 +30,17 @@ class Validator(pym.validator.Validator):
 
     @property
     def cur_node(self):
-        v = self.fetch('path', required=True, multiple=False)
-        pp = v.split('/')
-        n = self.fs_root
-        for i, p in enumerate(pp):
-            if i == 0:
-                if n.name != p:
-                    raise pym.exc.ValidationError(
-                        "Wrong root node in path: '{}".format(p))
-            else:
-                try:
-                    n = n[p]
-                except KeyError:
-                    raise pym.exc.ValidationError(
-                        "Unknown node in path: '{}".format(p))
+        p = self.fetch('path', required=True, multiple=False)
+        if p == 'fs':
+            return self.fs_root
+        pp = p.split('/')
+        if pp[0] == 'fs':
+            pp = pp[1:]
+        p = '/'.join(pp)
+        try:
+            n = self.fs_root.find_by_path(p)
+        except KeyError:
+            raise pym.exc.ValidationError("Invalid path: '{}".format(p))
         return n
 
     @property
@@ -60,15 +58,27 @@ class Validator(pym.validator.Validator):
         v = self.fetch('name', required=True, multiple=False)
         return pym.security.safepath(v, split=False)
 
+    @property
+    def fil(self):
+        v = self.fetch('filter', required=True, multiple=False)
+        if v not in ('dirs', 'all'):
+            raise pym.exc.ValidationError("Invalid filter: '{}".format(v))
+        return v
+
+    @property
+    def include_deleted(self):
+        return self.fetch_bool('incdel', required=True, multiple=False)
+
 
 class Worker(object):
 
-    def __init__(self, lgg, sess, owner_id, cache, has_permission):
+    def __init__(self, lgg, sess, owner_id, cache, has_permission, fs_root):
         self.lgg = lgg
         self.sess = sess
         self.owner_id = owner_id
         self.cache = cache
         self.has_permission = has_permission
+        self.fs_root = fs_root
         self.fc_col_map = {
         }
 
@@ -205,17 +215,34 @@ class Worker(object):
             resp.error(_("Forbidden to create directory '{}'").format(name))
             return
         try:
-            pym.fs.manager.create_fs_node(
-                self.sess,
-                owner=self.owner_id,
-                parent_id=cur_node.id,
-                name=name,
-                mime_type=FsNode.MIME_TYPE_DIRECTORY
-            )
+            cur_node.add_directory(owner=self.owner_id, name=name)
         except pym.exc.ItemExistsError:
             resp.error(_("Directory '{}' already exists").format(name))
         # remove cache keys for children of cur_node
         self.del_cached_children(cur_node.id)
+
+    # cur_node not yet implemented # def load_tree(self, resp, cur_node, filter):
+    def load_tree(self, resp, fil, include_deleted):
+
+        def _load_twig(n, twig):
+            # Need at least read permission
+            # TODO
+            # Filter
+            if fil == 'dirs' and n.mime_type != MIME_TYPE_DIRECTORY:
+                return
+            # Do it
+            x = {'id': n.id, 'title': n.title, 'name': n.name, 'nodes': [], 'sortix': n.sortix}
+            twig.append(x)
+            if n.has_children(include_deleted=include_deleted):
+                for cn in n.children.values():
+                    _load_twig(cn, x['nodes'])
+                x['nodes'].sort(key=lambda y: (y['sortix'], y['title']))
+
+        data = []
+        cur_node = self.fs_root
+        """:type: FsNode"""
+        _load_twig(cur_node, data)
+        resp.data = data
 
 
 @view_defaults(
@@ -235,7 +262,7 @@ class FsView(object):
         self.request = request
         self.sess = DbSession()
         self.lgg = logging.getLogger(__name__)
-        self.fs_root = [x for x in lineage(context) if isinstance(x, FsNode)][-1]
+        self.fs_root = context.class_root
 
         self.tr = self.request.localizer.translate
         self.sess = DbSession()
@@ -245,15 +272,17 @@ class FsView(object):
             sess=self.sess,
             owner_id=request.user.uid,
             cache=request.redis,
-            has_permission=request.has_permission
+            has_permission=request.has_permission,
+            fs_root=self.fs_root
         )
 
         self.urls = dict(
             index=request.resource_url(context),
             upload=request.resource_url(context, '@@_ul_'),
-            ls=request.resource_url(context, '@@_ls_'),
+            load_items=request.resource_url(context, '@@_ls_'),
             rm=request.resource_url(context, '@@_rm_'),
             create_directory=request.resource_url(context, '@@_crd_'),
+            load_tree=request.resource_url(context, '@@_load_tree_'),
         )
 
     @view_config(
@@ -289,14 +318,15 @@ class FsView(object):
         request_method='GET'
     )
     def browse(self):
-        path = list(reversed([(x.id, x.name) for x in lineage(self.context)
-            if isinstance(x, FsNode)]))
+        path = '/'.join(list(reversed([x.name for x in lineage(self.context)
+            if isinstance(x, FsNode)])))
         rc = {}
         node_rc = self.context.rc
         for k in FsNode.RC_KEYS_QUOTA:
             rc[k] = node_rc[k]
         rc['urls'] = self.urls
         rc['path'] = path
+        rc['MIME_TYPE_DIRECTORY'] = MIME_TYPE_DIRECTORY
         return {
             'rc': rc
         }
@@ -376,6 +406,26 @@ class FsView(object):
         keys = ('cur_node', 'name')
         func = functools.partial(
             self.worker.create_directory
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_load_tree_',
+        renderer='string',
+        request_method='GET'
+    )
+    def load_tree(self):
+        keys = ('fil', 'include_deleted')
+        func = functools.partial(
+            self.worker.load_tree
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

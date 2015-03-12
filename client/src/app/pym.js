@@ -225,6 +225,7 @@
      * @returns {Function}
      */
     my.createBoundedWrapper = function (object, method) {
+        console.log('binding to', object);
         return function() {
             return method.apply(object, arguments);
         };

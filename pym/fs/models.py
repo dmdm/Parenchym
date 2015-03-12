@@ -294,7 +294,7 @@ class FsNode(pym.res.models.ResourceNode):
                 sess, None, parent_id=tenant.id, name=NODE_NAME_FS)
         except sa.orm.exc.NoResultFound:
             n = cls(owner_id=owner.id, parent_id=tenant.id,
-                name=NODE_NAME_FS, title='Filesystem')
+                name=NODE_NAME_FS, title='Filesystem', mime_type=MIME_TYPE_DIRECTORY)
             sess.add(n)
         return n
 
@@ -516,7 +516,7 @@ class FsNode(pym.res.models.ResourceNode):
         return n
 
     @reify
-    def get_root(self):
+    def class_root(self):
         """
         Returns the root node of the resource tree.
 
@@ -534,12 +534,12 @@ class FsNode(pym.res.models.ResourceNode):
         return n
 
     @reify
-    def get_path(self):
+    def class_path(self):
         """
         Path to the root node of the resource tree.
 
         N.B.: If you need the path to a different 'root' in a child class,
-        override :method:`.get_path`.
+        override :method:`.class_path`.
         """
         pp = []
         n = self

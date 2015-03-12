@@ -361,7 +361,7 @@ class ResourceNode(DbBase, DefaultMixin):
         :raises ValueError: if dst is invalid.
         :raises FileNotFoundError: if path to dst does not exist.
         """
-        root_node = self.get_root()
+        root_node = self.class_root()
         if self == root_node:
             raise pym.exc.PymError("Root node cannot be renamed or moved")
         cls = self.__class__
@@ -380,7 +380,7 @@ class ResourceNode(DbBase, DefaultMixin):
         dst_pp = dst.split(cls.SEP)
         dst_path = cls.SEP.join(dst_pp[:-1])
         new_name = dst_pp[-1]
-        full_src_path = self.get_path()  # path incl. name
+        full_src_path = self.class_path()  # path incl. name
         src_pp = full_src_path.split(cls.SEP)
         src_path = cls.SEP.join(src_pp[:-1])  # path excl. name
         dirty = False
@@ -405,7 +405,7 @@ class ResourceNode(DbBase, DefaultMixin):
             raise pym.exc.PymError('Src and dst are the same')
 
     def move(self, editor, dst, overwrite=False):
-        root_node = self.get_root()
+        root_node = self.class_root()
         dst += self.__class__.SEP + self.name
         try:
             n_dst = root_node.find_by_path(dst, include_deleted=False)
@@ -485,7 +485,7 @@ class ResourceNode(DbBase, DefaultMixin):
             return False
 
     @reify
-    def get_root(self):
+    def class_root(self):
         """
         Returns the root node of the resource tree.
 
@@ -501,12 +501,12 @@ class ResourceNode(DbBase, DefaultMixin):
         return n
 
     @reify
-    def get_path(self):
+    def class_path(self):
         """
         Path to the root node of the resource tree.
 
         N.B.: If you need the path to a different 'root' in a child class,
-        override :method:`.get_path`.
+        override :method:`.class_path`.
         """
         pp = []
         n = self

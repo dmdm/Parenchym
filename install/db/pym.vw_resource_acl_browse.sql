@@ -4,6 +4,7 @@ CREATE OR REPLACE VIEW pym.vw_resource_acl_browse AS
       acl.id,
       acl.resource_id,
       res.name    AS resource_name,
+      res.parent_id AS resource_parent_id,
       res.parents AS resource_parents,
       acl.group_id,
       g.name      AS group_name,

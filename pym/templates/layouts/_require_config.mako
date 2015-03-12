@@ -3,7 +3,7 @@ var require = {
     , deps: [
         '${request.static_url('pym:static/app/plugins.js')}',
         '${request.static_url('pym:static/app/boot-ng.js')}'
-##        '${request.static_url('pym:static/app/app.min.js')}'
+//        '${request.static_url('pym:static/app/app.min.js')}'
     ]
     , paths: {
           'jquery':          'static-pym/vendor/jquery/dist/jquery.min'
@@ -13,7 +13,7 @@ var require = {
         , 'pnotify':         'static-pym/vendor/pnotify/pnotify.core'
         , 'pnotify.buttons': 'static-pym/vendor/pnotify/pnotify.buttons'
         , 'select2':         'static-pym/vendor/select2/select2.min'
-        , 'ng':              'static-pym/vendor/angular/angular'
+        , 'ng':              'static-pym/vendor/angular/angular.min'
         , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
         , 'ng-sanitize':     'static-pym/vendor/angular/angular-sanitize.min'
         , 'ng-messages':     'static-pym/vendor/angular/angular-messages.min'

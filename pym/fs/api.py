@@ -168,7 +168,7 @@ class PymFs(fs.base.FS):
         ).order_by(FsNode.sortix, FsNode._name)
         if pattern:
             qry = qry.params(re=pattern)
-        return (x.get_path() if full else x.name for x in qry)
+        return (x.class_path() if full else x.name for x in qry)
 
     @synchronize
     def makedir(self, path, recursive=False, allow_recreate=False):
