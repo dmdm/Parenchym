@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from collections import OrderedDict
+import concurrent.futures
 import fnmatch
 import glob
 from pprint import pprint
@@ -219,49 +220,86 @@ class Runner(pym.cli.Cli):
             src = [src]
         root_dir = self.rc.root_dir
         ff = []
+        dd = []
         for fn in src:
-            ff += self._collect_files(root_dir, fn, self.args.recursive)
+            root_dir, dd2, ff2 = self._collect_files(root_dir, fn, self.args.recursive)
+            ff += ff2
+            dd += dd2
+        dd.sort()
+        ff.sort(key=lambda s: len(s))
 
         root_node = self.fs.fs_root.find_by_path(self.args.dst)
 
-        with transaction.manager:
-            for f in ff:
-                self._save_thing(
-                    actor=self.fs.actor,
-                    root_dir=pym.security.safepath(
-                        os.path.join(root_dir, self.args.src)),
-                    fn=f,
-                    root_node=root_node,
-                    update=self.args.update,
-                    revise=self.args.revise
-                )
+        kwargs = dict(
+            actor=self.fs.actor,
+            root_dir=pym.security.safepath(root_dir),
+            root_node=root_node,
+            update=self.args.update,
+            revise=self.args.revise
+        )
 
-    def _save_thing(self, actor, root_dir, fn, root_node, update=False,
+        self.lgg.info('Loading directories...')
+        with transaction.manager:
+            for d in dd:
+                self._save_thing(filename=d, **kwargs)
+
+        self.lgg.info('Loading files...')
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.args.jobs) as executor:
+            # Start the load operations and mark each future with its URL
+            fut = {executor.submit(self._save_thing, filename=f, **kwargs): f for f in ff}
+            for future in concurrent.futures.as_completed(fut):
+                fn = fut[future]
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    self.lgg.error("Error in future: '{}'".format(future))
+                    self.lgg.error("Failed to process file: '{}'".format(fn))
+                    self.lgg.exception(exc)
+                    raise
+                else:
+                    self.lgg.debug("Ok: '{}'".format(fn))
+
+    def _save_thing(self, actor, root_dir, filename, root_node, update=False,
             revise=False):
+
+        # print('root dir', root_dir)
+        # print(filename)
+        # return
         lrd = len(root_dir)
-        dst_path = fn[lrd:]
-        sess = DbSession()
-        root_node = sess.merge(root_node)
-        actor = sess.merge(actor)
-        if os.path.isdir(fn):
-            self._save_dir(
-                actor=actor,
-                fn=fn,
-                root_node=root_node,
-                dst_path=dst_path,
-                update=update,
-                revise=revise
-            )
-        else:
-            self._save_file(
-                actor=actor,
-                fn=fn,
-                root_node=root_node,
-                dst_path=dst_path,
-                update=update,
-                revise=revise
-            )
-        # sess.flush()
+        dst_path = filename.strip('/')[lrd:].strip('/')
+
+        try:
+            pym.security.is_path_safe(dst_path, split=True, sep=os.path.sep, raise_error=True)
+        except ValueError as exc:
+            self.lgg.error(str(exc))
+            dst_path = os.path.sep + pym.security.safepath(dst_path)
+            self.lgg.warning("Cleaning to: '{}'".format(dst_path))
+
+        with transaction.manager:
+            sess = DbSession()
+            actor = sess.merge(actor)
+            fs_root = sess.query(pym.fs.models.FsNode).filter(pym.fs.models.FsNode.name=='fs').one()
+            root_node = fs_root.find_by_path(self.args.dst)
+            if os.path.isdir(filename):
+                self._save_dir(
+                    actor=actor,
+                    fn=filename,
+                    root_node=root_node,
+                    dst_path=dst_path,
+                    update=update,
+                    revise=revise
+                )
+            else:
+                self._save_file(
+                    actor=actor,
+                    fn=filename,
+                    root_node=root_node,
+                    dst_path=dst_path,
+                    update=update,
+                    revise=revise
+                )
+            # sess.flush()
 
     def _save_dir(self, actor, fn, root_node, dst_path, update, revise):
         self.lgg.debug("Trying to save dir '{}'".format(dst_path))
@@ -344,14 +382,22 @@ class Runner(pym.cli.Cli):
             else:
                 pat = '*'
             ff = []
+            dd = []
             self.lgg.debug('Recursing {}, pattern {}'.format(start_dir, pat))
-            for rd, files, dirs in os.walk(start_dir):
-                ff += [os.path.join(rd, x)
-                    for x in fnmatch.filter(files + dirs, pat)]
-            return ff
+            for rd, dirs, files in os.walk(start_dir):
+                dd += [os.path.join(rd, x) for x in fnmatch.filter(dirs, pat)]
+                ff += [os.path.join(rd, x) for x in fnmatch.filter(files, pat)]
         else:
             self.lgg.debug('Globbing ' + start_dir)
-            return glob.glob(start_dir)
+            xx = glob.glob(start_dir)
+            dd = []
+            ff = []
+            for x in xx:
+                if os.path.isdir(x):
+                    dd.append(x)
+                else:
+                    ff.append(x)
+        return start_dir, dd, ff
 
     def _build_query(self, qry, entity):
         if not self.args.with_deleted:
@@ -622,6 +668,8 @@ def main(argv=None):
         runner = Runner()
         args = parse_args(runner, argv[1:])
         runner.init_app(args, lgg=lgg, setup_logging=True)
+        logging.getLogger().setLevel(logging.WARN)
+        lgg.setLevel(logging.WARN)
         if hasattr(args, 'func'):
             args.func()
         else:

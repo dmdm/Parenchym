@@ -1,5 +1,6 @@
 import collections
 import json
+import logging
 from pyramid.decorator import reify
 from pyramid.location import lineage
 import pyramid.util
@@ -19,6 +20,9 @@ import pym.res.models
 from pym.security import is_path_safe
 import pym.tenants.models
 from .const import NODE_NAME_FS, MIME_TYPE_DEFAULT, MIME_TYPE_DIRECTORY
+
+
+mlgg = logging.getLogger(__name__)
 
 
 class IFsNode(zope.interface.Interface):
@@ -110,15 +114,26 @@ class FsContent(DbBase, DefaultMixin):
             with open(fn, 'rb') as fh:
                 setattr(self, attr, fh.read())
         else:
-            with open(fn, 'rt', encoding=self.encoding) as fh:
-                if attr == 'data_json':
-                    setattr(self, attr,
-                        json.load(fh, cls=pym.lib.JsonDecoder))
-                else:
-                    setattr(self, attr, fh.read())
+            try:
+                with open(fn, 'rt', encoding=self.encoding) as fh:
+                    if attr == 'data_json':
+                        setattr(self, attr,
+                            json.load(fh, cls=pym.lib.JsonDecoder))
+                    else:
+                        setattr(self, attr, fh.read())
+            except UnicodeDecodeError as exc:
+                mlgg.exception(exc)
+                mlgg.warn("Saving file as binary: '{}'".format(fn))
+                with open(fn, 'rb') as fh:
+                    setattr(self, 'data_bin', fh.read())
 
     def set_meta(self, meta):
         kk = 'meta_json meta_xmp data_text data_html_head data_html_body'.split(' ')
+        mj = meta.get('meta_json', None)
+        if mj:
+            s = pym.lib.json_serializer(mj)
+            s = s.replace("\0", '').replace("\x00", '').replace("\u0000", '').replace("\\u0000", '')
+            meta['meta_json'] = pym.lib.json_deserializer(s)
         for k in kk:
             setattr(self, k, meta.get(k, None))
 
@@ -380,6 +395,7 @@ class FsNode(pym.res.models.ResourceNode):
         c.size = size
         n.content_rows = [c]
         n.content = c
+        n.set_meta(kwargs)
         return n
 
     def set_meta(self, meta):
@@ -390,8 +406,8 @@ class FsNode(pym.res.models.ResourceNode):
                 x = meta['meta_json'][0]
             else:
                 x = meta['meta_json']
-            if 'title' in x:
-                self.fs_node.title = x['title']
+            if x is not None and 'title' in x:
+                self.title = x['title']
 
     def update(self, editor, **kwargs):
         """
@@ -421,6 +437,8 @@ class FsNode(pym.res.models.ResourceNode):
                 if k in kwargs:
                     setattr(self.content, k, kwargs[k])
             self.content.editor_id = editor.id
+
+        self.set_meta(kwargs)
 
     def revise(self, editor, **kwargs):
         """
@@ -461,6 +479,8 @@ class FsNode(pym.res.models.ResourceNode):
                 if k in kwargs:
                     setattr(self.content, k, kwargs[k])
             c.owner_id = editor.id
+
+        self.set_meta(kwargs)
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """

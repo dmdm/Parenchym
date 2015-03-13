@@ -8,27 +8,28 @@
         <tabset>
             <tab>
                 <tab-heading>${_('Item')}</tab-heading>
-                <textarea ng-model="dlg.data.item" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.item}}</textarea>
+                <textarea ng-model="dlg.data.item" style="width: 100%; height: 40ex; white-space: pre; font-family: monospace; border: none;">{{dlg.data.item}}</textarea>
             </tab>
             <tab>
                 <tab-heading>${_('Meta JSON')}</tab-heading>
-                <textarea ng-model="dlg.data.meta_json" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.meta_json}}</textarea>
+                <textarea ng-model="dlg.data.meta_json" style="width: 100%; height: 40ex; white-space: pre; font-family: monospace; border: none;">{{dlg.data.meta_json}}</textarea>
             </tab>
             <tab>
                 <tab-heading>${_('Meta XMP')}</tab-heading>
-                <textarea ng-model="dlg.data.meta_xmp" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.meta_xmp}}</textarea>
+                <textarea ng-model="dlg.data.meta_xmp" style="width: 100%; height: 40ex; white-space: pre; font-family: monospace; border: none;">{{dlg.data.meta_xmp}}</textarea>
             </tab>
             <tab>
                 <tab-heading>${_('Content Text')}</tab-heading>
-                <textarea ng-model="dlg.data.data_text" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.data_text}}</textarea>
+                <textarea ng-model="dlg.data.data_text" style="width: 100%; height: 40ex; white-space: pre; font-family: monospace; border: none;">{{dlg.data.data_text}}</textarea>
             </tab>
             <tab>
                 <tab-heading>${_('Content HTML')}</tab-heading>
-                <textarea ng-model="dlg.data.data_html_body" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.data_html_body}}</textarea>
+                <div style="width: 100%; height: 40ex; overflow: auto;" ng-bind-html="dlg.data.data_html_body">
+                </div>
             </tab>
             <tab>
                 <tab-heading>${_('RC')}</tab-heading>
-                <textarea ng-model="dlg.data.rc" style="width: 100%; height: 20ex; white-space: pre; font-family: monospace;">{{dlg.data.rc}}</textarea>
+                <textarea ng-model="dlg.data.rc" style="width: 100%; height: 40ex; white-space: pre; font-family: monospace; border: none;">{{dlg.data.rc}}</textarea>
             </tab>
         </tabset>
 
