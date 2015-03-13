@@ -502,7 +502,7 @@ class PymFs(fs.base.FS):
             if callable(meta):
                 self.lgg.debug('Fetching meta data')
                 meta = meta(src_fn)
-            n.set_meta(meta)
+            n.set_meta(meta, keep_content=False)
         finished_callback()
         return bytes_written
 

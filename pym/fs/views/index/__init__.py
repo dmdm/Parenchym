@@ -360,18 +360,19 @@ class FsView(object):
     )
     def index(self):
         disposition = self.request.GET.get('disposition', 'inline')
+        if disposition not in ('inline', 'attachment'):
+            disposition = 'inline'
         n = self.context
-        if n.size < 1:
-            return HTTPNotFound(n.name)
         response = pyramid.response.Response(
             content_type=n.mime_type,
             content_length=n.size,
             content_disposition=disposition + '; filename=' + n.name
         )
-        if isinstance(n.content, str):
-            response.text = n.content
+        attr = n.content.data_attr
+        if attr == 'data_bin':
+            response.body = n.content.data
         else:
-            response.body = n.content
+            response.text = n.content.data
         return response
 
     @view_config(

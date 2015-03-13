@@ -146,9 +146,24 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
                     return result;
                 }
             );
+        },
+
+        buildDownloadUrl: function (path, name) {
+            var pp, s;
+            // Make local copy of original path
+            pp = path.slice();
+            // Remove filesystem root, because browser is already there:
+            // http://HOST:PORT/TENANT/fs/@@_br_
+            if (pp[0].name === 'fs') { pp.shift(); }
+            // Stringify path and append name
+            s = pp.length ? pathToStr(pp) + '/' + name : name;
+            // Get current url and apply our path string
+            return $window.location.href.replace(/@@_br_/, s);
         }
     };
 
+    ctrl.canUpload = true;
+    ctrl.canDownload = false;
     ctrl.canDeleteItems = false;
     ctrl.canUndeleteItems = false;
     ctrl.canOpenNode = false;
@@ -320,18 +335,26 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
 
     ctrl.cbOnRowSelectionChanged = function (row) {
-        var sel = this.FileBrowser.api.selection.getSelectedRows();
+        var sel = ctrl.FileBrowser.api.selection.getSelectedRows();
         if (sel.length) {
-            this.canDeleteItems = true;
-            this.canUndeleteItems = true;
-            this.canOpenNode = true;
-            this.canOpenItemPropertiesDlg = true;
+            if (sel[0].mime_type.match(/.*inode.*/)) {
+                ctrl.canDownload = false;
+            }
+            else {
+                ctrl.canDownload = true;
+                ctrl.downloadUrl = FsService.buildDownloadUrl(ctrl.FileTree.path, sel[0]._name);
+            }
+            ctrl.canDeleteItems = true;
+            ctrl.canUndeleteItems = true;
+            ctrl.canOpenNode = true;
+            ctrl.canOpenItemPropertiesDlg = true;
         }
         else {
-            this.canDeleteItems = false;
-            this.canUndeleteItems = false;
-            this.canOpenNode = false;
-            this.canOpenItemPropertiesDlg = false;
+            ctrl.canDownload = false;
+            ctrl.canDeleteItems = false;
+            ctrl.canUndeleteItems = false;
+            ctrl.canOpenNode = false;
+            ctrl.canOpenItemPropertiesDlg = false;
         }
     };
 

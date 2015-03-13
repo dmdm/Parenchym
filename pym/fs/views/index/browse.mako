@@ -91,30 +91,9 @@ ${parent.scripts()}
 
             <div class="btn-group" dropdown is-open="fs.ToolsMenu.isOpen">
                 <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="fs.ToolsMenu.isDisabled">
-                    <i class="fa fa-cog text-primary"></i> <span class="caret"></span>
+                    <i class="fa fa-cog text-primary"></i> ${_("Actions")} <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" role="menu">
-                    <li>
-                        <div ng-file-select
-                             ng-file-change="fs.FileBrowser.upload()"
-                             ng-model="fs.FileBrowser.files"
-                             ng-multiple="true"
-                             multiple="multiple"
-                             class="anchor"
-                            >
-                            <i class="fa fa-fw fa-upload"></i> ${_("Upload")}
-                        </div>
-                    </li>
-                    <li ng-class="{'disabled':!fs.canDeleteItems}">
-                        <a href="#" ng-click="fs.ToolsMenu.deleteItems()">
-                            <i class="fa fa-fw fa-trash-o"></i> ${_("Delete")}
-                        </a>
-                    </li>
-                    <li ng-class="{'disabled':!fs.canUndeleteItems}">
-                        <a href="#" ng-click="fs.ToolsMenu.undeleteItems()">
-                            <i class="fa fa-fw fa-trash-o fa-rotate-180"></i> ${_("Undelete")}
-                        </a>
-                    </li>
                     <li>
                         <a href="#" ng-click="fs.ToolsMenu.createDirectory()">
                             <i class="fa fa-fw fa-asterisk"></i> ${_("Create Directory")}
@@ -127,17 +106,38 @@ ${parent.scripts()}
                     </li>
                     <li class="divider"></li>
                     <li>
-                        <label class="anchor">
-                            <input type="checkbox" name="overwrite" ng-model="fs.GlobalOptions.overwrite"> ${_("Allow Overwrite")}
-                        </label>
+                        <div ng-file-select
+                             ng-file-change="fs.FileBrowser.upload()"
+                             ng-model="fs.FileBrowser.files"
+                             ng-multiple="true"
+                             multiple="multiple"
+                             class="anchor"
+                            >
+                            <i class="fa fa-fw fa-upload"></i> ${_("Upload")}
+                        </div>
                     </li>
-                    <li>
-                        <label class="anchor">
-                            <input type="checkbox" name="include_deleted" ng-model="fs.GlobalOptions.includeDeleted" ng-click="fs.toggleIncludeDeleted()" ng-true-value="true" ng-false-value="false"> ${_("Show deleted")}
-                        </label>
+                    <li ng-class="{'disabled':!fs.canDownload}">
+                        <a href="{{fs.downloadUrl}}?disposition=attachment">
+                            <i class="fa fa-fw fa-download"></i> ${_("Download")}
+                        </a>
+                    </li>
+                    <li ng-class="{'disabled':!fs.canDownload}">
+                        <a href="{{fs.downloadUrl}}" target="_blank">
+                            <i class="fa fa-fw fa-eye"></i> ${_("Preview")}
+                        </a>
                     </li>
                     <li class="divider"></li>
-                    <li>
+                    <li ng-class="{'disabled':!fs.canDeleteItems}">
+                        <a href="#" ng-click="fs.ToolsMenu.deleteItems()">
+                            <i class="fa fa-fw fa-trash-o"></i> ${_("Delete")}
+                        </a>
+                    </li>
+                    <li ng-class="{'disabled':!fs.canUndeleteItems}">
+                        <a href="#" ng-click="fs.ToolsMenu.undeleteItems()">
+                            <i class="fa fa-fw fa-trash-o fa-rotate-180"></i> ${_("Undelete")}
+                        </a>
+                    </li>
+                    <li class="divider"></li>
                     <li>
                         <a href="#" ng-click="fs.ToolsMenu.openFsPropertiesDlg()">
                             <i class="fa fa-fw"></i> ${_("Fs Properties")}
@@ -150,6 +150,26 @@ ${parent.scripts()}
                     </li>
                 </ul>
             </div>
+
+            <div class="btn-group" dropdown is-open="fs.PrefMenu.isOpen">
+                <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="fs.PrefMenu.isDisabled">
+                    <i class="fa fa-wrench text-primary"></i> ${_("Preferences")} <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    <li>
+                        <label class="anchor">
+                            <input type="checkbox" name="overwrite" ng-model="fs.GlobalOptions.overwrite"> ${_("Allow Overwrite")}
+                        </label>
+                    </li>
+                    <li>
+                        <label class="anchor">
+                            <input type="checkbox" name="include_deleted" ng-model="fs.GlobalOptions.includeDeleted" ng-click="fs.toggleIncludeDeleted()" ng-true-value="true" ng-false-value="false"> ${_("Show deleted")}
+                        </label>
+                    </li>
+                </ul>
+            </div>
+
+
         </div>
     </div>
 

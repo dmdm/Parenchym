@@ -395,11 +395,11 @@ class FsNode(pym.res.models.ResourceNode):
         c.size = size
         n.content_rows = [c]
         n.content = c
-        n.set_meta(kwargs)
+        n.set_meta(kwargs, keep_content=False)
         return n
 
-    def set_meta(self, meta):
-        if self.content:
+    def set_meta(self, meta, keep_content):
+        if self.content and not keep_content:
             self.content.set_meta(meta)
         if 'meta_json' in meta:
             if isinstance(meta['meta_json'], list):
@@ -438,9 +438,9 @@ class FsNode(pym.res.models.ResourceNode):
                     setattr(self.content, k, kwargs[k])
             self.content.editor_id = editor.id
 
-        self.set_meta(kwargs)
+        self.set_meta(kwargs, keep_content=False)
 
-    def revise(self, editor, **kwargs):
+    def revise(self, keep_content, editor, **kwargs):
         """
         Revises current node.
 
@@ -450,11 +450,15 @@ class FsNode(pym.res.models.ResourceNode):
 
         .. todo:: Keep history of the FsNode
 
-        We then add a new, empty instance of FsContent to the collection
-        ``content_rows``, and let attribute ``content`` point to it. If kwargs
-        contain ``filename``, ``mime_type`` and ``size``, we apply them to the
-        new content entity. We also set its owner. Caller may additionally
-        set data to the content.
+        If ``keep_content`` is True, we keep the content of the previous
+        revision. That means, all attributes mentioned in ``kwargs`` are
+        only applied to the node itself, not the content.
+
+        If ``keep_content`` is False, we then add a new, empty instance of
+        FsContent to the collection ``content_rows``, and let attribute
+        ``content`` point to it. If kwargs contain ``filename``, ``mime_type``
+        and ``size``, we apply them to the new content entity. We also set its
+        owner. Caller may additionally set data to the content.
 
         To update a node in-place, use :meth:`.update`.
 
@@ -470,7 +474,7 @@ class FsNode(pym.res.models.ResourceNode):
         self.editor_id = editor.id
 
         # If we had a content entry, create a new one for the new revision
-        if self.content:
+        if self.content and not keep_content:
             c = FsContent()
             self.content_rows.append(c)
             self.content = c
@@ -480,7 +484,7 @@ class FsNode(pym.res.models.ResourceNode):
                     setattr(self.content, k, kwargs[k])
             c.owner_id = editor.id
 
-        self.set_meta(kwargs)
+        self.set_meta(kwargs, keep_content)
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """
