@@ -13,7 +13,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             var httpConfig = {},
                 postData = {
                     name: dirName,
-                    path: path
+                    path: this.pathToStr(path)
                 };
             return $http.post(RC.urls.create_directory, postData, httpConfig)
             .then(function (resp) {
@@ -30,7 +30,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         deleteItems: function (path, names, reason) {
             var httpConfig = {
                 params: {
-                    path: path,
+                    path: this.pathToStr(path),
                     names: names,
                     reason: reason
                 }
@@ -50,7 +50,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         undeleteItems: function (path, names) {
             var httpConfig = {},
                 putData = {
-                    path: path,
+                    path: this.pathToStr(path),
                     names: names
                 };
             return $http.put(RC.urls.undelete_items, putData, httpConfig)
@@ -66,8 +66,9 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         },
 
         loadItems: function (path, includeDeleted) {
+            $log.log('got oath', path);
             var httpConfig = {params: {
-                path: path,
+                path: this.pathToStr(path),
                 incdel: includeDeleted
             }};
             return $http.get(RC.urls.load_items, httpConfig)
@@ -128,7 +129,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
         loadItemProperties: function (path, name) {
             var httpConfig = {params: {
-                path: path,
+                path: this.pathToStr(path),
                 name: name
             }};
             return $http.get(RC.urls.load_item_properties, httpConfig)
@@ -156,9 +157,17 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             // http://HOST:PORT/TENANT/fs/@@_br_
             if (pp[0].name === 'fs') { pp.shift(); }
             // Stringify path and append name
-            s = pp.length ? pathToStr(pp) + '/' + name : name;
+            s = pp.length ? this.pathToStr(pp) + '/' + name : name;
             // Get current url and apply our path string
             return $window.location.href.replace(/@@_br_/, s);
+        },
+
+        pathToStr: function (path) {
+            var pp = [];
+            angular.forEach(path, function (x) {
+                pp.push(x.name);
+            });
+            return pp.join('/');
         }
     };
 
@@ -189,7 +198,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
 
     ctrl.createDirectory = function () {
-        var path = pathToStr(ctrl.FileTree.path),
+        var path = ctrl.FileTree.path,
             dirName = $window.prompt(T.prompt_dir_name);
         if (! dirName ) {return;}
         FsService.createDirectory(path, dirName)
@@ -202,7 +211,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
 
     ctrl.deleteItems = function () {
-        var path = pathToStr(ctrl.FileTree.path),
+        var path = ctrl.FileTree.path,
             names = [],
             reason = $window.prompt(T.prompt_delete_items);
         if (! reason) { return; }
@@ -221,7 +230,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
 
     ctrl.undeleteItems = function () {
-        var path = pathToStr(ctrl.FileTree.path),
+        var path = ctrl.FileTree.path,
             names = [];
         if (! $window.confirm(T.confirm_undelete_items)) { return; }
         // Collect selected rows
@@ -265,7 +274,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
 
     ctrl.openItemPropertiesDlg = function () {
-        var path = pathToStr(ctrl.FileTree.path);
+        var path = ctrl.FileTree.path;
         var name = ctrl.FileBrowser.api.selection.getSelectedRows()[0]._name;
         var modalInstance = $modal.open({
             templateUrl: 'ItemPropertiesDlgTpl.html',
@@ -273,7 +282,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             size: 'lg', // 'sm', 'lg'
             resolve: {
                 loadResp: function () { return FsService.loadItemProperties(path, name); },
-                path: function () { return path; }
+                path: function () { return FsService.pathToStr(path); }
             }
         });
         modalInstance.result
@@ -285,14 +294,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         );
     };
 
-
-    function pathToStr (path) {
-        var pp = [];
-        angular.forEach(path, function (x) {
-            pp.push(x.name);
-        });
-        return pp.join('/');
-    }
 
 
     /*
@@ -377,7 +378,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
         setPath: function (path) {
             this.path = path;
-            this.loadItems(pathToStr(path));
+            this.loadItems(path);
         },
 
         postProcessItems: function (items) {
@@ -407,7 +408,7 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         },
 
         refresh: function () {
-            this.loadItems(pathToStr(this.path));
+            this.loadItems(this.path);
         },
 
         saveRow: function () {
@@ -635,8 +636,8 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         init: function (rc) {
             var self = this;
             this.rc = rc;
-            this.callbacks.accept = PYM.createBoundedWrapper(this, this.cbAccept);
-            this.callbacks.select = PYM.createBoundedWrapper(this, this.cbSelect);
+            this.callbacks.accept = angular.bind(this, this.cbAccept);
+            this.callbacks.select = angular.bind(this, this.cbSelect);
             this.loadItems(rc.rootPath, this.data).then(
                 function () {
                     // This is the only case where we set path directly
