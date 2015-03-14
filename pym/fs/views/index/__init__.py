@@ -69,6 +69,10 @@ class Validator(pym.validator.Validator):
     def include_deleted(self):
         return self.fetch_bool('incdel', required=True, multiple=False)
 
+    @property
+    def files(self):
+        return self.fetch('files', required=True, multiple=False)
+
 
 class Worker(object):
 
@@ -310,6 +314,13 @@ class Worker(object):
         }
         resp.data = dictate(rs, fmap=fmap, excludes=excl, objects_as='flat')
 
+    def validate_files(self, resp, path, files):
+        # TODO Validate files: name safe? file exists? save permitted? quota? update or revise?
+        resp.data = {}
+        print(files)
+        for f in files:
+            resp.data[f['key']] = 'ok'
+
 
 @view_defaults(
     context=IFsNode,
@@ -352,6 +363,7 @@ class FsView(object):
             load_tree=request.resource_url(context, '@@_load_tree_'),
             load_fs_properties=request.resource_url(context, '@@_load_fs_properties_'),
             load_item_properties=request.resource_url(context, '@@_load_item_properties_'),
+            validate_files=request.resource_url(context, '@@_validate_files_'),
         )
 
     @view_config(
@@ -407,24 +419,25 @@ class FsView(object):
         request_method='POST'
     )
     def upload(self):
-        data = self.request.POST
-        self.validator.inp = data
-        overwrite = data.get('overwrite', False)
-        keys = ('path', )
-        func = functools.partial(
-            self.worker.upload,
-            data=data,
-            overwrite=overwrite
-        )
-        resp = pym.resp.build_json_response(
-            lgg=self.lgg,
-            validator=self.validator,
-            keys=keys,
-            func=func,
-            request=self.request,
-            die_on_error=False
-        )
-        return json_serializer(resp.resp)
+        return 'ok'
+        # data = self.request.POST
+        # self.validator.inp = data
+        # overwrite = data.get('overwrite', False)
+        # keys = ('path', )
+        # func = functools.partial(
+        #     self.worker.upload,
+        #     data=data,
+        #     overwrite=overwrite
+        # )
+        # resp = pym.resp.build_json_response(
+        #     lgg=self.lgg,
+        #     validator=self.validator,
+        #     keys=keys,
+        #     func=func,
+        #     request=self.request,
+        #     die_on_error=False
+        # )
+        # return json_serializer(resp.resp)
 
     @view_config(
         name='_ls_',
@@ -557,6 +570,27 @@ class FsView(object):
         keys = ('path', 'name')
         func = functools.partial(
             self.worker.load_item_properties
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_validate_files_',
+        renderer='string',
+        request_method='POST'
+    )
+    def validate_files(self):
+        self.validator.inp = self.request.json_body
+        keys = ('path', 'files')
+        func = functools.partial(
+            self.worker.validate_files
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

@@ -28,7 +28,7 @@ var require = {
         , 'ng-ui-router':    'static-pym/vendor/angular-ui-router/release/angular-ui-router.min'
         , 'moment':          'static-pym/vendor/moment/moment.min'
         , 'angular-moment':  'static-pym/vendor/angular-moment/angular-moment.min'
-        , 'ng-fup':          'static-pym/vendor/angular-file-upload/angular-file-upload.min'
+        , 'ng-fup':          'static-pym/bower_components/ng-file-upload/angular-file-upload.min'
         , 'pym':             'static-pym/app'
         , 'pym-v':           'static-pym/vendor'
         , 'ccg':             'static-ccg/app'

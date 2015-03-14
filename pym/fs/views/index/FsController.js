@@ -7,6 +7,15 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
 
     var ctrl = this;
 
+    var FILE_STATE_NEW               =   0,
+        FILE_STATE_VALIDATING        =  10,
+        FILE_STATE_VALIDATION_OK     =  20,
+        FILE_STATE_VALIDATION_ERROR  = -20,
+        FILE_STATE_UPLOADING         =  30,
+        FILE_STATE_UPLOAD_OK         =  40,
+        FILE_STATE_UPLOAD_ERROR      = -40,
+        FILE_STATE_UPLOAD_CANCELED   = -100;
+
 
     var FsService = {
         createDirectory: function (path, dirName) {
@@ -162,6 +171,137 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             return $window.location.href.replace(/@@_br_/, s);
         },
 
+        /**
+         * Performs upload of a file and returns promise
+         * @param file
+         * @returns {*}
+         */
+        upload: function (path, file, overwrite) {
+            var self = this,
+                uploadConf = {
+                    url: RC.urls.upload,
+                    file: file.file,
+                    data: {
+                        path: this.pathToStr(path),
+                        overwrite: overwrite
+                    }
+
+                    /*
+                    method: 'POST', // 'POST' or 'PUT', default POST
+
+                    headers: {}, // {'Authorization': 'xxx'} only for html5
+
+                    fileName: null, //'doc.jpg' or ['1.jpg', '2.jpg', ...],  to modify the name of the file(s)
+
+                    // file formData name ('Content-Disposition'), server side request form name could be
+                    // an array  of names for multiple files (html5). Default is 'file'
+                    fileFormDataName: 'file', // 'myFile' or ['file[0]', 'file[1]', ...],
+
+                    // map of extra form data fields to send along with file. each field will be sent as a form field.
+                    // The values are converted to json string or jsob blob depending on 'sendObjectsAsJsonBlob' option.
+                    fields: null, // {key: $scope.myValue, ...},
+
+                    // if the value of a form field is an object it will be sent as 'application/json' blob
+                    // rather than json string, default false.
+                    sendObjectsAsJsonBlob: false, // true|false,
+
+                    // customize how data is added to the formData. See #40#issuecomment-28612000 for sample code.
+                    formDataAppender: function(formData, key, val){},
+
+                    // data will be sent as a separate form data field called "data". It will be converted to json string
+                    // or jsob blob depending on 'sendObjectsAsJsonBlob' option
+                    data: {},
+
+                    withCredentials: false, //true|false,
+
+                    // ... and all other angular $http() options could be used here.
+                    */
+                },
+                p;
+
+            p = $upload.upload(uploadConf);
+            file.uploadPromise = p;
+            file.state = FILE_STATE_UPLOADING;
+            return p;
+
+            /* then promise (note that returned promise doesn't have progress, xhr and cancel functions. */
+            // var promise = upload.then(success, error, progress);
+
+            /* cancel/abort the upload in progress. */
+            //upload.abort();
+
+            /* alternative way of uploading, send the file binary with the file's content-type.
+            Could be used to upload files to CouchDB, imgur, etc... html5 FileReader is needed.
+            It could also be used to monitor the progress of a normal http post/put request.
+            Note that the whole file will be loaded in browser first so large files could crash the browser.
+            You should verify the file size before uploading with $upload.http().
+            */
+            //$upload.http({...})  // See 88#issuecomment-31366487 for sample code.
+        },
+
+        /**
+         * Validates queue on server side.
+         *
+         * Put each file with state VALIDATING in one request. Response data must
+         * be a hash: key is file's key, value is 'ok' or validation message.
+         * Communication with server is a POST request, on success we set the state
+         * of each file as responded. On error, we set state to UPLOAD_ERROR.
+         *
+         * @param {list} path - Path as list of nodes.
+         * @param {object} queue - Dict of instances of File.
+         */
+        validateFiles: function (path, queue) {
+            var httpConfig = {}, postData = {},
+                ff = [];
+            $log.log('queue to validate', queue);
+            angular.forEach(queue, function (v) {
+                if (v.state === FILE_STATE_VALIDATING) {
+                    ff.push(
+                        {
+                            key: v.key,
+                            name: v.file.name,
+                            size: v.file.size,
+                            mime_type: v.file.type
+                        }
+                    );
+                }
+            });
+            postData.path = this.pathToStr(path);
+            postData.files = ff;
+            return $http.post(RC.urls.validate_files, postData, httpConfig)
+            .then(function (resp) {
+                if (resp.data.ok) {
+                    angular.forEach(resp.data.data, function (v, k) {
+                        if (v === 'ok') {
+                            queue[k].state = FILE_STATE_VALIDATION_OK;
+                        }
+                        else {
+                            queue[k].state = FILE_STATE_VALIDATION_ERROR;
+                            queue[k].validationMessage = v;
+                        }
+                    });
+                }
+                else {
+                    PYM.growl_ajax_resp(resp.data);
+                    angular.forEach(queue, function (v, k) {
+                        if (v.state === FILE_STATE_VALIDATING) {
+                            queue[k].state = FILE_STATE_VALIDATION_ERROR;
+                            queue[k].validationMessage = 'Unknown error';
+                        }
+                    });
+                }
+                return resp;
+            }, function (result) {
+                angular.forEach(queue, function (v, k) {
+                    if (v.state === FILE_STATE_VALIDATING) {
+                        queue[k].state = FILE_STATE_VALIDATION_ERROR;
+                        queue[k].validationMessage = 'Network error';
+                    }
+                });
+                return result;
+            });
+        },
+
         pathToStr: function (path) {
             var pp = [];
             angular.forEach(path, function (x) {
@@ -295,6 +435,10 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
     };
 
 
+    ctrl.startUpload = function () {
+        ctrl.FileUploader.upload(ctrl.FileTree.path, ctrl.GlobalOptions.overwrite);
+    };
+
 
     /*
      * Tools menu
@@ -359,13 +503,156 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
         }
     };
 
+    function PymFile(file) {
+        this.file = file;
+        this.state = 0;
+        this.key = null;
+        this.progress = 0;
+        this.validationPromise = null;
+        this.validationMessage = null;
+        this.uploadPromise = null;
+    }
+
+    ctrl.FileUploader = {
+        files: [],
+        rejectedFiles: [],
+        isDropAvailable: null,
+        queue: {},
+        uploads: [],
+
+        validate: function ($file) {
+            $log.log('Validating file', $file);
+            if ($file.type === 'audio/x-ape') return false;
+            return true;
+        },
+
+        validateHere: function (f) {
+            // TODO Check quota. If violation, set state and message, if ok, keep state as VALIDATING
+        },
+
+        enqueue: function (files) {
+            var self = this,
+                i, imax, f,
+                myQueue = {};
+            if (! files.length) { return; }
+            for (i=0, imax=files.length; i<imax; i++) {
+                f = new PymFile(files[i]);
+                if (self.queue[files[i].name]) {
+                    f.state = FILE_STATE_VALIDATION_ERROR;
+                    f.validationMessage = 'File with this name already in queue';
+                    f.key = f.file.name + new Date();
+                }
+                else {
+                    f.state = FILE_STATE_VALIDATING;
+                    self.validateHere(f);
+                    f.key = f.file.name;
+                }
+                myQueue[f.key] = f;
+                self.queue[f.key] = f;
+            }
+            FsService.validateFiles(ctrl.FileTree.path, myQueue);
+        },
+
+        cancel: function (file) {
+            file.uploadPromise.abort();
+            file.state = FILE_STATE_UPLOAD_CANCELED;
+        },
+
+        fileDropped: function ($files, $event, $rejectedFiles) {
+            this.enqueue($files);
+        },
+
+        fileSelected: function ($files, $event) {
+            $log.log('selected', $files, this.files, $event);
+            this.enqueue($files);
+        },
+
+        /**
+         * Checks given mime-type against pattern from ``allow`` and ``deny``
+         * and returns true if mime-type is allowed, false otherwise.
+         */
+        checkType: function (ty) {
+            var self = this,
+                i, imax, pat, good;
+            if (! ty) {ty = 'application/octet-stream';}
+            ty = ty.split('/');
+            $log.log(ty);
+            // Is given mime type allowed?
+            good = false;
+            for (i=0, imax=self.allow.length; i<imax; i++) {
+                pat = self.allow[i];
+                if (pat.search(/\*/) > -1 && pat.search(/\.\*/) === -1) {
+                    pat = pat.replace(
+                        /\*/g,
+                        '.*'
+                    );
+                }
+                pat = pat.split('/');
+                if (ty[0].search(pat[0]) > -1 && ty[1].search(pat[1]) > -1) {
+                    good = true;
+                    break;
+                }
+            }
+            if (! good) {return false;}
+            // Is given mime type denied?
+            for (i=0, imax=self.deny.length; i<imax; i++) {
+                pat = self.deny[i];
+                if (pat.search(/\*/) > -1 && pat.search(/\.\*/) === -1) {
+                    pat = pat.replace(
+                        /\*/g,
+                        '.*'
+                    );
+                }
+                pat = pat.split('/');
+                if (ty[0].search(pat[0]) > -1 || ty[1].search(pat[1]) > -1) {
+                    good = false;
+                    break;
+                }
+            }
+            return good;
+        },
+
+        checkSize: function (sz) {
+            return (sz >= this.minSize && sz <= this.maxSize);
+        },
+
+        cbProgress: function (evt) {
+            var n = parseInt(100.0 * evt.loaded / evt.total);
+            $log.log('progress: ' + n + '% file :'+ evt.config.file.name);
+            $log.log('progress-evt: ', evt);
+            $log.log('progress-this: ', this);
+            this.progress = n;
+        },
+
+        cbSuccess: function (data, status, headers, config) {
+            // file is uploaded successfully
+            $log.log('file ' + config.file.name + 'is uploaded successfully. Response: ' + data);
+            this.state = FILE_STATE_UPLOAD_OK;
+        },
+
+        upload: function (path, overwrite) {
+            var self = this,
+                p,
+                fProgress, fSuccess;
+            angular.forEach(self.queue, function(f) {
+                if (f.state === FILE_STATE_VALIDATION_OK) {
+                    $log.log('starting upload of', f.file.name, f);
+                    // Bind the callbacks to the individual PymFile, so that
+                    // their 'this' points to the PymFile instance.
+                    fProgress = angular.bind(f, self.cbProgress);
+                    fSuccess = angular.bind(f, self.cbSuccess);
+                    p = FsService.upload(path, f, overwrite)
+                        .progress(fProgress)
+                        .success(fSuccess);
+                }
+            });
+        },
+    };
 
     ctrl.FileBrowser = {
         rc: {},
         path: [],
         includeDeleted: false,
-        files: [],
-        rejectedFiles: [],
         data: [],
         api: null,
 
@@ -437,112 +724,6 @@ function ($scope,   $http,   $q,   $window,   $upload,   RC,   T,   GridTools,  
             this.loadItems(rc.rootPath);
             this.windowResized = angular.bind(this, this.cbWindowResized);
         },
-
-        /**
-         * Checks given mime-type against pattern from ``allow`` and ``deny``
-         * and returns true if mime-type is allowed, false otherwise.
-         */
-        checkType: function (ty) {
-            var self = this,
-                i, imax, pat, good;
-            if (! ty) {ty = 'application/octet-stream';}
-            ty = ty.split('/');
-            $log.log(ty);
-            // Is given mime type allowed?
-            good = false;
-            for (i=0, imax=self.allow.length; i<imax; i++) {
-                pat = self.allow[i];
-                if (pat.search(/\*/) > -1 && pat.search(/\.\*/) === -1) {
-                    pat = pat.replace(
-                        /\*/g,
-                        '.*'
-                    );
-                }
-                pat = pat.split('/');
-                if (ty[0].search(pat[0]) > -1 && ty[1].search(pat[1]) > -1) {
-                    good = true;
-                    break;
-                }
-            }
-            if (! good) {return false;}
-            // Is given mime type denied?
-            for (i=0, imax=self.deny.length; i<imax; i++) {
-                pat = self.deny[i];
-                if (pat.search(/\*/) > -1 && pat.search(/\.\*/) === -1) {
-                    pat = pat.replace(
-                        /\*/g,
-                        '.*'
-                    );
-                }
-                pat = pat.split('/');
-                if (ty[0].search(pat[0]) > -1 || ty[1].search(pat[1]) > -1) {
-                    good = false;
-                    break;
-                }
-            }
-            return good;
-        },
-        checkSize: function (sz) {
-            return (sz >= this.minSize && sz <= this.maxSize);
-        },
-        uploader: null,
-        upload: function () {
-            var self = this,
-                i, imax, f,
-                allowedFiles = [], deniedFiles = [];
-            for (i=0, imax=self.files.length; i<imax; i++) {
-                f = self.files[i];
-                if (! self.checkType(f.type)) {
-                    deniedFiles.push([f, '${_("File type not allowed")}']);
-                    continue;
-                }
-                if (! self.checkSize(f.size)) {
-                    deniedFiles.push([f, '${_("File too large")}']);
-                    continue;
-                }
-                allowedFiles.push(f);
-            }
-            if (deniedFiles.length) {
-                var m = [];
-                for (i=0, imax=deniedFiles.length; i<imax; i++) {
-                    m.push('<p>' + deniedFiles[i][0].name + ': ' + deniedFiles[i][1] + '</p>');
-                }
-                PYM.growl({kind: 'warn', text: m.join('')});
-            }
-            if (allowedFiles.length) {
-                self.uploader = $upload.upload({
-                    url: RC.urls.upload, // upload.php script, node.js route, or servlet url
-                    //method: 'POST' or 'PUT',
-                    //headers: {'Authorization': 'xxx'}, // only for html5
-                    //withCredentials: true,
-                    data: {
-                        path: self.rc.tree.pathToStr(),
-                        overwrite: self.overwrite
-                    },
-                    file: allowedFiles // single file or a list of files. list is only for html5
-                    //fileName: 'doc.jpg' or ['1.jpg', '2.jpg', ...] // to modify the name of the file(s)
-                    //fileFormDataName: myFile, // file formData name ('Content-Disposition'), server side request form name
-                    // could be a list of names for multiple files (html5). Default is 'file'
-                    //formDataAppender: function(formData, key, val){}  // customize how data is added to the formData.
-                    // See #40#issuecomment-28612000 for sample code
-
-                }).progress(function (evt) {
-                    $log.log('progress: ' + parseInt(100.0 * evt.loaded / evt.total) + '% file :', evt.config.file);
-                }).success(function (data, status, headers, config) {
-                    // file is uploaded successfully
-                    $log.log('file ', config.file, ' is uploaded successfully. Response: ', data);
-                    PYM.growl_ajax_resp(data);
-                    if (data.ok) {
-                        // TODO
-                    }
-                    self.ls();
-                });
-                //.error(...)
-                //.then(success, error, progress); // returns a promise that does NOT have progress/abort/xhr functions
-                //.xhr(function(xhr){xhr.upload.addEventListener(...)}) // access or attach event listeners to
-                //the underlying XMLHttpRequest
-            }
-        }
     };
 
     var nodeIdTpl = '<div class="ui-grid-cell-contents"><span tooltip-trigger="click" tooltip-append-to-body="true" tooltip-html-unsafe="{{row.entity.id}}">{{row.entity.id}}</span></div>';

@@ -107,10 +107,12 @@ ${parent.scripts()}
                     <li class="divider"></li>
                     <li>
                         <div ng-file-select
-                             ng-file-change="fs.FileBrowser.upload()"
-                             ng-model="fs.FileBrowser.files"
+                             ng-model="fs.FileUploader.files"
+                             ng-model-rejected="fs.FileUploader.rejectedFiles"
+                             ng-file-change="fs.FileUploader.fileSelected($files, $event)"
                              ng-multiple="true"
-                             multiple="multiple"
+                             ng-capture="camera"
+                             ng-accept="fs.FileUploader.validate($file)"
                              class="anchor"
                             >
                             <i class="fa fa-fw fa-upload"></i> ${_("Upload")}
@@ -168,8 +170,32 @@ ${parent.scripts()}
                     </li>
                 </ul>
             </div>
+        </div>
+    </div>
 
-
+    <div class="row" ng-cloak>
+        <div class="col-md-4">
+            <button class="btn btn-default" ng-click="fs.startUpload()">Start Upload</button>
+        </div>
+        <div class="col-md-8">
+            <table class="table">
+                <tbody>
+                        <tr ng-repeat-start="(k, f) in fs.FileUploader.queue">
+                            <td>{{f.state}}</td>
+                            <td>{{f.file.name}}</td>
+                            <td class="align-right">{{f.file.size|number:0}}</td>
+                            <td>{{f.file.type}}</td>
+                            <td ng-if="f.validationMessage">{{f.validationMessage}}</td>
+                            <td ng-if="f.uploadMessage">{{f.uploadMessage}}</td>
+                        </tr>
+                        <tr ng-repeat-end ng-if="f.state >= 20 && f.state < 40">
+                            <td></td>
+                            <td><progressbar class="progress-striped active progress-bar-striped" value="f.progress">{{f.progress}} %</progressbar></td>
+                            <td><button class="btn btn-warn btn-xs" ng-click="fs.FileUploader.cancel(f)">Cancel</button></td>
+                            <td></td>
+                        </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -221,12 +247,16 @@ ${parent.scripts()}
             </block-container>
             <block-splitter on-splitter-stop="fs.FileBrowser.windowResized" size="5"></block-splitter>
             <block-container>
-                <div ng-file-drop ng-file-change="fs.FileBrowser.upload()"
-                     ng-model="fs.FileBrowser.files"
-                     ng-rejected-file-model="fs.FileBrowser.rejectedFiles"
+                <div ng-file-drop
+                     ng-model="fs.FileUploader.files"
+                     ng-model-rejected="fs.FileUploader.rejectedFiles"
+                     ng-file-change="fs.FileUploader.fileDropped($files, $event, $rejectedFiles)"
                      ng-multiple="true"
                      allow-dir="true"
-                     accept="*/*"
+                     ng-accept="fs.FileUploader.validate($file)"
+                     drop-available="fs.FileUploader.isDropAvailable"
+                     stop-propagation="false"
+                     hide-on-drop-not-available="false"
                      class="drop-box form-control"
                      drag-over-class="{accept:'dragover', reject:'dragover-err', delay:100}"
                     >
@@ -242,6 +272,7 @@ ${parent.scripts()}
                 </div>
             </block-container>
         </flexy-layout>
+        <p ng-no-file-drop>File Drag/drop is not supported</p>
     </div>
 </div>
 
