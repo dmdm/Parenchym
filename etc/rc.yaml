@@ -168,8 +168,8 @@ pyramid.debug_routematch: false
 
 # We can use path names or asset specs.
 # If we use asset specs throughout, we do not need to define dirs here.
-### mako.directories :
-### - pym:templates
+mako.directories :
+- '/home/dm/myprojects/Parenchym/Parenchym/client/src/app'
 
 # If module_directory is empty, compiled templates are stored in memory.
 mako.module_directory : "{here}/var/cache/mako"

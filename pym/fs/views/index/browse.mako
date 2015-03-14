@@ -49,7 +49,8 @@ ${parent.styles()}
         'ui.grid', 'ui.grid.selection', 'ui.grid.resizeColumns', 'ui.grid.edit', 'ui.grid.rowEdit', 'ui.grid.cellNav',
         'ui.router',
         'ui.tree',
-        'flexyLayout'
+        'flexyLayout',
+        'pym.fs'
     );
 </%block>
 <%block name="scripts">
@@ -85,7 +86,7 @@ ${parent.scripts()}
 
 
 
-<div ng-controller="FsController as fs" ng-cloak>
+<div ng-controller="pymFsController as fs" ng-cloak>
     <div class="row">
         <div class="col-md-12">
 
@@ -174,28 +175,53 @@ ${parent.scripts()}
     </div>
 
     <div class="row" ng-cloak>
-        <div class="col-md-4">
-            <button class="btn btn-default" ng-click="fs.startUpload()">Start Upload</button>
-        </div>
-        <div class="col-md-8">
-            <table class="table">
-                <tbody>
-                        <tr ng-repeat-start="(k, f) in fs.FileUploader.queue">
-                            <td>{{f.state}}</td>
-                            <td>{{f.file.name}}</td>
-                            <td class="align-right">{{f.file.size|number:0}}</td>
-                            <td>{{f.file.type}}</td>
-                            <td ng-if="f.validationMessage">{{f.validationMessage}}</td>
-                            <td ng-if="f.uploadMessage">{{f.uploadMessage}}</td>
-                        </tr>
-                        <tr ng-repeat-end ng-if="f.state >= 20 && f.state < 40">
-                            <td></td>
-                            <td><progressbar class="progress-striped active progress-bar-striped" value="f.progress">{{f.progress}} %</progressbar></td>
-                            <td><button class="btn btn-warn btn-xs" ng-click="fs.FileUploader.cancel(f)">Cancel</button></td>
-                            <td></td>
-                        </tr>
-                </tbody>
-            </table>
+        <div class="col-md-12">
+            <section class="pym-fs-uploader">
+                <header>
+                    <button class="btn btn-primary" ng-click="fs.startUpload()">Start</button>
+                    <button class="btn btn-danger" ng-click="fs.cancelUpload()"><i class="fa fa-trash" style="font-weight: bold;"></i> All</button>
+                    <button class="btn btn-default" ng-click="fs.minimaxWindow()"><i class="fa fa-chevron-up fa-fw"></i></button>
+                    <progressbar class="progress-striped active progress-bar-striped" value="fs.totalProgress">{{fs.totalProgress}} %</progressbar>
+                </header>
+                <div class="body">
+                    <table class="table table-condensed table-responsive">
+                        <tbody>
+                            <tr ng-repeat-start="(k, f) in fs.FileUploader.queue">
+                                <td title="{{f.stateCaption}}">
+                                    {{f.state}}
+                                    <i class="fa"
+                                       ng-class="{
+                                            'fa-bicycle': f.state == 10,
+                                            'fa-chain text-info': f.state == 20,
+                                            'fa-chain-broken text-danger': f.state == -20,
+                                            'fa-car': f.state == 30,
+                                            'fa-check text-success': f.state == 40,
+                                            'fa-bug text-danger': f.state == -40,
+                                            'fa-remove text-danger': f.state == -100
+                                       }"
+                                        ></i>
+                                </td>
+                                <td>
+                                    {{f.file.name}}
+                                    <button class="btn btn-xs btn-default" ng-click="fs.FileUploader.cancel(f)"><i class="fa fa-trash-o text-danger" style="font-weight: bold;"></i></button>
+                                </td>
+                                <td class="align-right">{{f.file.size|number:0}}</td>
+                                <td>{{f.file.type}}</td>
+                                <td ng-if="f.validationMessage" class="text-danger">{{f.validationMessage}}</td>
+                                <td ng-if="f.uploadMessage" class="text-danger">{{f.uploadMessage}}</td>
+                            </tr>
+                            <tr ng-repeat-end ng-if="f.state >= 20 && f.state < 40">
+                                <td></td>
+                                <td><progressbar class="progress-striped active progress-bar-striped progress-no-margin" value="f.progress">{{f.progress}} %</progressbar></td>
+                                <td></td>
+                                <td></td>
+                                <td ng-if="f.validationMessage"></td>
+                                <td ng-if="f.uploadMessage"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -289,11 +315,16 @@ function( doc,                   angular,  PYM,       PymApp) {
 
 
 
+    <%include file="/fs/fs.js" args="parent=self" />
+    <%include file="/fs/fs-const.js" args="parent=self" />
+    <%include file="/fs/fs-service.js" args="parent=self" />
+    <%include file="/fs/uploader-service.js" args="parent=self" />
+    <%include file="/fs/uploader-controller.js" args="parent=self" />
+
     <%include file="FsPropertiesDlgController.js" args="parent=self" />
     <%include file="ItemPropertiesDlgController.js" args="parent=self" />
     <%include file="FsController.js" args="parent=self" />
 
-    return FsController;
 });
 
 </script>

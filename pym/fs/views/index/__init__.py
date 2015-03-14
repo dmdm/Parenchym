@@ -257,10 +257,13 @@ class Worker(object):
             if fil == 'dirs' and n.mime_type != MIME_TYPE_DIRECTORY:
                 return
             # Do it
-            x = {'id': n.id, 'title': n.title, 'name': n.name, 'nodes': [], 'sortix': n.sortix}
+            x = {'id': n.id, 'title': n.title, 'name': n.name, 'nodes': [],
+                'sortix': n.sortix, 'is_deleted': n.is_deleted()}
             twig.append(x)
             if n.has_children(include_deleted=include_deleted):
                 for cn in n.children.values():
+                    if cn.is_deleted() and not include_deleted:
+                        continue
                     _load_twig(cn, x['nodes'])
                 x['nodes'].sort(key=lambda y: (y['sortix'], y['title']))
 

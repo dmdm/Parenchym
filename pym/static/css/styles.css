@@ -6393,3 +6393,40 @@ body > footer {
 .flexy-layout .ghost {
   background: #777777;
   opacity: 0.5; }
+
+/*
+ * pym.Fs.Uploader
+ */
+.progress-no-margin {
+  margin: 0; }
+
+.pym-fs-uploader-total-progress {
+  margin-bottom: 0;
+  display: inline-block; }
+
+.pym-fs-uploader {
+  margin: 5px 0;
+  border-radius: 4px;
+  border: 1px solid #ccc; }
+  .pym-fs-uploader header {
+    padding: 5px 10px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex; }
+    .pym-fs-uploader header .btn {
+      padding: 1px 5px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 3px;
+      margin-right: 10px; }
+    .pym-fs-uploader header .progress {
+      padding: 1px 5px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 3px;
+      margin-bottom: 0;
+      height: 22px; }
+  .pym-fs-uploader .body {
+    max-height: 25vh;
+    overflow: auto;
+    padding: 5px 10px; }
