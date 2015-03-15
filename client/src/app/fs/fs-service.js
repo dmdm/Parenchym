@@ -42,14 +42,14 @@ function ($log,   $http,   $window,   RC) {
          * Also reloads tree and browser!
          */
         toggleIncludeDeleted: function () {
-            var pp = this.path, p0 = pp.slice(0);
+            var pp = this.path, p0 = pp[0];
             this.includeDeleted = !this.includeDeleted;
             if (this.getLeafNode().is_deleted && !this.includeDeleted) {
                 while (pp.length && pp[pp.length-1].is_deleted) {
                     pp.pop();
                 }
                 // Make sure, we at least stay on the root node
-                if (! pp.length) { pp = [p0]; }
+                if (! pp.length) { pp.push(p0); }
                 this.setPath(pp);
             }
             else {

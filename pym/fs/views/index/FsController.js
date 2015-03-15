@@ -113,11 +113,6 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     };
 
 
-    ctrl.startUpload = function () {
-        ctrl.FileUploader.upload(ctrl.FileTree.path, ctrl.GlobalOptions.overwrite);
-    };
-
-
     /*
      * Tools menu
      */

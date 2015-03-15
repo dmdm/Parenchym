@@ -1,25 +1,84 @@
 angular.module('pym.fs').controller('pymFsUploaderController',
-        ['$log', 'pymFsService', 'pymFsUploaderService', 'FILE_STATES',
-function ($log,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
+        ['$scope', '$window', '$log', 'T', 'pymFsService', 'pymFsUploaderService', 'FILE_STATES',
+function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
 
     "use strict";
 
     var ctrl = this;
 
-
+    // Storage for $uploader service
+    // Not sure if we need these...
     ctrl.files = [];
     ctrl.rejectedFiles = [];
     ctrl.isDropAvailable = null;
+
+    // Enqueued files to validate and upload
     ctrl.queue = {};
-    ctrl.uploads = [];
+    // Several counters, updated by countActiveUploads watcher
+    // Active means either validating or uploading
+    ctrl.activeUploads = 0;
+    // Validation errors + upload errors
+    ctrl.errors = 0;
+    // Transferring data
+    ctrl.uploading = 0;
+    // total progress
+    ctrl.totalProgress = 0;
+
+    ctrl.windowMaximized = true;
+    ctrl.windowIsOpen = false;
+
+    ctrl.countActiveUploads = function () {
+        var n = 0, e = 0, u = 0, p = 0, len = 0;
+        angular.forEach(ctrl.queue, function (f) {
+            if (f.isActive) { ++n; }
+            if (f.hasError) { ++e; }
+            if (f.isUploading) { ++u; }
+            p += f.progress;
+            ++len;
+        });
+        ctrl.activeUploads = n;
+        ctrl.errors = e;
+        ctrl.uploading = u;
+        if (len !== 0) {
+            ctrl.totalProgress = parseInt(p / len);
+        }
+    };
+
+    $scope.$watch(ctrl.countActiveUploads, function (newValue, oldValue) {
+        angular.noop();
+    });
+
+    ctrl.minimaxWindow = function () {
+        ctrl.windowMaximized = !ctrl.windowMaximized;
+    };
+
+    ctrl.closeWindow = function () {
+        var prop;
+        if (ctrl.activeUploads) {
+            if (! ctrl.cancelAll()) {
+                return;
+            }
+        }
+        for (prop in ctrl.queue) {
+            if (ctrl.queue.hasOwnProperty(prop)) {
+                delete ctrl.queue[prop];
+            }
+        }
+        ctrl.windowIsOpen = false;
+    };
 
     ctrl.fileDropped = function ($files, $event, $rejectedFiles) {
-        this.enqueue($files);
+        $log.log('dropped', $files, this.files, $event);
+        if ($files && $files.length > 0) {
+            this.enqueue($files);
+        }
     };
 
     ctrl.fileSelected = function ($files, $event) {
         $log.log('selected', $files, this.files, $event);
-        this.enqueue($files);
+        if ($files && $files.length > 0) {
+            this.enqueue($files);
+        }
     };
 
     ctrl.validate = function ($file) {
@@ -31,7 +90,8 @@ function ($log,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
         var self = this,
             i, imax, f,
             myQueue = {};
-        if (! files.length) { return; }
+        if (! (files && files.length > 0)) { return; }
+        ctrl.windowIsOpen = true;
         for (i=0, imax=files.length; i<imax; i++) {
             f = new pymFsUploaderService.createPymFile(files[i]);
             if (self.queue[files[i].name]) {
@@ -56,19 +116,19 @@ function ($log,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
 
     ctrl.cbProgress = function (evt) {
         var n = parseInt(100.0 * evt.loaded / evt.total);
-        $log.log('progress: ' + n + '% file :'+ evt.config.file.name);
-        $log.log('progress-evt: ', evt);
-        $log.log('progress-this: ', this);
+        //$log.log('progress: ' + n + '% file :'+ evt.config.file.name);
+        //$log.log('progress-evt: ', evt);
+        //$log.log('progress-this: ', this);
         this.progress = n;
     };
 
     ctrl.cbSuccess = function (data, status, headers, config) {
         // file is uploaded successfully
-        $log.log('file ' + config.file.name + 'is uploaded successfully. Response: ' + data);
+        //$log.log('file ' + config.file.name + 'is uploaded successfully. Response: ' + data);
         this.setState(FILE_STATES.UPLOAD_OK);
     };
 
-    ctrl.upload = function () {
+    ctrl.startUpload = function () {
         var self = this,
             p,
             fProgress, fSuccess;
@@ -88,8 +148,17 @@ function ($log,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
     };
 
     ctrl.cancel = function (file) {
-        file.uploadPromise.abort();
-        file.setState(FILE_STATES.UPLOAD_CANCELED);
+        file.abort();
+    };
+
+    ctrl.cancelAll = function () {
+        if (ctrl.activeUploads) {
+            if (! $window.confirm(T.confirm_cancel_all_uploads)) { return false; }
+        }
+        angular.forEach(ctrl.queue, function (f) {
+            f.abort();
+        });
+        return true;
     };
 
     /**
@@ -141,24 +210,25 @@ function ($log,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
         return (sz >= this.minSize && sz <= this.maxSize);
     };
 
-    function init() {
-        var i, f;
-        for (i=0; i<10; i++) {
-            f = new pymFsUploaderService.createPymFile({
-                name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
-                size: 6523856653,
-                type: 'stuff/sample'
-                            });
-            f.setState(FILE_STATES.UPLOAD_CANCELED);
-            f.validationMessage = 'blah bölddf erwe';
-            ctrl.queue[i] = f;
-        }
-    }
-
-
-    /*
-     * Run immediately
-     */
-    init();
+    //function init() {
+    //    var i, f;
+    //    for (i=0; i<10; i++) {
+    //        f = new pymFsUploaderService.createPymFile({
+    //            name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
+    //            size: 6523856653,
+    //            type: 'stuff/sample'
+    //                        });
+    //        f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
+    //        f.validationMessage = 'blah bölddf erwe';
+    //        ctrl.queue[i] = f;
+    //    }
+    //    ctrl.windowIsOpen = true;
+    //}
+    //
+    //
+    ///*
+    // * Run immediately
+    // */
+    //init();
 
 }]);

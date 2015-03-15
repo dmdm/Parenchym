@@ -6413,6 +6413,14 @@ body > footer {
     background: #f5f5f5;
     border-bottom: 1px solid #e6e6e6;
     display: flex; }
+    .pym-fs-uploader header .text {
+      vertical-align: middle;
+      height: 22px;
+      padding: 1px 5px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 3px;
+      padding-top: 2px; }
     .pym-fs-uploader header .btn {
       padding: 1px 5px;
       font-size: 12px;
@@ -6425,8 +6433,14 @@ body > footer {
       line-height: 1.5;
       border-radius: 3px;
       margin-bottom: 0;
-      height: 22px; }
+      height: 22px;
+      min-width: 50px;
+      width: 250px; }
+    .pym-fs-uploader header div {
+      margin-right: 10px; }
   .pym-fs-uploader .body {
     max-height: 25vh;
     overflow: auto;
     padding: 5px 10px; }
+    .pym-fs-uploader .body td {
+      white-space: nowrap; }

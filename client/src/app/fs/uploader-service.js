@@ -14,12 +14,25 @@ function ($log,   $upload,   $http,   RC,   FILE_STATES,   FILE_STATE_CAPTIONS) 
         this.validationPromise = null;
         this.validationMessage = null;
         this.uploadPromise = null;
+        this.isActive = false;
+        this.isUploading = false;
+        this.hasError = false;
     }
 
     PymFile.prototype.setState = function(state) {
         this.state = state;
         this.stateCaption = FILE_STATE_CAPTIONS[state];
+        this.isActive = (this.state > FILE_STATES.NEW &&
+            this.state < FILE_STATES.UPLOAD_OK);
+        this.isUploading = (this.state === FILE_STATES.UPLOADING);
+        this.hasError = (this.state > FILE_STATES.UPLOAD_CANCELED &&
+            this.state < FILE_STATES.NEW);
         $log.log('state', state, this.stateCaption, this);
+    };
+
+    PymFile.prototype.abort = function () {
+        if (this.uploadPromise) { this.uploadPromise.abort(); }
+        this.setState(FILE_STATES.UPLOAD_CANCELED);
     };
 
 
@@ -80,7 +93,11 @@ function ($log,   $upload,   $http,   RC,   FILE_STATES,   FILE_STATE_CAPTIONS) 
                 },
                 p;
 
-            p = $upload.upload(uploadConf);
+            p = $upload.upload(uploadConf)
+            .error(function (data, status, headers, config) {
+                file.setState(FILE_STATES.UPLOAD_ERROR);
+                file.validationMessage = data;
+            });
             file.uploadPromise = p;
             file.setState(FILE_STATES.UPLOADING);
             return p;
