@@ -1,3 +1,10 @@
+/*
+ *      KEEP FOR LEGACY CODE
+ *      MODER PARENCHYM DOES NOT NEED IT AND DOES NOT LOAD IT
+ *
+ *      CAVEAT: init_growl() may interfere with PymApp's growler config.
+ */
+
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
@@ -26,7 +33,7 @@
         this.rc = rc;
         this.csrf_token = rc['csrf_token'];
         this.base_url = rc['base_url'];
-        my.init_growl();
+        //my.init_growl();
         my.init_pym(rc);
         //my.init_ajax();
     };
@@ -48,7 +55,6 @@
         );
     };
 
-    /*
     my.init_ajax = function () {
         var that = this;
         $.ajaxSetup({
@@ -76,7 +82,6 @@
             that.growl(resp);
         });
     };
-    */
 
     /**
      * Sort select list by text

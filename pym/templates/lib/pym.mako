@@ -42,7 +42,7 @@ from pprint import pformat
 
 <%def name="growl_flash()">
 % for m in pym.lib.build_growl_msgs(request):
-    PYM.growl( ${m|n} );
+    pym.growler.growl( ${m|n} );
 % endfor
 </%def>
 

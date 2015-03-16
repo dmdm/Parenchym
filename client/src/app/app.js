@@ -1,6 +1,6 @@
 define(PYM_APP_REQUIREMENTS,
-           // ng,      pym/pym
-function (angular, PYM) {
+           // ng
+function (angular) {
     'use strict';
 
     var PymApp = angular.module('PymApp', PYM_APP_INJECTS);
@@ -11,8 +11,39 @@ function (angular, PYM) {
 
     PymApp.config(
         [
-                      '$httpProvider', '$provide', 'uiSelectConfig', '$compileProvider',
-            function ( $httpProvider,   $provide,   uiSelectConfig,   $compileProvider) {
+                     '$provide', '$httpProvider', 'uiSelectConfig', '$compileProvider', 'pymServiceProvider',
+            function ($provide,   $httpProvider,   uiSelectConfig,   $compileProvider,   pymServiceProvider) {
+                /**
+                 * Intercept HTTP errors to growl
+                 */
+                $provide.factory('PymHttpErrorInterceptor',
+                    [
+                        '$q', 'pymService',
+                        function ($q, pym) {
+                            return {
+                                responseError: function (rejection) {
+                                    pym.growler.growl({'kind': 'error', 'title': rejection.status, 'text': rejection.statusText});
+                                    return $q.reject(rejection);
+                                }
+                            };
+                        }
+                    ]
+                );
+                $httpProvider.interceptors.push('PymHttpErrorInterceptor');
+
+
+                /**
+                 * Re-enable the XMLHttpRequest header
+                 */
+                $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+
+                /**
+                 * Configure ui-select
+                 */
+                uiSelectConfig.theme = 'bootstrap';
+
+
                 /**
                  * Disable debug data
                  *
@@ -24,31 +55,23 @@ function (angular, PYM) {
                  */
                 // WTF: Need debug info because of ui-tree: https://github.com/angular-ui-tree/angular-ui-tree/issues/403
                 //$compileProvider.debugInfoEnabled(false);
+
+
                 /**
-                 * Intercept HTTP errors to growl
-                 */
-                $provide.factory('PymHttpErrorInterceptor',
-                    [
-                        '$q',
-                        function ($q) {
-                            return {
-                                responseError: function (rejection) {
-                                    PYM.growl({'kind': 'error', 'title': rejection.status, 'text': rejection.statusText});
-                                    return $q.reject(rejection);
-                                }
-                            };
-                        }
-                    ]
-                );
-                $httpProvider.interceptors.push('PymHttpErrorInterceptor');
-                /**
-                 * Re-enable the XMLHttpRequest header
-                 */
-                $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-                /**
-                 * Configure ui-select
-                 */
-                uiSelectConfig.theme = 'bootstrap';
+                * angular-pnotify aka notificationServiceProvider
+                */
+                pymServiceProvider.setDefaults({
+                    growler: {
+                        delay: 7000,
+                        opacity: 0.9,
+                        styling: 'fontawesome',
+                        buttons: {
+                            closer: true,
+                            sticker: true
+                        },
+                        type: 'error'
+                    }
+                });
             }
         ]
     );
@@ -143,7 +166,7 @@ function (angular, PYM) {
                         if (f.term) {
                             var op, t;
                             op = f.term[0] + f.term[1];
-                            t = f.term.slice(2)
+                            t = f.term.slice(2);
                             console.log('try 1', op, t);
                             if (self.allowedOperators.indexOf(op) < 0) {
                                 op = f.term[0];
@@ -154,7 +177,7 @@ function (angular, PYM) {
                                     t = f.term;
                                 }
                             }
-                            if (op == '!') op = '!like';
+                            if (op === '!') {op = '!like';}
                             fil.push([col.field, op, 'i', t]);
                         }
                     });
@@ -169,11 +192,11 @@ function (angular, PYM) {
                     self.gridDef.pym.pager.currentPage = 1;
                 }
                 self.gridDef.loadItems();
-            }
+            };
 
             Filter.prototype.changed = function (grid) {
                 var self = this;
-                if (this.timer) $timeout.cancel(this.timer);
+                if (this.timer) {$timeout.cancel(this.timer);}
                 this.timer = $timeout(function () {
                     self.buildFilter.call(self, grid);
                 }, this.delay);
@@ -181,7 +204,7 @@ function (angular, PYM) {
 
             Filter.prototype.clear = function () {
                 // We might get called before gridApi was published.
-                if (! this.gridDef.api) return;
+                if (! this.gridDef.api) {return;}
                 angular.forEach(this.gridDef.api.grid.columns, function (col) {
                     angular.forEach(col.filters, function (f) {
                         f.term = null;
@@ -193,18 +216,18 @@ function (angular, PYM) {
             Filter.prototype.toggle = function () {
                 console.log('toggling');
                 var self = this;
-                if (self.activationState == 0) {
+                if (self.activationState === 0) {
                     self.activationState = 1;
                 }
-                else if (self.activationState == 1) {
+                else if (self.activationState === 1) {
                     self.activationState = 2;
                 }
-                else if (self.activationState == 2) {
+                else if (self.activationState === 2) {
                     self.activationState = 0;
                 }
                 self.gridDef.api.core.refresh();
                 console.log('new activationState', self.activationState);
-            }
+            };
 
             /**
              * @ngdoc method
@@ -275,7 +298,7 @@ function (angular, PYM) {
 
             Pager.prototype.changed = function () {
                 var p, max = Math.ceil(this.totalItems / this.pageSize);
-                if (this.currentPage == '') return;
+                if (this.currentPage === '') {return;}
                 p = parseInt(this.currentPage);
                 if (! p) { return; }
                 if (p < 1) { p = 1; }
@@ -397,12 +420,12 @@ function (angular, PYM) {
                 angular.forEach(sortColumns, function (col) {
                     self.opts.sortDef.push([col.field, col.sort.direction, col.sort.priority]);
                 });
-                if (! self.opts.sortDef.length) self.opts.sortDef = self.opts.initialSortDef.slice(0);
+                if (! self.opts.sortDef.length) {self.opts.sortDef = self.opts.initialSortDef.slice(0);}
                 self.gridDef.loadItems();
             };
             Sorter.prototype.gridApplyInitialSort = function (isd) {
                 var self = this;
-                if (isd) self.opts.initialSortDef = isd;
+                if (isd) {self.opts.initialSortDef = isd;}
                 angular.forEach(self.opts.initialSortDef, function (sd) {
                     self.gridDef.options.indexedColumnDefs[sd[0]] = {
                         direction: sd[1],
@@ -478,7 +501,7 @@ function (angular, PYM) {
                 });
                 if (RC && RC.col_display_names) {
                     angular.forEach(self.options.columnDefs, function (cd) {
-                        cd['displayName'] = RC.col_display_names[cd.name || cd.field];
+                        cd.displayName = RC.col_display_names[cd.name || cd.field];
                     });
                 }
             }
@@ -502,17 +525,20 @@ function (angular, PYM) {
                 // ``this`` points to the ``pym`` namespace of the gridDef
                 var self = this,
                     params = httpConf.params;
-                if (self.filter) self.filter.applyParams(params);
-                if (self.sorter) self.sorter.applyParams(params);
-                if (self.pager) self.pager.applyParams(params);
+                if (self.filter) {self.filter.applyParams(params);}
+                if (self.sorter) {self.sorter.applyParams(params);}
+                if (self.pager) {self.pager.applyParams(params);}
                 self.loading = true;
                 return $http.get(url, httpConf)
                     .then(function (resp) {
                         var data = resp.data.data;
                         self.loading = false;
                         if (resp.data.ok) {
-                            if (self.pager) self.pager.updateItemCount(
-                                data.total, data.rows.length);
+                            if (self.pager) {
+                                self.pager.updateItemCount(
+                                    data.total, data.rows.length
+                                );
+                            }
                         }
                         return resp;
                     }, function (result) {
@@ -658,6 +684,194 @@ function (angular, PYM) {
                 +'  <div class="spinner"><pym-spinner state="spinner"></pym-spinner></div>'
         };
     });
+
+
+    /**
+     * Wrapper to use pnotify as angular service.
+     */
+    PymApp.provider('pymService', [ function() {
+
+        var log;
+
+        var conf = {
+            growler: {
+                delay: 7000,
+                opacity: 0.9,
+                styling: 'fontawesome',
+                buttons: {
+                    closer: true,
+                    sticker: true
+                },
+                type: 'error'
+            }
+        };
+
+        this.setDefaults = function(defaults) {
+            conf = defaults;
+            return this;
+        };
+
+        var Growler = {
+            stacks: {},
+            defaultStack: false,
+
+            initGrowlerOpts: function(stackName) {
+                var opts = angular.copy(conf.growler);
+
+                if ((stackName || (stackName = this.defaultStack)) &&
+                        stackName in this.stacks) {
+                    opts.stack = this.stacks[stackName].stack;
+                    if (this.stacks[stackName].addclass) {
+                        opts.addclass = ('addclass' in opts
+                            ? opts.addclass + ' '
+                              + this.stacks[stackName].addclass
+                              : this.stacks[stackName].addclass);
+                    }
+                }
+                return opts;
+            },
+
+            setStack: function(name, addclass, stack) {
+                if (angular.isObject(addclass)) {
+                    stack = addclass;
+                    addclass = false;
+                }
+
+                this.stacks[name] = {
+                    stack: stack,
+                    addclass: addclass
+                };
+                return this;
+            },
+            
+            setDefaultStack: function(name) {
+                this.defaultStack = name;
+                return this;
+            },
+
+            notice: function(text, title, stack) {
+                var opts = this.initGrowlerOpts(stack);
+                opts.type = 'notice';
+                opts.title = title;
+                opts.text = text;
+                return this.growl(opts);
+            },
+
+            info: function(text, title, stack) {
+                var opts = this.initGrowlerOpts(stack);
+                opts.type = 'info';
+                opts.title = title;
+                opts.text = text;
+                return this.growl(opts);
+            },
+
+            warn: function(text, title, stack) {
+                var opts = this.initGrowlerOpts(stack);
+                opts.type = 'warn';
+                opts.title = title;
+                opts.text = text;
+                return this.growl(opts);
+            },
+
+            success: function(text, title, stack) {
+                var opts = this.initGrowlerOpts(stack);
+                opts.type = 'success';
+                opts.title = title;
+                opts.text = text;
+                return this.growl(opts);
+            },
+
+            error: function(text, title, stack) {
+                var opts = this.initGrowlerOpts(stack);
+                opts.type = 'error';
+                opts.title = title;
+                opts.text = text;
+                return this.growl(opts);
+            },
+
+            growl: function(msg, stack) {
+                if (! msg.kind) { msg.kind = msg.type ? msg.type : 'notice'; }
+                // Put timestamp into title
+                // We get time as UTC
+                var dt;
+                if (msg.time) {
+                    dt = new Date(Date.UTC(msg.time[0], msg.time[1], msg.time[2], msg.time[3],
+                        msg.time[4], msg.time[5]));
+                }
+                else {
+                    dt = new Date();
+                }
+                if (! msg.title) { msg.title = msg.kind.charAt(0).toUpperCase() + msg.kind.slice(1); }
+                msg.title = msg.title
+                    + '<br><span style="font-weight:normal;font-size:xx-small;">'
+                    + dt.toString()
+                    + '</span>';
+                // Setup type, icon and persistance according to kind
+                switch (msg.kind[0]) {
+                    case 'n':
+                        msg.type = 'notice';
+                        break;
+                    case 'i':
+                        msg.type = 'info';
+                        break;
+                    case 'w':
+                        msg.type = 'warning';
+                        break;
+                    case 'e':
+                        msg.type = 'error';
+                        break;
+                    case 'f':
+                        msg.type = 'error';
+                        break;
+                    case 's':
+                        msg.type = 'success';
+                        break;
+                }
+                msg.hide = ! (msg.kind[0] === 'e' || msg.kind[0] === 'f');
+                msg.buttons = {
+                    closer: true,
+                    sticker: true
+                };
+                msg.history = { menu: true };
+
+                var defaults = this.initGrowlerOpts(stack);
+                var combined = angular.extend(defaults, msg);
+                return new PNotify(combined);
+            },
+
+            growlAjaxResp: function (resp) {
+                var i, imax = resp.msgs.length;
+                for (i = 0; i < imax; i++) {
+                    this.growl(resp.msgs[i]);
+                }
+                if (imax < 1) {
+                    if (resp.ok) {
+                        this.growl({kind: 'success', text: 'Ok'});
+                    }
+                    else {
+                        this.growl({kind: 'warning', text: 'Unspecified error occurred'});
+                    }
+                }
+            }
+        };
+
+
+        this.$get = [ function() {
+
+            return {
+                getConf: function() {
+                    return conf;
+                },
+
+                /**
+                 * Growler API
+                 */
+                growler: Growler
+            };
+
+        }];
+
+    }]);
 
     return PymApp;
 });

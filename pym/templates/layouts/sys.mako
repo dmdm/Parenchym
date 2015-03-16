@@ -25,7 +25,7 @@
         <%block name="require_config">
             ## List the minimal libs that require has to load
             ## Mind to include those that PymApp.config initialises!
-            var PYM_APP_REQUIREMENTS = ['ng', 'pym/pym', 'angular-moment', 'ng-ui-bs', 'ui-select'];
+            var PYM_APP_REQUIREMENTS = ['ng', 'angular-moment', 'ng-ui-bs', 'ui-select', 'pnotify', 'pnotify.buttons', 'pnotify.confirm', 'pnotify.history', 'pnotify.callbacks'];
             ## List the minimal libs that anular has to inject.
             ## Mind to include those that PymApp.config initialises!
             var PYM_APP_INJECTS = ['angularMoment', 'ui.bootstrap', 'ui.select', 'ngSanitize'];
@@ -34,15 +34,6 @@
         </script>
         <%block name="scripts">
             <script src="${request.static_url('pym:static/vendor/requirejs/require.min.js')}"></script>
-##          PYM can and must be initialised even before the page is complete
-            <script>
-            require(['pym/pym'], function(PYM) {
-                PYM.init({
-                    csrf_token: '${request.session.get_csrf_token()}'
-                });
-                //deform.load();
-            });
-            </script>
         </%block>
     </head>
     <body ng-controller="PageCtrl">
@@ -59,11 +50,13 @@
             </div><!-- END #page_content -->
 
         </div><!-- END #page_container -->
+##      Needed to growl the flash messages from server
+        <div ng-controller="GrowlCtrl as gr"></div>
 
         <%include file="pym:templates/layouts/page_footer.mako" />
         <script>
-        require(['ng',     'pym/pym', 'pym/app'],
-        function (angular,  PYM,       PymApp) {
+        require(['ng',     'pym/app'],
+        function (angular,  PymApp) {
             'use strict';
 
             var PageCtrl = PymApp.controller('PageCtrl',
@@ -94,9 +87,11 @@
             }]);
         });
 
-        require(['requirejs/domReady!', 'pym/pym'],
-        function( doc,                   PYM) {
-            ${pym.growl_flash()}
+        require(['requirejs/domReady!', 'ng',    'pym/app'],
+        function( doc,                   angular, PymApp) {
+            var GrowlCtrl = PymApp.controller('GrowlCtrl', ['pymService', function (pym) {
+                ${pym.growl_flash()}
+            }]);
         });
         </script>
     </body>
