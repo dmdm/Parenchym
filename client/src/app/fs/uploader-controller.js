@@ -7,7 +7,6 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
     var ctrl = this;
 
     // Storage for $uploader service
-    // Not sure if we need these...
     ctrl.files = [];
     ctrl.rejectedFiles = [];
     ctrl.isDropAvailable = null;
@@ -210,25 +209,24 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
         return (sz >= this.minSize && sz <= this.maxSize);
     };
 
-    //function init() {
-    //    var i, f;
-    //    for (i=0; i<10; i++) {
-    //        f = new pymFsUploaderService.createPymFile({
-    //            name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
-    //            size: 6523856653,
-    //            type: 'stuff/sample'
-    //                        });
-    //        f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
-    //        f.validationMessage = 'blah bölddf erwe';
-    //        ctrl.queue[i] = f;
-    //    }
-    //    ctrl.windowIsOpen = true;
-    //}
-    //
-    //
-    ///*
-    // * Run immediately
-    // */
-    //init();
+    function init() {
+        var i, f;
+        for (i=0; i<10; i++) {
+            f = new pymFsUploaderService.createPymFile({
+                name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
+                size: 6523856653,
+                type: 'stuff/sample'
+                            });
+            f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
+            f.validationMessage = 'blah bölddf erwe';
+            ctrl.queue[i] = f;
+        }
+        ctrl.windowIsOpen = true;
+    }
+
+    /*
+    * Run immediately
+    */
+    init();
 
 }]);

@@ -42,7 +42,8 @@ ${parent.styles()}
         'ui-grid',
         'ng-ui-router',
         'ui-tree',
-        'flexy-layout'
+        'flexy-layout',
+        'pym/fs/fs.min'
     );
     PYM_APP_INJECTS.push(
         'angularFileUpload',
@@ -320,11 +321,11 @@ function( doc,                   angular,  PYM,       PymApp) {
 
 
 
-    <%include file="/fs/fs.js" args="parent=self" />
-    <%include file="/fs/fs-const.js" args="parent=self" />
-    <%include file="/fs/fs-service.js" args="parent=self" />
-    <%include file="/fs/uploader-service.js" args="parent=self" />
-    <%include file="/fs/uploader-controller.js" args="parent=self" />
+##    <%include file="/fs/fs.js" args="parent=self" />
+##    <%include file="/fs/fs-const.js" args="parent=self" />
+##    <%include file="/fs/fs-service.js" args="parent=self" />
+##    <%include file="/fs/uploader-service.js" args="parent=self" />
+##    <%include file="/fs/uploader-controller.js" args="parent=self" />
 
     <%include file="FsPropertiesDlgController.js" args="parent=self" />
     <%include file="ItemPropertiesDlgController.js" args="parent=self" />

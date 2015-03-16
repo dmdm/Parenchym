@@ -19,6 +19,38 @@ gulp.task('default', function() {
 // ===[ Parenchym ]=======
 
 /**
+ * pym.fs
+ */
+gulp.task('pym-fs', function() {
+    var _src = SRC + 'app/fs/',
+        _dst = DST + 'app/fs/';
+
+    return gulp.src([
+                _src + 'fs.js',
+                _src + 'fs-const.js',
+                _src + 'fs-service.js',
+                _src + 'uploader-service.js',
+                _src + 'uploader-controller.js',
+            ])
+        .pipe(sourcemaps.init())
+            .pipe(concat('fs.js'))
+        .pipe(sourcemaps.write())
+        .pipe(stripDebug())
+        // This will output the non-minified version
+        .pipe(gulp.dest(_dst))
+        // This will minify and rename to foo.min.js
+        .pipe(uglify({mangle: true, }))
+        .pipe(rename({ extname: '.min.js' }))
+        .pipe(gulp.dest(_dst))
+        .on('error', gutil.log);
+});
+
+gulp.task('pym-fs-watch', function () {
+    var _src = SRC + 'app/fs/';
+    gulp.watch(_src + '*.js', ['pym-fs']);
+});
+
+/**
  * app
  */
 gulp.task('app', function() {

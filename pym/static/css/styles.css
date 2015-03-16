@@ -5467,30 +5467,20 @@ tbody.collapse.in {
 /*!
  *   Vendor
  */
-/*
-Author  : Hunter Perrin
-Version : 2.0.0
-Link    : http://sciactive.com/pnotify/
-*/
-/* -- Notice */
 .ui-pnotify {
   top: 25px;
   right: 25px;
   position: absolute;
   height: auto;
-  /* Ensures notices are above everything */
   z-index: 9999; }
 
-/* Hides position: fixed from IE6 */
-/*
 html > body > .ui-pnotify {
-position: fixed;
-}
-  */
+  position: fixed; }
+
 .ui-pnotify .ui-pnotify-shadow {
-  -webkit-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
-  -moz-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
-  box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5); }
+  -webkit-box-shadow: 0 2px 10px rgba(50, 50, 50, 0.5);
+  -moz-box-shadow: 0 2px 10px rgba(50, 50, 50, 0.5);
+  box-shadow: 0 2px 10px rgba(50, 50, 50, 0.5); }
 
 .ui-pnotify-container {
   background-position: 0 0;
@@ -5516,12 +5506,11 @@ position: fixed;
   float: left;
   margin-right: .2em; }
 
-/* Alternate stack initial positioning. */
-.ui-pnotify.stack-topleft, .ui-pnotify.stack-bottomleft {
+.ui-pnotify.stack-bottomleft, .ui-pnotify.stack-topleft {
   left: 25px;
   right: auto; }
 
-.ui-pnotify.stack-bottomright, .ui-pnotify.stack-bottomleft {
+.ui-pnotify.stack-bottomleft, .ui-pnotify.stack-bottomright {
   bottom: 25px;
   top: auto; }
 
@@ -5529,7 +5518,6 @@ position: fixed;
   float: right;
   margin-left: .2em; }
 
-/* -- Pulldown */
 .ui-pnotify-history-container {
   position: absolute;
   top: 0;
@@ -5543,7 +5531,6 @@ position: fixed;
   -webkit-border-top-right-radius: 0;
   -moz-border-top-right-radius: 0;
   border-top-right-radius: 0;
-  /* Ensures history container is above notices. */
   z-index: 10000; }
 
 .ui-pnotify-history-container.ui-pnotify-history-fixed {
