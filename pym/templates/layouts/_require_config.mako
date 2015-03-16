@@ -6,12 +6,11 @@ var require = {
 //        '${request.static_url('pym:static/app/app.min.js')}'
     ]
     , paths: {
-          'jquery':          'static-pym/vendor/jquery/dist/jquery.min'
+          'jquery':          'static-pym/bower_components/jquery/dist/jquery.min'
         , 'jq-ui':           'static-pym/vendor/jquery-ui/ui/minified/jquery-ui.min'
         , 'requirejs':       'static-pym/vendor/requirejs'
         , 'd3':              'static-pym/vendor/d3/d3.min'
-        , 'pnotify':         'static-pym/vendor/pnotify/pnotify.core'
-        , 'pnotify.buttons': 'static-pym/vendor/pnotify/pnotify.buttons'
+        , 'pnotify':         'static-pym/bower_components/pnotify/pnotify.custom.min'
         , 'select2':         'static-pym/vendor/select2/select2.min'
         , 'ng':              'static-pym/vendor/angular/angular'
         , 'ng-resource':     'static-pym/vendor/angular/angular-resource.min'
@@ -38,7 +37,6 @@ var require = {
     , shim: {
           'jq-ui':                                ['jquery']
         , 'select2':                              ['ng']
-        , 'pnotify.buttons':                      ['pnotify']
         , 'ng':                                   {deps: ['jquery'], exports: 'angular'}
         , 'angular':                              {deps: ['jquery'], exports: 'angular'}
         , 'ng-resource':                          ['ng']
@@ -55,6 +53,8 @@ var require = {
         , 'ng-ui-router':                         ['ng']
         , 'ng-fup':                               ['ng']
         , 'google-client':                        ['ng']
+        , 'pym/fs/fs':                            ['ng']
+        , 'pym/fs/fs.min':                        ['ng']
     }
     , waitSeconds: 5
 };
