@@ -74,8 +74,8 @@ function( doc,                   angular,  PYM,       PymApp) {
     PymApp.constant('OIDC_CLIENTS', ${h.json_serializer(oidc_clients)|n});
 
     var OAuthCtrl = PymApp.controller('OAuthCtrl',
-            ['$scope', '$http', '$q', '$window', 'RC', 'OIDC_CLIENTS',
-    function ($scope,   $http,   $q,   $window,   RC,   OIDC_CLIENTS) {
+            ['$scope', '$http', '$q', '$window', 'RC', 'pymService', 'OIDC_CLIENTS',
+    function ($scope,   $http,   $q,   $window,   RC,   pym,   OIDC_CLIENTS) {
 
         $scope.model = $scope.model || {};
         $scope.model.isSignedIn = false;
@@ -105,7 +105,7 @@ function( doc,                   angular,  PYM,       PymApp) {
                 $scope.model.immediateFailed = false;
                 $http.post(RC.urls.connect_gplus, data, httpConfig)
                 .then(function (resp) {
-                    PYM.growl_ajax_resp(resp.data);
+                    pym.growler.growlAjaxResp(resp.data);
                     if (resp.data.ok) {
                         $scope.model.isSignedIn = true;
                         $window.location.href = resp.data.data

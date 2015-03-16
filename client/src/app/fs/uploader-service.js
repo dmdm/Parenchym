@@ -1,6 +1,6 @@
 angular.module('pym.fs').factory('pymFsUploaderService',
-        ['$log', '$upload', '$http', 'RC', 'FILE_STATES', 'FILE_STATE_CAPTIONS',
-function ($log,   $upload,   $http,   RC,   FILE_STATES,   FILE_STATE_CAPTIONS) {
+        ['$log', '$upload', '$http', 'RC', 'pymService', 'FILE_STATES', 'FILE_STATE_CAPTIONS',
+function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_STATE_CAPTIONS) {
 
     "use strict";
 
@@ -169,7 +169,7 @@ function ($log,   $upload,   $http,   RC,   FILE_STATES,   FILE_STATE_CAPTIONS) 
                         );
                     }
                     else {
-                        PYM.growl_ajax_resp(resp.data);
+                        pym.growler.growlAjaxResp(resp.data);
                         angular.forEach(
                             fileList, function (v, k) {
                                 if (v.state === FILE_STATES.VALIDATING) {

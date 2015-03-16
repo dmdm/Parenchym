@@ -1,6 +1,6 @@
 angular.module('pym.fs').factory('pymFsService',
-        ['$log', '$http', '$window', 'RC',
-function ($log,   $http,   $window,   RC) {
+        ['$log', '$http', '$window', 'RC', 'pymService',
+function ($log,   $http,   $window,   RC,   pym) {
 
     "use strict";
 
@@ -94,7 +94,7 @@ function ($log,   $http,   $window,   RC) {
                     if (resp.data.ok) {
                         // Noop
                     }
-                    PYM.growl_ajax_resp(resp.data);
+                    Pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -116,7 +116,7 @@ function ($log,   $http,   $window,   RC) {
                     if (resp.data.ok) {
                         // NOOP
                     }
-                    PYM.growl_ajax_resp(resp.data);
+                    Pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -136,7 +136,7 @@ function ($log,   $http,   $window,   RC) {
                     if (resp.data.ok) {
                         // NOOP
                     }
-                    PYM.growl_ajax_resp(resp.data);
+                    Pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -158,7 +158,7 @@ function ($log,   $http,   $window,   RC) {
                         // noop
                     }
                     else {
-                        PYM.growl_ajax_resp(resp.data);
+                        Pym.growler.growlAjaxResp(resp.data);
                     }
                     return resp;
                 }, function (result) {
@@ -182,7 +182,7 @@ function ($log,   $http,   $window,   RC) {
                         // noop
                     }
                     else {
-                        PYM.growl_ajax_resp(resp.data);
+                        Pym.growler.growlAjaxResp(resp.data);
                     }
                     return resp;
                 },
@@ -201,7 +201,7 @@ function ($log,   $http,   $window,   RC) {
                         return resp;
                     }
                     else {
-                        PYM.growl_ajax_resp(resp.data);
+                        Pym.growler.growlAjaxResp(resp.data);
                         return false;
                     }
                 },
@@ -225,7 +225,7 @@ function ($log,   $http,   $window,   RC) {
                         return resp;
                     }
                     else {
-                        PYM.growl_ajax_resp(resp.data);
+                        Pym.growler.growlAjaxResp(resp.data);
                         return false;
                     }
                 },

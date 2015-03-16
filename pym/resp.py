@@ -111,7 +111,7 @@ class JsonResp(object):
         Returns the list of messages.
 
         Each message is a dict with at least keys ``kind`` and ``text``. This
-        format is suitable for the PYM.growl() JavaScript.
+        format is suitable for the pymService.growler.growl() JavaScript.
 
         ``kind`` is one of (notice, info, warning, error, fatal, success).
         """
