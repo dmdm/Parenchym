@@ -691,7 +691,7 @@ function (angular) {
      */
     PymApp.provider('pymService', [ function() {
 
-        var log;
+        var log, q;
 
         var conf = {
             growler: {
@@ -839,6 +839,68 @@ function (angular) {
                 return new PNotify(combined);
             },
 
+            confirm: function (text, title) {
+                var msg = {
+                    title: title || 'Please confirm',
+                    text: text,
+                    icon: 'fa fa-question',
+                    hide: false,
+                    confirm: {
+                        confirm: true
+                    },
+                    buttons: {
+                        closer: false,
+                        sticker: false
+                    },
+                    history: {
+                        history: false
+                    }
+                }, dfrr;
+                dfrr = q.defer();
+                new PNotify(msg).get().on(
+                    'pnotify.confirm', function () {
+                        log.log('CONFIRMED');
+                        dfrr.resolve();
+                    }
+                ).on(
+                    'pnotify.cancel', function () {
+                        log.log('NOT CONFIRMED');
+                        dfrr.reject();
+                    }
+                );
+                return dfrr.promise;
+            },
+
+            prompt: function (text, title) {
+                var msg = {
+                    title: title || 'Please enter',
+                    text: text,
+                    icon: 'fa fa-question',
+                    hide: false,
+                    confirm: {
+                        prompt: true
+                    },
+                    buttons: {
+                        closer: false,
+                        sticker: false
+                    },
+                    history: {
+                        history: false
+                    }
+                }, dfrr;
+                dfrr = q.defer();
+                new PNotify(msg).get().on(
+                    'pnotify.confirm', function (e, notice, val) {
+                        dfrr.resolve(val);
+                    }
+                ).on(
+                    'pnotify.cancel', function (e, notice) {
+                        dfrr.reject();
+                    }
+                );
+                return dfrr.promise;
+            },
+
             growlAjaxResp: function (resp) {
                 var i, imax = resp.msgs.length;
                 for (i = 0; i < imax; i++) {
@@ -856,8 +918,9 @@ function (angular) {
         };
 
 
-        this.$get = [ function() {
-
+        this.$get = ['$log', '$q', function($log, $q) {
+            log = $log;
+            q = $q;
             return {
                 getConf: function() {
                     return conf;

@@ -114,10 +114,10 @@ class Enum(enum.Enum):
         Returns first found member with given value.
 
         Python's enums allow you to access a member by its name via dict-access.
-        This method is the other wa around, it gives you a member by looking at
+        This method is the other way around, it gives you a member by looking at
         the value.
 
-        It comes in handy if e.g. you want to translate a value stored in the DB
+        It comes in handy if e.g. you want to convert a value stored in the DB
         back to its enum member.
 
         .. note:: Enums may allow you to specify more than one members with the

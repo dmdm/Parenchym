@@ -4,7 +4,7 @@ import sqlalchemy.sql
 
 from pym.exc import AuthError
 import pym.security
-from pym.cache import FromCache
+import pym.cache
 
 from .models import (Group, GroupMember)
 from .const import SYSTEM_UID, NOBODY_UID
@@ -55,7 +55,7 @@ class AuthProvider():
         """
         try:
             p = self.sess.query(self.user_class).options(
-                FromCache("auth_short_term",
+                pym.cache.FromCache("auth_short_term",
                     cache_key='auth:user:{}'.format(principal))
             ).filter(
                 self.user_class.principal == principal

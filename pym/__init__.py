@@ -14,7 +14,7 @@ import pym.res.models
 import pym.auth.manager
 import pym.lib
 import pym.resp
-from .rc import Rc
+from pym.rc import Rc
 
 
 def main(global_config, **settings):

@@ -58,6 +58,9 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                     data: {
                         path: pathStr,
                         overwrite: overwrite
+                    },
+                    headers: {
+                        'content-type': file.file.type
                     }
 
                     /*
@@ -141,7 +144,7 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                         ff.push(
                             {
                                 key: v.key,
-                                name: v.file.name,
+                                filename: v.file.name,
                                 size: v.file.size,
                                 mime_type: v.file.type
                             }

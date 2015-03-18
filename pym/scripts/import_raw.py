@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import csv
+import datetime
 import time
 import argparse
 import logging
@@ -15,11 +16,6 @@ import pym.lib
 import pym.models
 import pym.auth.const
 import pym.libimport
-
-
-# Do not use the scoped session from the framework
-DbSession = sa.orm.sessionmaker(extension=ZopeTransactionExtension())
-DbBase = sa.ext.declarative.declarative_base()
 
 
 class Runner(pym.cli.Cli):
@@ -117,12 +113,12 @@ class Runner(pym.cli.Cli):
             self.worker.load_cols(self.args.map)
 
 
-def parse_args(app_class):
+def parse_args(app, argv):
     # Main parser
     parser = argparse.ArgumentParser(
         description="""Imports data of product mgmt."""
     )
-    app_class.add_parser_args(parser, (('config', True),
+    app.add_parser_args(parser, (('config', True),
         ('locale', False), ('alembic-config', False)))
     parser.add_argument(
         '--dialect',
@@ -184,44 +180,39 @@ def parse_args(app_class):
         choices=['col-map', 'create-table', 'import'],
         help="""Command"""
     )
-    parser.add_argument(
-        'fn',
-        help="""Filename"""
-    )
-    return parser.parse_args()
+
+    return parser.parse_args(argv)
 
 
 def main(argv=None):
+    start_time = time.time()
     if not argv:
         argv = sys.argv
 
-    start_time = time.time()
     app_name = os.path.basename(argv[0])
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s %(name)s %(levelname)-8s %(message)s'
-    )
     lgg = logging.getLogger('cli.' + app_name)
 
-    args = parse_args(Runner)
-    runner = Runner()
-    runner.init_app(args, lgg=lgg, setup_logging=True)
-    # Init session after app!
-    DbSession.configure(bind=pym.models.DbEngine, autocommit=True)
-    DbBase.metadata.bind = pym.models.DbEngine
-    runner.sess = DbSession()
     # noinspection PyBroadException
     try:
-        runner.run()
+        runner = Runner()
+        args = parse_args(runner, argv[1:])
+        runner.init_app(args, lgg=lgg, setup_logging=True)
+        logging.getLogger().setLevel(logging.WARN)
+        lgg.setLevel(logging.WARN)
+        if hasattr(args, 'func'):
+            args.func()
+        else:
+            runner.run()
     except Exception as exc:
         lgg.exception(exc)
         lgg.fatal('Program aborted!')
     else:
         lgg.info('Finished.')
     finally:
-        lgg.debug('{} secs'.format(time.time() - start_time))
-        pass
+        lgg.info('Time taken: {}'.format(
+            datetime.timedelta(seconds=time.time() - start_time))
+        )
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)

@@ -1,8 +1,8 @@
-import collections
+import copy
 import json
 import logging
+import colander
 from pyramid.decorator import reify
-from pyramid.location import lineage
 import pyramid.util
 import pyramid.i18n
 from sqlalchemy.dialects.postgresql import JSONB
@@ -13,13 +13,15 @@ import sqlalchemy.orm
 import sqlalchemy.event
 
 import pym.exc
+import pym.colander
 import pym.auth.models
 from pym.models import DbBase, DefaultMixin
-from pym.models.types import CleanUnicode
+from pym.models.types import CleanUnicode, TypedJsonB
 import pym.res.models
 from pym.security import is_path_safe
 import pym.tenants.models
-from .const import NODE_NAME_FS, MIME_TYPE_DEFAULT, MIME_TYPE_DIRECTORY
+from .const import (NODE_NAME_FS, MIME_TYPE_DEFAULT, MIME_TYPE_DIRECTORY,
+    DEFAULT_RC_SCHEMA)
 
 
 mlgg = logging.getLogger(__name__)
@@ -31,6 +33,12 @@ class IFsNode(zope.interface.Interface):
     specific view.
     """
     pass
+
+
+class WriteModes(pym.lib.Enum):
+    create = 'create'
+    update = 'update'
+    revise = 'revise'
 
 
 class FsContent(DbBase, DefaultMixin):
@@ -177,6 +185,25 @@ class FsContent(DbBase, DefaultMixin):
             self.data_bin = v
 
 
+class RcSchema(colander.MappingSchema):
+    max_size = colander.SchemaNode(pym.colander.JsonInteger(),
+        validator=colander.Range(min=0))
+    max_total_size = colander.SchemaNode(pym.colander.JsonInteger(),
+        validator=colander.Range(min=0))
+    max_total_items = colander.SchemaNode(pym.colander.JsonInteger(),
+        validator=colander.Range(min=-1))
+
+    @colander.instantiate()
+    class allowed_mimes(colander.SequenceSchema):
+        mime_type = colander.SchemaNode(colander.String())
+
+    @colander.instantiate()
+    class denied_mimes(colander.SequenceSchema):
+        mime_type = colander.SchemaNode(colander.String())
+
+    force_revision = colander.SchemaNode(pym.colander.JsonBoolean())
+
+
 class FsNode(pym.res.models.ResourceNode):
     """
     A filesystem node.
@@ -199,13 +226,6 @@ class FsNode(pym.res.models.ResourceNode):
     __mapper_args__ = {
         'polymorphic_identity': 'fs'
     }
-
-    RC_KEYS_QUOTA = ('min_size', 'max_size', 'max_total_size', 'max_children',
-        'allow', 'deny')
-    """
-    These keys in attribute ``rc`` define the quota of this node. Used e.g.
-    by :class:`~pym.cache.UploadCache`.
-    """
 
     id = sa.Column(
         sa.Integer(),
@@ -275,10 +295,15 @@ class FsNode(pym.res.models.ResourceNode):
     encoding = sa.Column(sa.Unicode(255), nullable=True)
     """Encoding, if content is text."""
     # Load only if needed
-    # TODO Convert rc column into TypedJson
-    _rc = sa.orm.deferred(sa.Column('rc', MutableDict.as_mutable(
-        JSONB(none_as_null=True)),
+    rc = sa.orm.deferred(sa.Column(TypedJsonB(json_schema=RcSchema()),
         nullable=True))
+    """
+    Settings of this node.
+
+    Some settings, e.g. the quota settings are inherited from our ancestors.
+    :class:`Sentry` is responsible to resolve the lineage. We here are just
+    a local storage.
+    """
     # Load description only if needed
     descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
     """Optional description."""
@@ -310,6 +335,7 @@ class FsNode(pym.res.models.ResourceNode):
         except sa.orm.exc.NoResultFound:
             n = cls(owner_id=owner.id, parent_id=tenant.id,
                 name=NODE_NAME_FS, title='Filesystem', mime_type=MIME_TYPE_DIRECTORY)
+            n._rc = copy.deepcopy(DEFAULT_RC_SCHEMA)
             sess.add(n)
         return n
 
@@ -576,44 +602,6 @@ class FsNode(pym.res.models.ResourceNode):
             return self.__class__.SEP
         return self.__class__.SEP.join(reversed(pp))
 
-    @property
-    def rc(self):
-        """Settings
-
-        Settings, like ACL, are inherited from ancestors up to the root node of
-        the file system (which in most cases is not identical with the root node of
-        the resource tree).
-
-        Quota settings as used e.g. in :class:`pym.cache.UploadCache`:
-
-        - ``min_size``: Minimum size of content in bytes, default 1
-        - ``max_size``: Maximum size of content in bytes, default 2 MB
-        - ``max_total_size``: Max size of content plus children in bytes. If not
-          specified, is not checked (default).
-        - ``max_children``: Max number children. If not specified, is not checked
-          (default).
-        - ``allow``: List of mime-types (RegEx pattern) that are allowed. To allow
-            all mime-types, set to ``['*/*']``.
-        - ``deny``: List of mime-types (RegEx pattern) that are denied. If empty,
-          no mime-types are denied (default).
-        """
-        # Fetch our rc and rc of ancestors
-        # We need to access protected '_rc' here!
-        maps = [x._rc or {} for x in lineage(self) if isinstance(x, FsNode)]
-        if not maps:
-            maps = []
-        # Append a map with the defaults
-        maps.append(dict(
-            min_size=1,
-            max_size=1024 * 1024 * 2,
-            max_total_size=None,
-            max_children=None,
-            #allow=['image/*', 'application/pdf'],
-            allow=['*/*'],
-            deny=[]
-        ))
-        return collections.ChainMap(*maps)
-
     def __repr__(self):
         return "<{name}(id={id}, parent_id={p}, name='{n}', rev={rev}'>".format(
             id=self.id, p=self.parent_id, n=self.name, rev=self.rev,
@@ -624,8 +612,36 @@ class FsNode(pym.res.models.ResourceNode):
         """Total size of the content of this node and all children in bytes."""
         sz = self.size
         for k, v in self.children.items():
-            sz += v.size
+            sz += v.total_size
         return sz
+
+    @reify
+    def fs_total_size(self):
+        """
+        Total size of the filesystem.
+
+        CAVEAT: This sums the whole filesystem. But what we need is some
+        per-tenant accounting...
+
+        :return: Total size in bytes.
+        """
+        sess = sa.inspect(self).session
+        # TODO CAVEAT: This sums the whole filesystem. But what we need is some per-tenant accounting...
+        return sess.query(sa.func.sum(FsNode.size)).scalar()
+
+    @reify
+    def fs_total_items(self):
+        """
+        Total number of items in the filesystem.
+
+        CAVEAT: This counts the whole filesystem. But what we need is some
+        per-tenant accounting...
+
+        :return: Total number.
+        """
+        sess = sa.inspect(self).session
+        # TODO CAVEAT: This counts the whole filesystem. But what we need is some per-tenant accounting...
+        return sess.query(sa.func.count(FsNode.id)).scalar()
 
 
 # When we load a node from DB attach the stored interface to the instance.

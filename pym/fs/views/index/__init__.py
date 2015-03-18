@@ -1,17 +1,15 @@
 import logging
 import functools
-import os
-from pprint import pprint
-import dateutil.tz
-from pyramid.httpexceptions import HTTPNotFound, HTTPForbidden
+
 from pyramid.location import lineage
 import sqlalchemy as sa
 import sqlalchemy.orm
 from pyramid.view import view_config, view_defaults
 import pyramid.response
-from pym.cache import UploadCache
+
+from pym.fs.tools import Sentry, UploadCache, UploadedFile
 from pym.lib import json_serializer
-from ...models import IFsNode, FsNode
+from ...models import IFsNode, FsNode, WriteModes
 from ...const import MIME_TYPE_DIRECTORY
 import pym.exc
 import pym.fs.manager
@@ -83,91 +81,237 @@ class Worker(object):
         self.cache = cache
         self.has_permission = has_permission
         self.fs_root = fs_root
-        self.fc_col_map = {
-        }
+        self.fc_col_map = {}
 
-    @staticmethod
-    def init_upload_cache(root_dir='/tmp/upload_cache'):
-        cache = UploadCache(root_dir=root_dir)
-        return cache
+        self.upload_cache = None
+        self.fs_sentry = None
+
+    def init_upload_cache(self, root_dir='/tmp/pym/upload_cache'):
+        if not self.upload_cache:
+            self.upload_cache = UploadCache(root_dir=root_dir)
 
     def del_cached_children(self, parent_id):
         for k in self.cache.keys("ResourceNode:children:*{}".format(parent_id)):
             self.cache.delete(k)
 
-    def upload(self, resp, path, data, overwrite):
-        cur_node = self.fs_root.find_by_path(path)
-        upload_cache = self.__class__.init_upload_cache()
-        upload_cache.fs_node = cur_node
+    def validate_files(self, resp, path, files, request):
+        """
+        Validates the given files using their meta data and checks permissions.
 
-        # Create instances of UploadedFile which also checks if we accept it or
-        # not.
+        :param resp: Response
+        :type resp: :class:`pym.resp.JsonResp`
+        :param path: String that identifies path to destination node.
+        :param files: Files are given as a list of dicts with meta data. Keys
+            'filename', 'size', 'mime_type', optionally key 'encoding'.
+        :param request:
+        :return: Returns a list of initialised instances of
+            :class:`pym.cache.UploadedFile`.
+        """
+        u_files = []
+        # Use path to find destination node. We may change that later on, in
+        # case the provided file names already have existing nodes. Then those
+        # will become destinations.
+        path_node = self.fs_root.find_by_path(path)
+        path_sentry = Sentry(path_node)
+
+        # 1. stage checks info provided by client
+        for f in files:
+            uf = UploadedFile()
+            u_files.append(uf)
+            uf.key = f['key']
+            meta = {
+                'filename': f['filename'],
+                'size': f['size'],
+                'mime_type': f['mime_type'],
+            }
+            uf.init_by_client_meta(meta)
+            try:
+                path_sentry.check_file_meta(meta)
+            # ValueError if name is not safe, PermissionError in all other cases
+            except (PermissionError, ValueError) as exc:
+                uf.exc = exc
+                uf.validation_msg = str(exc)
+
+        # 1.5 Interlude: setup destination node and corresponding sentry
+        for uf in u_files:
+            if not uf.is_ok:
+                continue
+            try:
+                file_node = path_node[uf.client_filename]
+            except KeyError:
+                # File does not yet exist
+                file_node = None
+                uf.exists = False
+                uf.dst_node = path_node
+                uf.sentry = path_sentry
+            else:
+                # File does exist.
+                uf.exists = True
+                uf.dst_node = file_node
+                uf.sentry = Sentry(file_node)
+
+        # 2. stage checks destination's permissions
+        for uf in u_files:
+            if not uf.is_ok:
+                continue
+            if not uf.exists:
+                # Dst does not exist, so we ask for "create".
+                try:
+                    uf.sentry.check_permission(request, WriteModes.create)
+                    uf.allow_create()
+                except PermissionError as exc:
+                    uf.exc = exc
+                    uf.validation_msg = str(exc)
+            else:
+                # Dst exists, check both, "update" and "revise"
+                e1, e2 = None, None
+                try:
+                    uf.sentry.check_permission(request, WriteModes.update)
+                    uf.allow_update()
+                except PermissionError as exc:
+                    # Do not set exception to uf, we still may be allowed to
+                    # revise...
+                    e1 = exc
+                try:
+                    uf.sentry.check_permission(request, WriteModes.revise)
+                    uf.allow_revise()
+                except PermissionError as exc:
+                    e2 = exc
+                # Aww, both permissions denied.
+                if e1 and e2:
+                    uf.validation_msg = _("Destination exists. Permission denied to update or revise.")
+                    uf.exc = e2
+
+        # Epilog: setup response
+        rr = {}
+        for uf in u_files:
+            rr[uf.key] = {
+                'ok': uf.is_ok,
+                'permissions': uf.get_permissions(),
+                'validation_msg': uf.validation_msg
+            }
+        resp.data = rr
+        return u_files
+
+    def upload(self, resp, path, data, request, write_mode):
+        self.init_upload_cache()
+        upload_cache = self.upload_cache
+
+        # Use path to find destination node. We may change that later on, in
+        # case the provided file names already have existing nodes. Then those
+        # will become destinations.
+        path_node = self.fs_root.find_by_path(path)
+        path_sentry = Sentry(path_node)
+
+        # Create instances of UploadedFile
         for name, fieldStorage in data.items():
             if not (hasattr(fieldStorage, 'file') and fieldStorage.file):
                 continue
-            upload_cache.create_file(fieldStorage)
-
-        # Save uploaded data only if needed. To just store it in the DB, it is
-        # not needed. On the other hand we need a real file if we want to
-        # extract xattr e.g. with TIKA. This should explicitly be requested by
-        # client.
-        # self.cache.save(self.lgg, resp)
-
-        actor = self.owner_id
-        # Store the uploaded data in DB
-        for c in upload_cache.files:
-            if not c.is_ok:
-                resp.error("{}: {}".format(c.client_filename, c.exc))
-                continue
-
-            name = c.client_filename
-            # Shall we trust the mime-type the client told us, or use the one we
-            # determined our own?
-            # At least in case of a JSON file, our detection says wrongly
-            # 'text/plain', but the client told correctly 'application/json'
-            # mime = c.local_mime_type
-            mime = c.client_mime_type
-
+            uf = upload_cache.create_file(fieldStorage)
+            # Without actually having saved the data to a file yet, we can do
+            # some pre-checks with the meta data as provided by the client.
+            meta = uf.get_client_meta()
             try:
-                child_fs_node = cur_node[name]
-            except KeyError:
-                child_fs_node = pym.fs.manager.create_fs_node(
-                    self.sess,
-                    owner=actor,
-                    parent_id=cur_node.id,
-                    name=name
-                )
-            else:
-                if overwrite:
-                    # Need write permission on child to overwrite
-                    if not self.has_permission(Permissions.write.value,
-                            context=child_fs_node):
-                        resp.error(_("Forbidden to overwrite '{}'").format(name))
-                        continue
-                    child_fs_node = pym.fs.manager.update_fs_node(
-                        self.sess,
-                        fs_node=child_fs_node,
-                        editor=actor
-                    )
-                else:
-                    resp.warn(_('{} already exists').format(name))
-                    continue
-            child_fs_node.mime_type = mime
-            child_fs_node.local_filename = c.local_filename
-            child_fs_node.size = c.meta['size']
-            child_fs_node.xattr = c.meta.get('xattr')
-            # Read data directly from fieldStorage, we might have no physically
-            # cached file.
-            attr = child_fs_node.content_attr
-            if attr == 'content_bin':
-                setattr(child_fs_node, attr, c.f.file.read())
-            else:
-                setattr(child_fs_node, attr, c.f.file.read().decode('UTF-8'))
-            for k in ('content_bin', 'content_text', 'content_json'):
-                if k != attr:
-                    setattr(child_fs_node, k, None)
+                path_sentry.check_file_meta(meta)
+            except (PermissionError, ValueError) as exc:
+                uf.exc = exc
 
-            self.del_cached_children(cur_node.id)
+        # For all files that are ok, determine if a node with their name already
+        # exists.
+        for uf in upload_cache.files:
+            if not uf.is_ok:
+                continue
+            try:
+                file_node = path_node[uf.client_filename]
+            except KeyError:
+                # File does not yet exist
+                file_node = None
+                uf.exists = False
+                uf.dst_node = path_node
+                uf.sentry = path_sentry
+            else:
+                # File does exist.
+                uf.exists = True
+                uf.dst_node = file_node
+                uf.sentry = Sentry(file_node)
+            # Now that each file knows its destination node, it's time to
+            # check permission to write
+            try:
+                uf.sentry.check_permission(request, write_mode)
+            except PermissionError as exc:
+                uf.exc = exc
+
+        # Save all survivors as real files in the cache, and check against
+        # the cache meta data. If the file still is ok, extract more meta via
+        # TIKA and finally store all in the DB.
+
+        # TODO
+
+
+
+
+
+        # # Save uploaded data only if needed. To just store it in the DB, it is
+        # # not needed. On the other hand we need a real file if we want to
+        # # extract xattr e.g. with TIKA. This should explicitly be requested by
+        # # client.
+        # # self.cache.save(self.lgg, resp)
+        #
+        # actor = self.owner_id
+        # # Store the uploaded data in DB
+        # for c in upload_cache.files:
+        #     if not c.is_ok:
+        #         resp.error("{}: {}".format(c.client_filename, c.exc))
+        #         continue
+        #
+        #     name = c.client_filename
+        #     # Shall we trust the mime-type the client told us, or use the one we
+        #     # determined our own?
+        #     # At least in case of a JSON file, our detection says wrongly
+        #     # 'text/plain', but the client told correctly 'application/json'
+        #     # mime = c.cache_mime_type
+        #     mime = c.client_mime_type
+        #
+        #     try:
+        #         child_fs_node = path_node[name]
+        #     except KeyError:
+        #         child_fs_node = pym.fs.manager.create_fs_node(
+        #             self.sess,
+        #             owner=actor,
+        #             parent_id=path_node.id,
+        #             name=name
+        #         )
+        #     else:
+        #         if overwrite:
+        #             # Need write permission on child to overwrite
+        #             if not self.has_permission(Permissions.write.value,
+        #                     context=child_fs_node):
+        #                 resp.error(_("Forbidden to overwrite '{}'").format(name))
+        #                 continue
+        #             child_fs_node = pym.fs.manager.update_fs_node(
+        #                 self.sess,
+        #                 fs_node=child_fs_node,
+        #                 editor=actor
+        #             )
+        #         else:
+        #             resp.warn(_('{} already exists').format(name))
+        #             continue
+        #     child_fs_node.mime_type = mime
+        #     child_fs_node.cache_filename = c.cache_filename
+        #     child_fs_node.size = c.meta['size']
+        #     child_fs_node.xattr = c.meta.get('xattr')
+        #     # Read data directly from fieldStorage, we might have no physically
+        #     # cached file.
+        #     attr = child_fs_node.content_attr
+        #     if attr == 'content_bin':
+        #         setattr(child_fs_node, attr, c.f.file.read())
+        #     else:
+        #         setattr(child_fs_node, attr, c.f.file.read().decode('UTF-8'))
+        #     for k in ('content_bin', 'content_text', 'content_json'):
+        #         if k != attr:
+        #             setattr(child_fs_node, k, None)
+
+            self.del_cached_children(path_node.id)
 
     def ls(self, resp, path, include_deleted):
         cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
@@ -317,13 +461,6 @@ class Worker(object):
         }
         resp.data = dictate(rs, fmap=fmap, excludes=excl, objects_as='flat')
 
-    def validate_files(self, resp, path, files):
-        # TODO Validate files: name safe? file exists? save permitted? quota? update or revise?
-        resp.data = {}
-        print(files)
-        for f in files:
-            resp.data[f['key']] = 'ok'
-
 
 @view_defaults(
     context=IFsNode,
@@ -407,14 +544,34 @@ class FsView(object):
             if isinstance(x, FsNode)])))
         rc = {}
         node_rc = self.context.rc
-        for k in FsNode.RC_KEYS_QUOTA:
-            rc[k] = node_rc[k]
         rc['urls'] = self.urls
         rc['path'] = path
         rc['MIME_TYPE_DIRECTORY'] = MIME_TYPE_DIRECTORY
         return {
             'rc': rc
         }
+
+    @view_config(
+        name='_validate_files_',
+        renderer='string',
+        request_method='POST'
+    )
+    def validate_files(self):
+        self.validator.inp = self.request.json_body
+        keys = ('path', 'files')
+        func = functools.partial(
+            self.worker.validate_files,
+            request=self.request
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
 
     @view_config(
         name='_ul_',
@@ -430,6 +587,7 @@ class FsView(object):
         # func = functools.partial(
         #     self.worker.upload,
         #     data=data,
+        #     request=self.request,
         #     overwrite=overwrite
         # )
         # resp = pym.resp.build_json_response(
@@ -573,27 +731,6 @@ class FsView(object):
         keys = ('path', 'name')
         func = functools.partial(
             self.worker.load_item_properties
-        )
-        resp = pym.resp.build_json_response(
-            lgg=self.lgg,
-            validator=self.validator,
-            keys=keys,
-            func=func,
-            request=self.request,
-            die_on_error=False
-        )
-        return json_serializer(resp.resp)
-
-    @view_config(
-        name='_validate_files_',
-        renderer='string',
-        request_method='POST'
-    )
-    def validate_files(self):
-        self.validator.inp = self.request.json_body
-        keys = ('path', 'files')
-        func = functools.partial(
-            self.worker.validate_files
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

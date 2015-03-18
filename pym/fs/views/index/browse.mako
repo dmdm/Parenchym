@@ -43,7 +43,7 @@ ${parent.styles()}
         'ng-ui-router',
         'ui-tree',
         'flexy-layout',
-        'pym/fs/fs.min'
+        'pym/fs/fs'
     );
     PYM_APP_INJECTS.push(
         'angularFileUpload',

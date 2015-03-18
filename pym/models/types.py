@@ -80,6 +80,20 @@ class TypedJson(sa.types.TypeDecorator):
         typed values (appstruct) by the given colander schema. If a validation
         error occurs, as expected a ``colander.Invalid`` exception is thrown.
         The whole (unverified) ctruct is available as its ``value`` attribute.
+
+        If your schema contains numbers and booleans, you may want to use
+        :class:`pym.colander.JsonInteger`, :class:`pym.colander.JsonFloat` and
+        :class:`pym.colander.JsonBoolean`. These variants keep the type of the
+        serialized value so that the following JSON serialization handles them
+        properly. Plain colander on the other hand would have cast them to a
+        string so that the stored JSON value also would be a string; which
+        probably is not what you want.
+
+        Usage:
+
+            sa.Column(TypedJson(json_schema=MySchema()))
+
+        :param json_schema: Instance (!) of a colander schema.
         """
         try:
             self.json_schema = kw['json_schema']
@@ -108,5 +122,8 @@ class TypedJson(sa.types.TypeDecorator):
 
 
 class TypedJsonB(TypedJson):
+    """
+    JSONB variant of :class:`TypedJson`.
+    """
 
     impl = JSONB(none_as_null=True)

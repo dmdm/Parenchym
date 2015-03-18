@@ -1,6 +1,6 @@
 angular.module('pym.fs').controller('pymFsUploaderController',
-        ['$scope', '$window', '$log', 'T', 'pymFsService', 'pymFsUploaderService', 'FILE_STATES',
-function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService,   FILE_STATES) {
+        ['$scope', '$window', '$log', 'T', 'pymService', 'pymFsService', 'pymFsUploaderService', 'FILE_STATES', '$q',
+function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsUploaderService,   FILE_STATES,   $q) {
 
     "use strict";
 
@@ -51,19 +51,50 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
         ctrl.windowMaximized = !ctrl.windowMaximized;
     };
 
-    ctrl.closeWindow = function () {
-        var prop;
+    /**
+     * Cancels all active uploads.
+     *
+     * Lets user confirm. Response is triggered by an event, iow, it arrives
+     * asynchronously. (We use our own dialog, not $window.confirm.)
+     *
+     * We may get called from another function (closeWindow), so return a promise
+     * to signal what the user selected.
+     *
+     * If there are no active downloads, we do not let the user confirm. Still
+     * return a promise, a resolved one, so the caller is cleared to do his
+     * thing.
+     *
+     * @returns {promise}
+     */
+    ctrl.cancelAll = function () {
         if (ctrl.activeUploads) {
-            if (! ctrl.cancelAll()) {
-                return;
-            }
+            return pym.growler.confirm(T.confirm_cancel_all_uploads)
+            .then(
+                function () {
+                    angular.forEach(ctrl.queue, function (f) {
+                        f.abort();
+                    });
+                }
+            );
         }
-        for (prop in ctrl.queue) {
-            if (ctrl.queue.hasOwnProperty(prop)) {
-                delete ctrl.queue[prop];
-            }
+        else {
+            return $q.defer().resolve();
         }
-        ctrl.windowIsOpen = false;
+    };
+
+    ctrl.closeWindow = function () {
+
+        function doIt () {
+            ctrl.clearQueue();
+            ctrl.windowIsOpen = false;
+        }
+
+        if (ctrl.activeUploads) {
+            ctrl.cancelAll().then(doIt);
+        }
+        else {
+            doIt();
+        }
     };
 
     ctrl.fileDropped = function ($files, $event, $rejectedFiles) {
@@ -83,6 +114,15 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
     ctrl.validate = function ($file) {
         $log.log('Validating file', $file);
         return $file.type !== 'audio/x-ape';
+    };
+
+    ctrl.clearQueue = function () {
+        var prop;
+        for (prop in ctrl.queue) {
+            if (ctrl.queue.hasOwnProperty(prop)) {
+                delete ctrl.queue[prop];
+            }
+        }
     };
 
     ctrl.enqueue = function (files) {
@@ -150,16 +190,6 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
         file.abort();
     };
 
-    ctrl.cancelAll = function () {
-        if (ctrl.activeUploads) {
-            if (! $window.confirm(T.confirm_cancel_all_uploads)) { return false; }
-        }
-        angular.forEach(ctrl.queue, function (f) {
-            f.abort();
-        });
-        return true;
-    };
-
     /**
      * Checks given mime-type against pattern from ``allow`` and ``deny``
      * and returns true if mime-type is allowed, false otherwise.
@@ -209,24 +239,24 @@ function ($scope,   $window,   $log,   T,   pymFsService,   pymFsUploaderService
         return (sz >= this.minSize && sz <= this.maxSize);
     };
 
-    function init() {
-        var i, f;
-        for (i=0; i<10; i++) {
-            f = new pymFsUploaderService.createPymFile({
-                name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
-                size: 6523856653,
-                type: 'stuff/sample'
-                            });
-            f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
-            f.validationMessage = 'blah bölddf erwe';
-            ctrl.queue[i] = f;
-        }
-        ctrl.windowIsOpen = true;
-    }
-
-    /*
-    * Run immediately
-    */
-    init();
+    //function init() {
+    //    var i, f;
+    //    for (i=0; i<10; i++) {
+    //        f = new pymFsUploaderService.createPymFile({
+    //            name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
+    //            size: 6523856653,
+    //            type: 'stuff/sample'
+    //                        });
+    //        f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
+    //        f.validationMessage = 'blah bölddf erwe';
+    //        ctrl.queue[i] = f;
+    //    }
+    //    ctrl.windowIsOpen = true;
+    //}
+    //
+    ///*
+    //* Run immediately
+    //*/
+    //init();
 
 }]);
