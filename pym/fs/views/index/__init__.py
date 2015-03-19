@@ -32,6 +32,15 @@ class Validator(pym.validator.Validator):
         return pym.security.safepath(p)
 
     @property
+    def write_mode(self):
+        v = self.fetch('write_mode', required=True, multiple=False)
+        try:
+            x = WriteModes.by_val(v)
+        except KeyError:
+            raise pym.exc.ValidationError("Invalid write mode: '{}".format(v))
+        return v
+
+    @property
     def ids(self):
         v = self.fetch_int('ids', required=True, multiple=True)
         return v
@@ -187,13 +196,14 @@ class Worker(object):
         for uf in u_files:
             rr[uf.key] = {
                 'ok': uf.is_ok,
+                'exists': uf.exists,
                 'permissions': uf.get_permissions(),
                 'validation_msg': uf.validation_msg
             }
         resp.data = rr
         return u_files
 
-    def upload(self, resp, path, data, request, write_mode):
+    def upload(self, resp, path, data, write_mode, request):
         self.init_upload_cache()
         upload_cache = self.upload_cache
 
@@ -582,13 +592,11 @@ class FsView(object):
         return 'ok'
         # data = self.request.POST
         # self.validator.inp = data
-        # overwrite = data.get('overwrite', False)
-        # keys = ('path', )
+        # keys = ('path', 'write_mode')
         # func = functools.partial(
         #     self.worker.upload,
         #     data=data,
-        #     request=self.request,
-        #     overwrite=overwrite
+        #     request=self.request
         # )
         # resp = pym.resp.build_json_response(
         #     lgg=self.lgg,

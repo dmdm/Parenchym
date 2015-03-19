@@ -5,6 +5,7 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
     "use strict";
 
     var ctrl = this;
+    ctrl.FILE_STATES = FILE_STATES;
 
     // Storage for $uploader service
     ctrl.files = [];
@@ -172,14 +173,13 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
             p,
             fProgress, fSuccess;
         angular.forEach(self.queue, function(f) {
-            if (f.state === FILE_STATES.VALIDATION_OK) {
+            if (f.state === FILE_STATES.CAN_UPLOAD) {
                 $log.log('starting upload of', f.file.name, f);
                 // Bind the callbacks to the individual PymFile, so that
                 // their 'this' points to the PymFile instance.
                 fProgress = angular.bind(f, self.cbProgress);
                 fSuccess = angular.bind(f, self.cbSuccess);
-                p = pymFsUploaderService.upload(
-                        pymFsService.getPathStr(), f, pymFsService.overwrite)
+                p = pymFsUploaderService.upload(pymFsService.getPathStr(), f)
                     .progress(fProgress)
                     .success(fSuccess);
             }
@@ -239,24 +239,24 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
         return (sz >= this.minSize && sz <= this.maxSize);
     };
 
-    //function init() {
-    //    var i, f;
-    //    for (i=0; i<10; i++) {
-    //        f = new pymFsUploaderService.createPymFile({
-    //            name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
-    //            size: 6523856653,
-    //            type: 'stuff/sample'
-    //                        });
-    //        f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.VALIDATION_OK);
-    //        f.validationMessage = 'blah bölddf erwe';
-    //        ctrl.queue[i] = f;
-    //    }
-    //    ctrl.windowIsOpen = true;
-    //}
-    //
-    ///*
-    //* Run immediately
-    //*/
-    //init();
+    function init() {
+        var i, f;
+        for (i=0; i<10; i++) {
+            f = new pymFsUploaderService.createPymFile({
+                name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
+                size: 6523856653,
+                type: 'stuff/sample'
+                            });
+            f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.CAN_UPLOAD);
+            f.validationMessage = 'blah bölddf erwe';
+            ctrl.queue[i] = f;
+        }
+        ctrl.windowIsOpen = true;
+    }
+
+    /*
+    * Run immediately
+    */
+    init();
 
 }]);

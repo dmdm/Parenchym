@@ -17,6 +17,9 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
         this.isActive = false;
         this.isUploading = false;
         this.hasError = false;
+        this.exists = false;
+        this.permissions = null;
+        this.writeMode = null;
     }
 
     PymFile.prototype.setState = function(state) {
@@ -28,6 +31,11 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
         this.hasError = (this.state > FILE_STATES.UPLOAD_CANCELED &&
             this.state < FILE_STATES.NEW);
         $log.log('state', state, this.stateCaption, this);
+    };
+
+    PymFile.prototype.setWriteMode = function(writeMode) {
+        this.writeMode = writeMode;
+        this.setState(FILE_STATES.CAN_UPLOAD);
     };
 
     PymFile.prototype.abort = function () {
@@ -47,17 +55,15 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
          *
          * @param {string} pathStr - Path where to save the file
          * @param {PymFile} file - Instance of a PymFile
-         * TODO make this 3-state: restrict, update, revise
-         * @param {bool} overwrite - Whether to overwrite or not
          * @returns {promise}
          */
-        upload: function (pathStr, file, overwrite) {
+        upload: function (pathStr, file) {
             var uploadConf = {
                     url: RC.urls.upload,
                     file: file.file,
                     data: {
                         path: pathStr,
-                        overwrite: overwrite
+                        write_mode: file.writeMode
                     },
                     headers: {
                         'content-type': file.file.type
@@ -130,11 +136,9 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
          *
          * @param {string} pathStr - Path as list of nodes.
          * @param {list} fileList - List of instances of PymFile.
-         * TODO make this 3-state: restrict, update, revise
-         * @param {bool} overwrite - Whether to overwrite or not
          * @returns {promise}
          */
-        validateFiles: function (pathStr, fileList, overwrite) {
+        validateFiles: function (pathStr, fileList) {
             var httpConfig = {}, postData = {},
                 ff = [];
             $log.log('fileList to validate', fileList);
@@ -154,19 +158,25 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
             );
             postData.path = pathStr;
             postData.files = ff;
-            postData.overwrite = overwrite;
             return $http.post(RC.urls.validate_files, postData, httpConfig)
                 .then(
                 function (resp) {
                     if (resp.data.ok) {
                         angular.forEach(
                             resp.data.data, function (v, k) {
-                                if (v === 'ok') {
-                                    fileList[k].setState(FILE_STATES.VALIDATION_OK);
+                                if (v.ok) {
+                                    fileList[k].exists = v.exists;
+                                    fileList[k].permissions = v.permissions;
+                                    if (! v.exists && v.permissions.create) {
+                                        fileList[k].setState(FILE_STATES.CAN_UPLOAD);
+                                    }
+                                    else {
+                                        fileList[k].setState(FILE_STATES.VALIDATION_OK);
+                                    }
                                 }
                                 else {
                                     fileList[k].setState(FILE_STATES.VALIDATION_ERROR);
-                                    fileList[k].validationMessage = v;
+                                    fileList[k].validationMessage = v.validation_msg;
                                 }
                             }
                         );

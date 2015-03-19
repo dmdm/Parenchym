@@ -180,12 +180,12 @@ ${parent.scripts()}
             <div class="col-md-12">
                 <section class="pym-fs-uploader" ng-if="upl.windowIsOpen">
                     <header>
-                        <button class="btn btn-primary" ng-disabled="upl.uploading>0" ng-click="upl.startUpload()">Start</button>
-                        <button class="btn" ng-class="{'btn-primary': upl.activeUploads===0, 'btn-danger': upl.activeUploads>0}" ng-click="upl.closeWindow()">
+                        <button class="btn btn-default" ng-click="upl.minimaxWindow()"><i class="fa fa-fw" ng-class="{'fa-chevron-down': !upl.windowMaximized, 'fa-chevron-up': upl.windowMaximized}"></i></button>
+                        <button class="btn btn-primary" ng-disabled="upl.uploading>0" ng-click="upl.startUpload()"><i class="fa fa-upload"></i> Start</button>
+                        <button class="btn" ng-class="{'btn-default': upl.activeUploads===0, 'btn-danger': upl.activeUploads>0}" ng-click="upl.closeWindow()">
                             <span ng-if="upl.activeUploads>0"><i class="fa fa-close" style="font-weight: bold;"></i> Cancel All</span>
                             <span ng-if="upl.activeUploads===0"><i class="fa fa-power-off" style="font-weight: bold;"></i> Close</span>
                         </button>
-                        <button class="btn btn-default" ng-click="upl.minimaxWindow()"><i class="fa fa-fw" ng-class="{'fa-chevron-down': !upl.windowMaximized, 'fa-chevron-up': upl.windowMaximized}"></i></button>
                         <div class="text">{{upl.activeUploads}}</div>
                         <div ng-if="upl.errors" class="text text-danger"><i class="fa fa-exclamation-triangle"></i> {{upl.errors}}</div>
                         <progressbar ng-if="upl.activeUploads" class="progress-striped active progress-bar-striped" value="upl.totalProgress">{{upl.totalProgress}} %</progressbar>
@@ -197,23 +197,37 @@ ${parent.scripts()}
                                     <td title="{{f.stateCaption}}" style="width: 4em;">
                                         <i class="fa fa-fw"
                                            ng-class="{
-                                                'fa-bicycle': f.state == 10,
-                                                'fa-chain text-info': f.state == 20,
-                                                'fa-chain-broken text-danger': f.state == -20,
-                                                'fa-car': f.state == 30,
-                                                'fa-check text-success': f.state == 40,
-                                                'fa-bug text-danger': f.state == -40,
-                                                'fa-remove text-danger': f.state == -100
+                                                'fa-bicycle': f.state == upl.FILE_STATES.VALIDATING,
+                                                'fa-chain text-info': f.state == upl.FILE_STATES.VALIDATION_OK,
+                                                'fa-chain-broken text-danger': f.state == upl.FILE_STATES.VALIDATION_ERROR,
+                                                'fa-car fa-rotate-270': f.state == upl.FILE_STATES.CAN_UPLOAD,
+                                                'fa-car': f.state == upl.FILE_STATES.UPLOADING,
+                                                'fa-check text-success': f.state == upl.FILE_STATES.UPLOAD_OK,
+                                                'fa-bug text-danger': f.state == upl.FILE_STATES.UPLOAD_ERROR,
+                                                'fa-remove text-danger': f.state == upl.FILE_STATES.UPLOAD_CANCELED
                                            }"
                                             ></i>
                                     </td>
                                     <td>
                                         {{f.file.name}}
                                         <button ng-if="f.isActive" class="btn btn-xs btn-default" ng-click="upl.cancel(f)"><i class="fa fa-trash-o text-danger" style="font-weight: bold;"></i></button>
+                                        <div ng-if="(f.state == upl.FILE_STATES.VALIDATION_OK || f.state == upl.FILE_STATES.CAN_UPLOAD) && f.exists">
+                                            ${_("File exists.")}
+                                            <label><input name="write_mode" type="radio" ng-click="f.setWriteMode('update')" ng-disabled="! f.permissions.update" value="update"> <span ng-class="{'text-muted':! f.permissions.update}">${_("Update or")}</span></label>
+                                            <label><input name="write_mode" type="radio" ng-click="f.setWriteMode('revise')" ng-disabled="! f.permissions.revise" value="revise"> <span ng-class="{'text-muted':! f.permissions.revise}">${_("revise?")}</span></label>
+                                        </div>
                                     </td>
                                     <td class="align-right">{{f.file.size|number:0}}</td>
                                     <td>{{f.file.type}}</td>
                                     <td ng-if="f.validationMessage" class="text-danger">{{f.validationMessage}}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td ng-if="f.validationMessage"></td>
                                 </tr>
                                 <tr ng-repeat-end ng-if="f.isUploading">
                                     <td></td>
