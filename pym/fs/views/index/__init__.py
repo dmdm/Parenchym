@@ -484,7 +484,7 @@ class Worker(object):
         }
         fmap = {
             'FsNode': {
-                'rc': lambda it: dict(it.rc),
+                'rc': lambda it: dict(it.rc) if it.rc else None,
                 'meta_json': lambda it: it.content.meta_json,
                 'meta_xmp': lambda it: it.content.meta_xmp,
                 'data_text': lambda it: it.content.data_text,
