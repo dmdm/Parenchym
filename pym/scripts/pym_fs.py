@@ -599,11 +599,11 @@ def parse_args(app, argv):
     )
     p_tika.add_argument(
         '--resource',
-        required=False,
+        required=True,
         choices=('meta', 'tika', 'rmeta', 'detect', 'unpack', 'pym'),
         help="""Use this resource of TIKA server. If you use 'unpack', we print
             out the TOC of the resulting ZIP file. Pipe to file to save as ZIP
-            file."""
+            file. "pym" produces output suitable to store in PymFs."""
     )
     p_tika.add_argument(
         '--type',
