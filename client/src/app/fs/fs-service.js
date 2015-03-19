@@ -14,6 +14,13 @@ function ($log,   $http,   $window,   RC,   pym) {
         overwrite: false,
         includeDeleted: false,
 
+        onUploadFinished: null,
+
+        refresh: function () {
+            this.tree.refresh();
+            this.browser.refresh();
+        },
+
         getPath: function () {
             return this.path;
         },

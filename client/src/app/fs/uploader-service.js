@@ -38,6 +38,18 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
         this.setState(FILE_STATES.CAN_UPLOAD);
     };
 
+    PymFile.prototype.setExistsAndPermissions = function(exists, permissions) {
+        this.exists = exists;
+        this.permissions = permissions;
+        if (!exists && permissions.create) {
+            this.setWriteMode('create');
+            this.setState(FILE_STATES.CAN_UPLOAD);
+        }
+        else {
+            this.setState(FILE_STATES.VALIDATION_OK);
+        }
+    };
+
     PymFile.prototype.abort = function () {
         if (this.uploadPromise) { this.uploadPromise.abort(); }
         this.setState(FILE_STATES.UPLOAD_CANCELED);
@@ -62,11 +74,10 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                     url: RC.urls.upload,
                     file: file.file,
                     data: {
+                        key: file.key,
+                        size: file.file.size,
                         path: pathStr,
                         write_mode: file.writeMode
-                    },
-                    headers: {
-                        'content-type': file.file.type
                     }
 
                     /*
@@ -103,9 +114,28 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                 p;
 
             p = $upload.upload(uploadConf)
+            .success(function (data, status, headers, config) {
+                                        $log.log('succ upl', data);
+                if (data.ok) {
+                    if (data.data[file.key].ok) {
+                        file.setState(FILE_STATES.UPLOAD_OK);
+                    }
+                    else {
+                        file.setState(FILE_STATES.UPLOAD_ERROR);
+                        file.validationMessage = data.data[file.key].validation_msg;
+                    }
+                }
+                else {
+                    pym.growler.growlAjaxResp(data);
+                    if (file.state === FILE_STATES.UPLOADING) {
+                        file.setState(FILE_STATES.UPLOAD_ERROR);
+                        file.validationMessage = 'Unknown error';
+                    }
+                }
+            })
             .error(function (data, status, headers, config) {
                 file.setState(FILE_STATES.UPLOAD_ERROR);
-                file.validationMessage = data;
+                file.validationMessage = status;
             });
             file.uploadPromise = p;
             file.setState(FILE_STATES.UPLOADING);
@@ -165,14 +195,7 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                         angular.forEach(
                             resp.data.data, function (v, k) {
                                 if (v.ok) {
-                                    fileList[k].exists = v.exists;
-                                    fileList[k].permissions = v.permissions;
-                                    if (! v.exists && v.permissions.create) {
-                                        fileList[k].setState(FILE_STATES.CAN_UPLOAD);
-                                    }
-                                    else {
-                                        fileList[k].setState(FILE_STATES.VALIDATION_OK);
-                                    }
+                                    fileList[k].setExistsAndPermissions(v.exists, v.permissions);
                                 }
                                 else {
                                     fileList[k].setState(FILE_STATES.VALIDATION_ERROR);

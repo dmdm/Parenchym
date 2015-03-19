@@ -1,5 +1,7 @@
 import logging
 import functools
+from pprint import pprint
+import random
 
 from pyramid.location import lineage
 import sqlalchemy as sa
@@ -7,7 +9,7 @@ import sqlalchemy.orm
 from pyramid.view import view_config, view_defaults
 import pyramid.response
 
-from pym.fs.tools import Sentry, UploadCache, UploadedFile
+from pym.fs.tools import Sentry, UploadCache, UploadedFile, Uploader
 from pym.lib import json_serializer
 from ...models import IFsNode, FsNode, WriteModes
 from ...const import MIME_TYPE_DIRECTORY
@@ -39,6 +41,14 @@ class Validator(pym.validator.Validator):
         except KeyError:
             raise pym.exc.ValidationError("Invalid write mode: '{}".format(v))
         return v
+
+    @property
+    def key(self):
+        return self.fetch('key', required=True, multiple=False)
+
+    @property
+    def size(self):
+        return self.fetch_int('size', required=True, multiple=False)
 
     @property
     def ids(self):
@@ -83,27 +93,23 @@ class Validator(pym.validator.Validator):
 
 class Worker(object):
 
-    def __init__(self, lgg, sess, owner_id, cache, has_permission, fs_root):
+    def __init__(self, lgg, sess, owner_id, cache, has_permission, fs_root,
+            cache_root_dir='/tmp/pym/upload_cache'):
         self.lgg = lgg
         self.sess = sess
         self.owner_id = owner_id
         self.cache = cache
         self.has_permission = has_permission
         self.fs_root = fs_root
+        self.cache_root_dir = cache_root_dir
+
         self.fc_col_map = {}
-
-        self.upload_cache = None
-        self.fs_sentry = None
-
-    def init_upload_cache(self, root_dir='/tmp/pym/upload_cache'):
-        if not self.upload_cache:
-            self.upload_cache = UploadCache(root_dir=root_dir)
 
     def del_cached_children(self, parent_id):
         for k in self.cache.keys("ResourceNode:children:*{}".format(parent_id)):
             self.cache.delete(k)
 
-    def validate_files(self, resp, path, files, request):
+    def OLD_validate_files(self, resp, path, files, request):
         """
         Validates the given files using their meta data and checks permissions.
 
@@ -203,75 +209,93 @@ class Worker(object):
         resp.data = rr
         return u_files
 
-    def upload(self, resp, path, data, write_mode, request):
-        self.init_upload_cache()
-        upload_cache = self.upload_cache
+    def validate_files(self, resp, path, files, request):
+        """
+        Validates the given files using their meta data and checks permissions.
 
-        # Use path to find destination node. We may change that later on, in
-        # case the provided file names already have existing nodes. Then those
-        # will become destinations.
+        :param resp: Response
+        :type resp: :class:`pym.resp.JsonResp`
+        :param path: String that identifies path to destination node.
+        :param files: Files are given as a list of dicts with meta data. Keys
+            'filename', 'size', 'mime_type', optionally key 'encoding'.
+        :param request:
+        :return: Returns a list of initialised instances of
+            :class:`pym.cache.UploadedFile`.
+        """
         path_node = self.fs_root.find_by_path(path)
-        path_sentry = Sentry(path_node)
+        uploader = Uploader(path_node, request)
+        uploader.add_files(files)
+        uploader.check_client_meta()
+        uploader.check_permissions()
+        resp.data = uploader.get_file_states()
 
-        # Create instances of UploadedFile
-        for name, fieldStorage in data.items():
-            if not (hasattr(fieldStorage, 'file') and fieldStorage.file):
-                continue
-            uf = upload_cache.create_file(fieldStorage)
-            # Without actually having saved the data to a file yet, we can do
-            # some pre-checks with the meta data as provided by the client.
-            meta = uf.get_client_meta()
-            try:
-                path_sentry.check_file_meta(meta)
-            except (PermissionError, ValueError) as exc:
-                uf.exc = exc
+    def upload(self, resp, key, path, size, file, write_mode, request):
+        files = []
+        files.append({
+            'key': key,
+            'filename': file.filename,
+            'size': size,
+            'mime_type': file.type
+        })
 
-        # For all files that are ok, determine if a node with their name already
-        # exists.
+        path_node = self.fs_root.find_by_path(path)
+        uploader = Uploader(path_node, request)
+        uploader.add_files(files)
+        uploader.check_client_meta()
+        uploader.check_permissions()
+        resp.data = uploader.get_file_states()
+
+        uploader.attach_fh(key, file)
+        upload_cache = UploadCache(root_dir=self.cache_root_dir)
+        uploader.save_to_cache(lgg=self.lgg, cache=upload_cache, overwrite=False)
+        uploader.check_cache_meta()
+
+        # Store the uploaded data in DB
+        actor = self.owner_id
         for uf in upload_cache.files:
             if not uf.is_ok:
                 continue
-            try:
-                file_node = path_node[uf.client_filename]
-            except KeyError:
-                # File does not yet exist
-                file_node = None
-                uf.exists = False
-                uf.dst_node = path_node
-                uf.sentry = path_sentry
+
+            data = dict(
+                filename=uf.client_filename,
+                mime_type=uf.cache_mime_type,
+                size=uf.cache_size,
+                encoding=uf.cache_encoding,
+            )
+
+            # TODO TIKA
+            extracted_meta = {}
+            if extracted_meta:
+                data.update(extracted_meta)
+
+            if write_mode == WriteModes.create.value:
+                self.lgg.debug('Adding file {} to {}, {} bytes'.format(data['filename'], uf.dst_node, data['size']))
+                file_node = uf.dst_node.add_file(owner=actor, **data)
+            elif write_mode == WriteModes.update.value:
+                self.lgg.debug('Updating file {}, {} bytes'.format(uf.dst_node, data['size']))
+                file_node = uf.dst_node.update(editor=actor, **data)
+            elif write_mode == WriteModes.revise.value:
+                self.lgg.debug('Revising file {}, {} bytes'.format(uf.dst_node, data['size']))
+                file_node = uf.dst_node.revise(keep_content=False,
+                    editor=actor, **data)
             else:
-                # File does exist.
-                uf.exists = True
-                uf.dst_node = file_node
-                uf.sentry = Sentry(file_node)
-            # Now that each file knows its destination node, it's time to
-            # check permission to write
-            try:
-                uf.sentry.check_permission(request, write_mode)
-            except PermissionError as exc:
-                uf.exc = exc
+                raise ValueError("Unknown write mode: '{}'".format(write_mode))
+            file_node.content.from_file(uf.abs_cache_filename)
 
-        # Save all survivors as real files in the cache, and check against
-        # the cache meta data. If the file still is ok, extract more meta via
-        # TIKA and finally store all in the DB.
-
-        # TODO
+        self.del_cached_children(path_node.id)
+        resp.data = uploader.get_file_states()
 
 
 
 
 
-        # # Save uploaded data only if needed. To just store it in the DB, it is
-        # # not needed. On the other hand we need a real file if we want to
-        # # extract xattr e.g. with TIKA. This should explicitly be requested by
-        # # client.
-        # # self.cache.save(self.lgg, resp)
-        #
+
+
+
         # actor = self.owner_id
         # # Store the uploaded data in DB
         # for c in upload_cache.files:
         #     if not c.is_ok:
-        #         resp.error("{}: {}".format(c.client_filename, c.exc))
         #         continue
         #
         #     name = c.client_filename
@@ -320,8 +344,6 @@ class Worker(object):
         #     for k in ('content_bin', 'content_text', 'content_json'):
         #         if k != attr:
         #             setattr(child_fs_node, k, None)
-
-            self.del_cached_children(path_node.id)
 
     def ls(self, resp, path, include_deleted):
         cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
@@ -490,6 +512,7 @@ class FsView(object):
         self.sess = DbSession()
         self.lgg = logging.getLogger(__name__)
         self.fs_root = context.class_root
+        self.upload_cache_root_dir = '/tmp/pym/upload_cache'
 
         self.tr = self.request.localizer.translate
         self.sess = DbSession()
@@ -500,7 +523,8 @@ class FsView(object):
             owner_id=request.user.uid,
             cache=request.redis,
             has_permission=request.has_permission,
-            fs_root=self.fs_root
+            fs_root=self.fs_root,
+            cache_root_dir=self.upload_cache_root_dir
         )
 
         self.urls = dict(
@@ -589,24 +613,27 @@ class FsView(object):
         request_method='POST'
     )
     def upload(self):
-        return 'ok'
-        # data = self.request.POST
-        # self.validator.inp = data
-        # keys = ('path', 'write_mode')
-        # func = functools.partial(
-        #     self.worker.upload,
-        #     data=data,
-        #     request=self.request
-        # )
-        # resp = pym.resp.build_json_response(
-        #     lgg=self.lgg,
-        #     validator=self.validator,
-        #     keys=keys,
-        #     func=func,
-        #     request=self.request,
-        #     die_on_error=False
-        # )
-        # return json_serializer(resp.resp)
+        if random.random() >= 0.7:
+            self.lgg.debug('Purging upload cache')
+            upload_cache = UploadCache(self.upload_cache_root_dir)
+            upload_cache.purge()
+        # handle multipart/form-data of a single file
+        self.validator.inp = pym.lib.json_deserializer(self.request.POST['data'])
+        keys = ('key', 'path', 'size', 'write_mode')
+        func = functools.partial(
+            self.worker.upload,
+            file=self.request.POST['file'],
+            request=self.request
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
 
     @view_config(
         name='_ls_',

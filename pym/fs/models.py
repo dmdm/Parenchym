@@ -465,6 +465,7 @@ class FsNode(pym.res.models.ResourceNode):
             self.content.editor_id = editor.id
 
         self.set_meta(kwargs, keep_content=False)
+        return self
 
     def revise(self, keep_content, editor, **kwargs):
         """
@@ -511,6 +512,7 @@ class FsNode(pym.res.models.ResourceNode):
             c.owner_id = editor.id
 
         self.set_meta(kwargs, keep_content)
+        return self
 
     def makedirs(self, owner, path, recursive=False, exist_ok=False):
         """

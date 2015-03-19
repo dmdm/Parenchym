@@ -148,6 +148,11 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
         openItemPropertiesDlg: function () {
             ctrl.openItemPropertiesDlg();
             this.isOpen = false;
+        },
+
+        refresh: function () {
+            pymFsService.refresh();
+            this.isOpen = false;
         }
     };
 
@@ -160,7 +165,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
             }
             else {
                 ctrl.canDownload = true;
-                ctrl.downloadUrl = pymFsService.buildDownloadUrl(ctrl.FileTree.path, sel[0]._name);
+                ctrl.downloadUrl = pymFsService.buildDownloadUrl(sel[0]._name);
             }
             ctrl.canDeleteItems = true;
             ctrl.canUndeleteItems = true;
@@ -547,6 +552,10 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     };
 
 
+    function cbUploadFinished() {
+        pymFsService.refresh();
+    }
+
     function init() {
         GridTools.enhance(ctrl.FileBrowser);
         ctrl.FileBrowser.init({
@@ -556,6 +565,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
         pymFsService.tree = ctrl.FileTree;
         pymFsService.browser = ctrl.FileBrowser;
         pymFsService.firstLoad(RC.path);
+        pymFsService.onUploadFinished = cbUploadFinished;
     }
 
 

@@ -153,6 +153,12 @@ ${parent.scripts()}
                                 <i class="fa fa-fw"></i> ${_("Item Properties")}
                             </a>
                         </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="#" ng-click="fs.ToolsMenu.refresh()">
+                                <i class="fa fa-fw fa-refresh"></i> ${_("Refresh")}
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
@@ -213,28 +219,19 @@ ${parent.scripts()}
                                         <button ng-if="f.isActive" class="btn btn-xs btn-default" ng-click="upl.cancel(f)"><i class="fa fa-trash-o text-danger" style="font-weight: bold;"></i></button>
                                         <div ng-if="(f.state == upl.FILE_STATES.VALIDATION_OK || f.state == upl.FILE_STATES.CAN_UPLOAD) && f.exists">
                                             ${_("File exists.")}
-                                            <label><input name="write_mode" type="radio" ng-click="f.setWriteMode('update')" ng-disabled="! f.permissions.update" value="update"> <span ng-class="{'text-muted':! f.permissions.update}">${_("Update or")}</span></label>
-                                            <label><input name="write_mode" type="radio" ng-click="f.setWriteMode('revise')" ng-disabled="! f.permissions.revise" value="revise"> <span ng-class="{'text-muted':! f.permissions.revise}">${_("revise?")}</span></label>
+                                            <label><input name="write_mode{{$index}}" type="radio" ng-click="f.setWriteMode('update')" ng-disabled="! f.permissions.update" value="update"> <span ng-class="{'text-muted':! f.permissions.update}">${_("Update or")}</span></label>
+                                            <label><input name="write_mode{{$index}}" type="radio" ng-click="f.setWriteMode('revise')" ng-disabled="! f.permissions.revise" value="revise"> <span ng-class="{'text-muted':! f.permissions.revise}">${_("revise?")}</span></label>
                                         </div>
+                                        <div ng-if="f.validationMessage" class="text-danger">{{f.validationMessage}}</div>
                                     </td>
                                     <td class="align-right">{{f.file.size|number:0}}</td>
                                     <td>{{f.file.type}}</td>
-                                    <td ng-if="f.validationMessage" class="text-danger">{{f.validationMessage}}</td>
-                                </tr>
-                                <tr>
-                                    <td></td>
-                                    <td>
-                                    </td>
-                                    <td></td>
-                                    <td></td>
-                                    <td ng-if="f.validationMessage"></td>
                                 </tr>
                                 <tr ng-repeat-end ng-if="f.isUploading">
                                     <td></td>
                                     <td><progressbar class="progress-striped active progress-bar-striped progress-no-margin" value="f.progress">{{f.progress}} %</progressbar></td>
                                     <td></td>
                                     <td></td>
-                                    <td ng-if="f.validationMessage"></td>
                                 </tr>
                             </tbody>
                         </table>

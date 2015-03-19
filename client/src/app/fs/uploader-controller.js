@@ -42,10 +42,13 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
         if (len !== 0) {
             ctrl.totalProgress = parseInt(p / len);
         }
+        return ctrl.activeUploads;
     };
 
     $scope.$watch(ctrl.countActiveUploads, function (newValue, oldValue) {
-        angular.noop();
+        if (newValue === 0 && newValue !== oldValue && pymFsService.onUploadFinished) {
+            pymFsService.onUploadFinished();
+        }
     });
 
     ctrl.minimaxWindow = function () {
@@ -162,26 +165,26 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
         this.progress = n;
     };
 
-    ctrl.cbSuccess = function (data, status, headers, config) {
-        // file is uploaded successfully
-        //$log.log('file ' + config.file.name + 'is uploaded successfully. Response: ' + data);
-        this.setState(FILE_STATES.UPLOAD_OK);
-    };
+    //ctrl.cbSuccess = function (data, status, headers, config) {
+    //    // file is uploaded successfully
+    //    $log.log('file ' + config.file.name + 'is uploaded successfully. Response: ' + data);
+    //    //this.setState(FILE_STATES.UPLOAD_OK);
+    //};
 
     ctrl.startUpload = function () {
         var self = this,
             p,
-            fProgress, fSuccess;
+            fProgress; //, fSuccess;
         angular.forEach(self.queue, function(f) {
             if (f.state === FILE_STATES.CAN_UPLOAD) {
                 $log.log('starting upload of', f.file.name, f);
                 // Bind the callbacks to the individual PymFile, so that
                 // their 'this' points to the PymFile instance.
                 fProgress = angular.bind(f, self.cbProgress);
-                fSuccess = angular.bind(f, self.cbSuccess);
+                //fSuccess = angular.bind(f, self.cbSuccess);
                 p = pymFsUploaderService.upload(pymFsService.getPathStr(), f)
-                    .progress(fProgress)
-                    .success(fSuccess);
+                    .progress(fProgress);
+                    //.success(fSuccess);
             }
         });
     };
@@ -239,24 +242,24 @@ function ($scope,   $window,   $log,   T,   pym,          pymFsService,   pymFsU
         return (sz >= this.minSize && sz <= this.maxSize);
     };
 
-    function init() {
-        var i, f;
-        for (i=0; i<10; i++) {
-            f = new pymFsUploaderService.createPymFile({
-                name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
-                size: 6523856653,
-                type: 'stuff/sample'
-                            });
-            f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.CAN_UPLOAD);
-            f.validationMessage = 'blah bölddf erwe';
-            ctrl.queue[i] = f;
-        }
-        ctrl.windowIsOpen = true;
-    }
-
-    /*
-    * Run immediately
-    */
-    init();
+    //function init() {
+    //    var i, f;
+    //    for (i=0; i<10; i++) {
+    //        f = new pymFsUploaderService.createPymFile({
+    //            name: 'dfdsffs sdfsgdfg fgsfgfdg sdfgfdg sdfgs dfg sdfg dfgsdfdg sdfgdfgs dfg d dsdgfsfdsg',
+    //            size: 6523856653,
+    //            type: 'stuff/sample'
+    //                        });
+    //        f.setState(i % 2 === 0 ? FILE_STATES.UPLOAD_ERROR : FILE_STATES.CAN_UPLOAD);
+    //        f.validationMessage = 'blah bölddf erwe';
+    //        ctrl.queue[i] = f;
+    //    }
+    //    ctrl.windowIsOpen = true;
+    //}
+    //
+    ///*
+    //* Run immediately
+    //*/
+    //init();
 
 }]);
