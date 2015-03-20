@@ -59,43 +59,11 @@ ${parent.scripts()}
 </%block>
 <%block name="meta_title">${_("Filesystem")}</%block>
 
-
-<%include file="FsPropertiesDlgTpl.mako" args="parent=self" />
-<%include file="ItemPropertiesDlgTpl.mako" args="parent=self" />
-
-
-<script type="text/ng-template" id="nodes_renderer.html">
-    <div ui-tree-handle class="tree-node tree-node-content" ng-class="{'selected': (fs.FileTree.selected.id == node.id)}">
-            <span ng-if="node.nodes && node.nodes.length > 0"
-                  nodrag
-                  ng-click="fs.FileTree.toggle(this)"
-                  class="fa fa-fw"
-                  ng-class="{'fa-caret-right': collapsed, 'fa-caret-down': !collapsed}">
-            </span>
-            ## Empty icon as placeholder
-            <span ng-if="! node.nodes || node.nodes.length == 0"
-                  nodrag
-                  class="fa fa-fw">
-            </span>
-            <span class="fa fa-fw fa-sort drag-handle"></span>
-            <span nodrag ng-click="fs.FileTree.toggleSelected(this)">{{node.title}}</span>
-    </div>
-    <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}">
-        <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'" collapsed="{{true}}"></li>
-    </ol>
-</script>
-
-
-
-<div ng-controller="pymFsController as fs" ng-cloak  ng-controller="pymFsUploaderController as upl">
-    <div ng-controller="pymFsUploaderController as upl">
-        <div class="row">
-            <div class="col-md-12">
-
-                <div class="btn-group" dropdown is-open="fs.ToolsMenu.isOpen">
-                    <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="fs.ToolsMenu.isDisabled">
+<%def name="tools_menu()">
+                <li class="dropdown" dropdown is-open="fs.ToolsMenu.isOpen">
+                    <a href="#" class="dropdown-toggle" dropdown-toggle ng-disabled="fs.ToolsMenu.isDisabled" role="button">
                         <i class="fa fa-cog text-primary"></i> ${_("Actions")} <span class="caret"></span>
-                    </button>
+                    </a>
                     <ul class="dropdown-menu" role="menu">
                         <li>
                             <a href="#" ng-click="fs.ToolsMenu.createDirectory()">
@@ -165,12 +133,13 @@ ${parent.scripts()}
                             </a>
                         </li>
                     </ul>
-                </div>
-
-                <div class="btn-group" dropdown is-open="fs.PrefMenu.isOpen">
-                    <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="fs.PrefMenu.isDisabled">
+                </li>
+</%def>
+<%def name="pref_menu()">
+                <li class="dropdown" dropdown is-open="fs.PrefMenu.isOpen">
+                    <a href="#" class="dropdown-toggle" dropdown-toggle ng-disabled="fs.PrefMenu.isDisabled" role="button">
                         <i class="fa fa-wrench text-primary"></i> ${_("Preferences")} <span class="caret"></span>
-                    </button>
+                    </a>
                     <ul class="dropdown-menu" role="menu">
                         <li>
                             <label class="anchor">
@@ -183,9 +152,107 @@ ${parent.scripts()}
                             </label>
                         </li>
                     </ul>
-                </div>
+                </li>
+    </%def>
+<%def name="find_menu()">
+    <div class="input-group">
+        <input type="text" class="form-control" style="height: 33px;">
+
+        <div class="input-group-btn" dropdown is-open="fs.FindMenu.isOpen">
+            <button type="button" class="btn btn-default">
+                <i class="fa fa-search text-primary"></i> ${_("Find")}
+            </button>
+            <button type="button"
+                    class="btn btn-default dropdown-toggle"
+                    dropdown-toggle
+                    ng-disabled="fs.FindMenu.isDisabled"
+                    aria-expanded="false">
+                <span class="caret"></span>
+                <span class="sr-only">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                <li role="presentation" class="dropdown-header">Search Area</li>
+                <li>
+                    <label class="anchor">
+                        <input type="radio"
+                               name="search_where"
+                               ng-model="fs.GlobalOptions.searchWhere"
+                               value="here"> ${_("Here")}
+                    </label>
+                </li>
+                <li>
+                    <label class="anchor">
+                        <input type="radio"
+                               name="search_where"
+                               ng-model="fs.GlobalOptions.searchWhere"
+                               value="everywhere"> ${_("Everywhere")}
+                    </label>
+                </li>
+                <li class="divider"></li>
+                <li role="presentation" class="dropdown-header">Search Fields
+                </li>
+                <li>
+                    <label class="anchor">
+                        <input type="radio"
+                               name="search_field"
+                               ng-model="fs.GlobalOptions.searchField"
+                               value="name"> ${_("Name and Title")}
+                    </label>
+                </li>
+                <li>
+                    <label class="anchor">
+                        <input type="radio"
+                               name="search_field"
+                               ng-model="fs.GlobalOptions.searchField"
+                               value="all"> ${_("Include Meta Data")}
+                    </label>
+                </li>
+            </ul>
+        </div><!-- /btn-group -->
+    </div><!-- /input-group -->
+</%def>
+
+
+<%include file="FsPropertiesDlgTpl.mako" args="parent=self" />
+<%include file="ItemPropertiesDlgTpl.mako" args="parent=self" />
+
+
+<script type="text/ng-template" id="nodes_renderer.html">
+    <div ui-tree-handle class="tree-node tree-node-content" ng-class="{'selected': (fs.FileTree.selected.id == node.id)}">
+            <span ng-if="node.nodes && node.nodes.length > 0"
+                  nodrag
+                  ng-click="fs.FileTree.toggle(this)"
+                  class="fa fa-fw"
+                  ng-class="{'fa-caret-right': collapsed, 'fa-caret-down': !collapsed}">
+            </span>
+            ## Empty icon as placeholder
+            <span ng-if="! node.nodes || node.nodes.length == 0"
+                  nodrag
+                  class="fa fa-fw">
+            </span>
+            <span class="fa fa-fw fa-sort drag-handle"></span>
+            <span nodrag ng-click="fs.FileTree.toggleSelected(this)">{{node.title}}</span>
+    </div>
+    <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}">
+        <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'" collapsed="{{true}}"></li>
+    </ol>
+</script>
+
+
+
+<div ng-controller="pymFsController as fs" ng-cloak  ng-controller="pymFsUploaderController as upl">
+    <div ng-controller="pymFsUploaderController as upl">
+        <nav class="navbar navbar-default navbar-pym">
+            <div class="container-fluid">
+                <ul class="nav navbar-nav">
+                    ${tools_menu()}
+                    ${pref_menu()}
+                </ul>
+                <form class="navbar-form navbar-left" role="search">
+                    ${find_menu()}
+                </form>
             </div>
-        </div>
+        </nav>
 
         <div class="row" ng-cloak>
             <div class="col-md-12">
@@ -245,7 +312,7 @@ ${parent.scripts()}
             </div>
         </div>
 
-        <div class="outer-gutter" style="margin: 1ex 0;">
+        <div class="outer-gutter" _style="margin: 1ex 0;">
             Path:<span ng-repeat="x in fs.FileTree.path">
                     <a href="#" style="padding: 0 4px 0 4px;" ng-click="fs.FileTree.setPathById(x.id)">{{x.title}}</a>
                     <span ng-if="! $last">/</span>
