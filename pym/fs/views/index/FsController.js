@@ -13,9 +13,15 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     ctrl.canUndeleteItems = false;
     ctrl.canOpenNode = false;
 
+    ctrl.globalOptions = pymFsService.globalOptions;
+
 
     ctrl.toggleIncludeDeleted = function () {
         pymFsService.toggleIncludeDeleted();
+    };
+
+    ctrl.find = function () {
+        pymFsService.find();
     };
 
 
@@ -372,7 +378,10 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
 
         initNodes: function () {
             var self = this;
-            return this.loadTree(this.data).then(
+            this.data = [RC.this_node, RC.search_node];
+            this.dataById[RC.this_node.id] = RC.this_node;
+            this.dataById[RC.search_node.id] = RC.search_node;
+            return this.loadTree(this.data[0].nodes).then(
                 function (resp) {
                     // This is the only case where we set path directly
                     self.path = [self.data[0]];
@@ -390,7 +399,9 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
          * @param {list} items.
          */
         postProcessItems: function (items) {
-            var self = this;
+            var self = this,
+                pathIds = [];
+            angular.forEach(this.path, function (p) {pathIds.push(p.id);});
             // Stuff parent to each node, so we can build the path more easily.
             // Also index by ID.
             function index(dd, parent) {
@@ -399,9 +410,10 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                     self.dataById[dd[i].id] = dd[i];
                     dd[i].parent = parent;
                     if (dd[i].nodes) {index(dd[i].nodes, dd[i]);}
+                    dd[i].collapsed = pathIds.indexOf(dd[i].id) < 0;
                 }
             }
-            index(items, null);
+            index(items, this.data[0]);
         },
 
         /**
@@ -438,6 +450,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                     self.loading = false;
                     if (resp.data.ok) {
                         self.postProcessItems(resp.data.data);
+                        $log.log(resp.data.data);
                         for (j=0, jmax=resp.data.data.length; j<jmax; j++) {
                             dst.push(resp.data.data[j]);
                         }
@@ -453,12 +466,13 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
          * Reloads tree data from server
          */
         refresh: function () {
-            var foo = [];
+            var self = this,
+                foo = [];
             this.loadTree(foo)
             .then(
                 $timeout(angular.bind(this, this.expandPath), 1000)
             );
-            this.data = foo;
+            this.data[0].nodes = foo;
         },
 
         /**

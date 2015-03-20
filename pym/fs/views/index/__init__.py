@@ -416,7 +416,8 @@ class Worker(object):
         cur_node = self.fs_root
         """:type: FsNode"""
         _load_twig(cur_node, data)
-        resp.data = data
+        # Skip fs_root, it is already there
+        resp.data = data[0]['nodes']
 
     def load_fs_properties(self, resp):
         resp.data = dict(self.fs_root.rc)
@@ -547,7 +548,12 @@ class FsView(object):
         path = '/'.join(list(reversed([x.name for x in lineage(self.context)
             if isinstance(x, FsNode)])))
         rc = {}
-        node_rc = self.context.rc
+        # This node will bee root for the tree
+        n = self.context
+        rc['this_node'] = {'id': n.id, 'title': n.title, 'name': n.name, 'nodes': [],
+                'sortix': n.sortix, 'is_deleted': n.is_deleted(), 'parent': None}
+        rc['search_node'] = {'id': -1000, 'title': _("Search Results"), 'name': 'search', 'nodes': [],
+                'sortix': 5000, 'is_deleted': False, 'parent': None}
         rc['urls'] = self.urls
         rc['path'] = path
         rc['MIME_TYPE_DIRECTORY'] = MIME_TYPE_DIRECTORY

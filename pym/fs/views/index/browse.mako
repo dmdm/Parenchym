@@ -143,12 +143,7 @@ ${parent.scripts()}
                     <ul class="dropdown-menu" role="menu">
                         <li>
                             <label class="anchor">
-                                <input type="checkbox" name="overwrite" ng-model="fs.GlobalOptions.overwrite"> ${_("Allow Overwrite")}
-                            </label>
-                        </li>
-                        <li>
-                            <label class="anchor">
-                                <input type="checkbox" name="include_deleted" ng-model="fs.GlobalOptions.includeDeleted" ng-click="fs.toggleIncludeDeleted()" ng-true-value="true" ng-false-value="false"> ${_("Show deleted")}
+                                <input type="checkbox" name="include_deleted" ng-model="fs.globalOptions.includeDeleted" ng-click="fs.toggleIncludeDeleted()" ng-true-value="true" ng-false-value="false"> ${_("Show deleted")}
                             </label>
                         </li>
                     </ul>
@@ -156,10 +151,10 @@ ${parent.scripts()}
     </%def>
 <%def name="find_menu()">
     <div class="input-group">
-        <input type="text" class="form-control" style="height: 33px;">
+        <input type="text" class="form-control" style="height: 33px;" name="search" ng-model="fs.globalOptions.search">
 
         <div class="input-group-btn" dropdown is-open="fs.FindMenu.isOpen">
-            <button type="button" class="btn btn-default">
+            <button type="button" class="btn btn-default" ng-click="fs.find()">
                 <i class="fa fa-search text-primary"></i> ${_("Find")}
             </button>
             <button type="button"
@@ -176,7 +171,7 @@ ${parent.scripts()}
                     <label class="anchor">
                         <input type="radio"
                                name="search_where"
-                               ng-model="fs.GlobalOptions.searchWhere"
+                               ng-model="fs.globalOptions.searchArea"
                                value="here"> ${_("Here")}
                     </label>
                 </li>
@@ -184,7 +179,7 @@ ${parent.scripts()}
                     <label class="anchor">
                         <input type="radio"
                                name="search_where"
-                               ng-model="fs.GlobalOptions.searchWhere"
+                               ng-model="fs.globalOptions.searchArea"
                                value="everywhere"> ${_("Everywhere")}
                     </label>
                 </li>
@@ -195,7 +190,7 @@ ${parent.scripts()}
                     <label class="anchor">
                         <input type="radio"
                                name="search_field"
-                               ng-model="fs.GlobalOptions.searchField"
+                               ng-model="fs.globalOptions.searchFields"
                                value="name"> ${_("Name and Title")}
                     </label>
                 </li>
@@ -203,7 +198,7 @@ ${parent.scripts()}
                     <label class="anchor">
                         <input type="radio"
                                name="search_field"
-                               ng-model="fs.GlobalOptions.searchField"
+                               ng-model="fs.globalOptions.searchFields"
                                value="all"> ${_("Include Meta Data")}
                     </label>
                 </li>
@@ -234,7 +229,7 @@ ${parent.scripts()}
             <span nodrag ng-click="fs.FileTree.toggleSelected(this)">{{node.title}}</span>
     </div>
     <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}">
-        <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'" collapsed="{{true}}"></li>
+        <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'" collapsed="{{node.collapsed}}"></li>
     </ol>
 </script>
 

@@ -10,11 +10,26 @@ function ($log,   $http,   $window,   RC,   pym) {
 
         rootPathStr: '',
         path: [],
+        prevPath: [],
 
-        overwrite: false,
-        includeDeleted: false,
+        globalOptions: {
+            includeDeleted: false,
+            searchArea: 'here',
+            searchFields: 'name',
+            search: ''
+        },
 
         onUploadFinished: null,
+
+        find: function () {
+            if (this.globalOptions.search.length) {
+                // Set prevPath only if current node is not a virtual node
+                if (this.path[0].id > 0) {
+                    this.prevPath = this.path;
+                }
+                this.tree.setPathById(-1000);
+            }
+        },
 
         refresh: function () {
             this.tree.refresh();
@@ -50,8 +65,8 @@ function ($log,   $http,   $window,   RC,   pym) {
          */
         toggleIncludeDeleted: function () {
             var pp = this.path, p0 = pp[0];
-            this.includeDeleted = !this.includeDeleted;
-            if (this.getLeafNode().is_deleted && !this.includeDeleted) {
+            this.globalOptions.includeDeleted = !this.globalOptions.includeDeleted;
+            if (this.getLeafNode().is_deleted && !this.globalOptions.includeDeleted) {
                 while (pp.length && pp[pp.length-1].is_deleted) {
                     pp.pop();
                 }
@@ -175,9 +190,16 @@ function ($log,   $http,   $window,   RC,   pym) {
             var httpConfig = {
                 params: {
                     path: this.pathToStr(this.path) || this.rootPathStr,
-                    incdel: this.includeDeleted
+                    incdel: this.globalOptions.includeDeleted,
+                    sarea: this.globalOptions.searchArea,
+                    sfields: this.globalOptions.searchFields,
+                    s: this.globalOptions.search
                 }
             };
+            // Current node is a virtual node, so use prevPath
+            if (this.path.length && this.path[0].id < 1) {
+                httpConfig.params.path = this.pathToStr(this.prevPath);
+            }
             return $http.get(RC.urls.load_items, httpConfig)
                 .then(
                 function (resp) {
@@ -199,7 +221,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                 params: {
                     path: this.rootPathStr,
                     filter: filter,
-                    incdel: this.includeDeleted
+                    incdel: this.globalOptions.includeDeleted
                 }
             };
             return $http.get(RC.urls.load_tree, httpConfig)
