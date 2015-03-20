@@ -113,6 +113,20 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     };
 
 
+    ctrl.extractMeta = function () {
+        var selected = [];
+        angular.forEach(ctrl.FileBrowser.api.selection.getSelectedRows(), function (v) {
+            $log.log(v);
+            selected.push(v._name);
+        });
+        pymFsService.extractMeta(selected)
+        .then(function () {
+                pymFsService.refresh();
+            }
+        );
+    };
+
+
     /*
      * Tools menu
      */
@@ -153,6 +167,11 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
         refresh: function () {
             pymFsService.refresh();
             this.isOpen = false;
+        },
+
+        extractMeta: function () {
+            ctrl.extractMeta();
+            this.isOpen = false;
         }
     };
 
@@ -170,6 +189,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
             ctrl.canDeleteItems = true;
             ctrl.canUndeleteItems = true;
             ctrl.canOpenNode = true;
+            ctrl.canExtractMeta = true;
             ctrl.canOpenItemPropertiesDlg = true;
         }
         else {

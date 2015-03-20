@@ -2,6 +2,7 @@ import logging
 import functools
 from pprint import pprint
 import random
+import tempfile
 
 from pyramid.location import lineage
 import sqlalchemy as sa
@@ -229,7 +230,7 @@ class Worker(object):
         uploader.check_permissions()
         resp.data = uploader.get_file_states()
 
-    def upload(self, resp, key, path, size, file, write_mode, request):
+    def upload(self, resp, key, path, size, file, write_mode, request, tika=None):
         files = []
         files.append({
             'key': key,
@@ -263,8 +264,10 @@ class Worker(object):
                 encoding=uf.cache_encoding,
             )
 
-            # TODO TIKA
-            extracted_meta = {}
+            if tika:
+                extracted_meta = tika.pym(uf.abs_cache_filename)
+            else:
+                extracted_meta = {}
             if extracted_meta:
                 data.update(extracted_meta)
 
@@ -285,65 +288,31 @@ class Worker(object):
         self.del_cached_children(path_node.id)
         resp.data = uploader.get_file_states()
 
-
-
-
-
-
-
-
-        # actor = self.owner_id
-        # # Store the uploaded data in DB
-        # for c in upload_cache.files:
-        #     if not c.is_ok:
-        #         continue
-        #
-        #     name = c.client_filename
-        #     # Shall we trust the mime-type the client told us, or use the one we
-        #     # determined our own?
-        #     # At least in case of a JSON file, our detection says wrongly
-        #     # 'text/plain', but the client told correctly 'application/json'
-        #     # mime = c.cache_mime_type
-        #     mime = c.client_mime_type
-        #
-        #     try:
-        #         child_fs_node = path_node[name]
-        #     except KeyError:
-        #         child_fs_node = pym.fs.manager.create_fs_node(
-        #             self.sess,
-        #             owner=actor,
-        #             parent_id=path_node.id,
-        #             name=name
-        #         )
-        #     else:
-        #         if overwrite:
-        #             # Need write permission on child to overwrite
-        #             if not self.has_permission(Permissions.write.value,
-        #                     context=child_fs_node):
-        #                 resp.error(_("Forbidden to overwrite '{}'").format(name))
-        #                 continue
-        #             child_fs_node = pym.fs.manager.update_fs_node(
-        #                 self.sess,
-        #                 fs_node=child_fs_node,
-        #                 editor=actor
-        #             )
-        #         else:
-        #             resp.warn(_('{} already exists').format(name))
-        #             continue
-        #     child_fs_node.mime_type = mime
-        #     child_fs_node.cache_filename = c.cache_filename
-        #     child_fs_node.size = c.meta['size']
-        #     child_fs_node.xattr = c.meta.get('xattr')
-        #     # Read data directly from fieldStorage, we might have no physically
-        #     # cached file.
-        #     attr = child_fs_node.content_attr
-        #     if attr == 'content_bin':
-        #         setattr(child_fs_node, attr, c.f.file.read())
-        #     else:
-        #         setattr(child_fs_node, attr, c.f.file.read().decode('UTF-8'))
-        #     for k in ('content_bin', 'content_text', 'content_json'):
-        #         if k != attr:
-        #             setattr(child_fs_node, k, None)
+    def extract_meta(self, resp, path, names, tika):
+        path_node = self.fs_root.find_by_path(path)
+        for name in names:
+            n = path_node[name]
+            if not n.content:
+                continue
+            attr = n.content.data_attr
+            if attr == 'data_bin':
+                mode = 'wb'
+                encoding = None
+            else:
+                mode = 'wt'
+                encoding = n.content.encoding or 'utf-8'
+            with tempfile.NamedTemporaryFile(mode=mode, encoding=encoding) as fp:
+                fp.write(getattr(n.content, attr))
+                fp.seek(0)
+                # Is it wise to hint TIKA with our stored mime-type?
+                # Maybe the reason to extract meta again is, our stored data
+                # incl. mime-type is wrong?
+                # OTOH, with tmp file, TIKA gets no hint from the filename...
+                hh = {'content-type': n.mime_type}
+                extracted_meta = tika.pym(fp.name, hh=hh)
+            n.set_meta(extracted_meta, keep_content=False)
+            n.editor_id = self.owner_id
+            n.content.editor_id = n.editor_id
 
     def ls(self, resp, path, include_deleted):
         cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
@@ -538,6 +507,7 @@ class FsView(object):
             load_fs_properties=request.resource_url(context, '@@_load_fs_properties_'),
             load_item_properties=request.resource_url(context, '@@_load_item_properties_'),
             validate_files=request.resource_url(context, '@@_validate_files_'),
+            extract_meta=request.resource_url(context, '@@_extract_meta_')
         )
 
     @view_config(
@@ -619,11 +589,13 @@ class FsView(object):
             upload_cache.purge()
         # handle multipart/form-data of a single file
         self.validator.inp = pym.lib.json_deserializer(self.request.POST['data'])
+        tika = pym.fs.tools.TikaServer('localhost', 9998)
         keys = ('key', 'path', 'size', 'write_mode')
         func = functools.partial(
             self.worker.upload,
             file=self.request.POST['file'],
-            request=self.request
+            request=self.request,
+            tika=tika
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,
@@ -766,6 +738,29 @@ class FsView(object):
         keys = ('path', 'name')
         func = functools.partial(
             self.worker.load_item_properties
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_extract_meta_',
+        renderer='string',
+        request_method='PUT'
+    )
+    def extract_meta(self):
+        self.validator.inp = self.request.json_body
+        keys = ('path', 'names')
+        tika = pym.fs.tools.TikaServer('localhost', 9998)
+        func = functools.partial(
+            self.worker.extract_meta,
+            tika=tika
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

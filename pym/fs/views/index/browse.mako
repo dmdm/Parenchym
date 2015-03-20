@@ -153,6 +153,11 @@ ${parent.scripts()}
                                 <i class="fa fa-fw"></i> ${_("Item Properties")}
                             </a>
                         </li>
+                        <li ng-class="{'disabled':!fs.canExtractMeta}">
+                            <a href="#" ng-click="fs.ToolsMenu.extractMeta()">
+                                <i class="fa fa-fw"></i> ${_("Extract Meta")}
+                            </a>
+                        </li>
                         <li class="divider"></li>
                         <li>
                             <a href="#" ng-click="fs.ToolsMenu.refresh()">

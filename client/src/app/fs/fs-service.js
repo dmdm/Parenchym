@@ -89,6 +89,26 @@ function ($log,   $http,   $window,   RC,   pym) {
             });
         },
 
+        extractMeta: function (nameList) {
+            var httpConfig = {},
+                postData = {
+                    names: nameList,
+                    path: this.pathToStr(this.path)
+                };
+            return $http.put(RC.urls.extract_meta, postData, httpConfig)
+                .then(
+                function (resp) {
+                    if (resp.data.ok) {
+                        // Noop
+                    }
+                    pym.growler.growlAjaxResp(resp.data);
+                    return resp;
+                }, function (result) {
+                    return result;
+                }
+            );
+        },
+
         createDirectory: function (dirName) {
             var httpConfig = {},
                 postData = {
@@ -101,7 +121,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                     if (resp.data.ok) {
                         // Noop
                     }
-                    Pym.growler.growlAjaxResp(resp.data);
+                    pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -123,7 +143,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                     if (resp.data.ok) {
                         // NOOP
                     }
-                    Pym.growler.growlAjaxResp(resp.data);
+                    pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -143,7 +163,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                     if (resp.data.ok) {
                         // NOOP
                     }
-                    Pym.growler.growlAjaxResp(resp.data);
+                    pym.growler.growlAjaxResp(resp.data);
                     return resp;
                 }, function (result) {
                     return result;
@@ -165,7 +185,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                         // noop
                     }
                     else {
-                        Pym.growler.growlAjaxResp(resp.data);
+                        pym.growler.growlAjaxResp(resp.data);
                     }
                     return resp;
                 }, function (result) {
@@ -189,7 +209,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                         // noop
                     }
                     else {
-                        Pym.growler.growlAjaxResp(resp.data);
+                        pym.growler.growlAjaxResp(resp.data);
                     }
                     return resp;
                 },
@@ -208,7 +228,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                         return resp;
                     }
                     else {
-                        Pym.growler.growlAjaxResp(resp.data);
+                        pym.growler.growlAjaxResp(resp.data);
                         return false;
                     }
                 },
@@ -232,7 +252,7 @@ function ($log,   $http,   $window,   RC,   pym) {
                         return resp;
                     }
                     else {
-                        Pym.growler.growlAjaxResp(resp.data);
+                        pym.growler.growlAjaxResp(resp.data);
                         return false;
                     }
                 },

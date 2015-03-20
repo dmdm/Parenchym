@@ -451,7 +451,7 @@ class Sentry():
 
 class TikaPymMixin():
 
-    def pym(self, fn):
+    def pym(self, fn, hh=None):
         """
         Fetches a bundle of meta information about given file.
 
@@ -465,17 +465,20 @@ class TikaPymMixin():
         :param fn: Filename.
         :return: Dict with meta info.
         """
+        if hh is None:
+            hh = {}
         m = {}
 
-        ct = self.detect(fn)
+        ct = self.detect(fn, hh=hh)
+        hh['content-type'] = ct
 
-        s = self.meta(fn, 'json')
+        s = self.meta(fn, 'json', hh=hh)
         m['meta_json'] = s if s else None
 
-        s = self.meta(fn, 'xmp')
+        s = self.meta(fn, 'xmp', hh=hh)
         m['meta_xmp'] = s if s else None
 
-        s = self.tika(fn, 'html')
+        s = self.tika(fn, 'html', hh=hh)
         if s:
             # Split head and body
             root = html.fromstring(s)
@@ -486,7 +489,7 @@ class TikaPymMixin():
             m['data_html_head'] = None
             m['data_html_body'] = None
 
-        s = self.tika(fn, 'text')
+        s = self.tika(fn, 'text', hh=hh)
         m['data_text'] = s if s else None
 
         m['mime_type'] = ct
@@ -599,7 +602,7 @@ class TikaServer(TikaPymMixin):
         self.port = port
         self.url = 'http://{}:{}'.format(host, port)
 
-    def detect(self, fn):
+    def detect(self, fn, hh):
         """
         Returns accurate content-type.
 
@@ -607,12 +610,13 @@ class TikaServer(TikaPymMixin):
         :returns: The content-type.
         :rtype: string
         """
-        hh = {}
+        if hh is None:
+            hh = {}
         url = self.url + '/detect/stream'
         r = self._send(url, fn, hh)
         return r.text
 
-    def rmeta(self, fn):
+    def rmeta(self, fn, hh=None):
         """
         Returns recursive meta info about compound document.
 
@@ -621,7 +625,8 @@ class TikaServer(TikaPymMixin):
             compound documents. Key ``X-TIKA:content`` contains text document.
         :rtype: List of dicts
         """
-        hh = {}
+        if hh is None:
+            hh = {}
         url = self.url + '/rmeta'
         r = self._send(url, fn, hh)
         try:
@@ -629,7 +634,7 @@ class TikaServer(TikaPymMixin):
         except ValueError:
             return r.text
 
-    def unpack(self, fn, all_=False):
+    def unpack(self, fn, all_=False, hh=None):
         """
         Unpacks compound document and returns ZIP archive.
 
@@ -637,16 +642,18 @@ class TikaServer(TikaPymMixin):
         :param all_: Get all compound documents.
         :return: File-like bytestream.
         """
-        hh = {
+        if hh is None:
+            hh = {}
+        hh.update({
             'content-type': 'application/zip'
-        }
+        })
         url = self.url + '/unpack'
         if all_:
             url += '/all'
         r = self._send(url, fn, hh)
         return io.BytesIO(r.content) if r.content else None
 
-    def meta(self, fn, type_='json'):
+    def meta(self, fn, type_='json', hh=None):
         """
         Returns meta info.
         :param fn: Filename.
@@ -655,7 +662,9 @@ class TikaServer(TikaPymMixin):
         """
         if not type_:
             type_ = 'json'
-        hh = self.__class__.TYPE_MAP[type_]
+        if hh is None:
+            hh = {}
+        hh.update(self.__class__.TYPE_MAP[type_])
         url = self.url + '/meta'
         r = self._send(url, fn, hh)
         if type_ == 'json':
@@ -666,7 +675,7 @@ class TikaServer(TikaPymMixin):
         else:
             return r.text
 
-    def tika(self, fn, type_='text'):
+    def tika(self, fn, type_='text', hh=None):
         """
         Returns text or HTML of content.
 
@@ -674,9 +683,13 @@ class TikaServer(TikaPymMixin):
         :param type_: 'text', 'html'
         :return: HTML or text
         """
-        hh = self.__class__.TYPE_MAP[type_]
+        if hh is None:
+            hh = {}
+        hh.update(self.__class__.TYPE_MAP[type_])
+        hh['Accept-Charset'] = 'unicode-1-1; q=1.0'
         url = self.url + '/tika'
         r = self._send(url, fn, hh)
+        r.encoding = 'utf-8'
         return r.text
 
     @staticmethod
