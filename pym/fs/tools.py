@@ -1,3 +1,5 @@
+from abc import abstractmethod
+from abc import ABCMeta
 import fcntl
 import io
 import logging
@@ -720,29 +722,24 @@ def guess_mime_type(fn,
     return mt, enc
 
 
-class UploadCache():
-
-    def __init__(self, root_dir='/tmp/upload_cache'):
+class BaseFsCache(metaclass=ABCMeta):
+    def __init__(self, root_dir='/tmp/pym/fs_cache'):
         """
-        Class to manage a cache for uploaded files.
+        Base class for filesystem caches.
 
-        :param root_dir: Root directory for the cache, default '/tmp'. As a
-            precaution, ``root_dir`` must be '/tmp' or have at least 3 elements,
-            like '/home/professor_xavier/foo'.
+        :param root_dir: Root directory for the cache, default
+            '/tmp/pym/upload_cache'. As a precaution, ``root_dir`` must be
+            '/tmp' or have at least 3 elements, like
+            '/home/professor_xavier/foo'.
         """
         self.check_path(root_dir.lstrip(os.path.sep))
         self._root_dir = root_dir
-        """Root directory for the cache"""
-        os.makedirs(self.root_dir, exist_ok=True)
+        os.makedirs(self._root_dir, exist_ok=True)
 
-        self.timeout = 60 * 60 * 24  # 1 day
-        """Files older than this are purged from cache [seconds]"""
+        self.ttl = 60 * 60 * 24  # 1 day
+        """Files older than this are purged from cache [seconds]."""
         self.chunk_size = 8 * 8192
-        """Chunk size for copy operations"""
-        self.magic_inst = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
-        """Instance of :class:magic.Magic"""
-
-        self._files = []
+        """Chunk size for copy operations."""
 
     @staticmethod
     def check_path(path):
@@ -778,6 +775,89 @@ class UploadCache():
                 os.makedirs(d, exist_ok=False)
         return p
 
+    @property
+    def root_dir(self):
+        """Root directory of cache."""
+        return self._root_dir
+
+    def open(self, fn):
+        """
+        Returns settings and an opened file handle
+
+        DO NOT FORGET TO CLOSE THE FILE HANDLE AFTER USE!
+
+        :param fn: Filename
+        :return: 2-tuple: (file handle, meta data)
+        """
+        fn_data = self.build_path(fn)
+        fn_rc = fn_data + '.yaml'
+        with open(fn_rc, 'rt', encoding='utf-8') as fh:
+            rc = yaml.load(fh)
+        fh = open(fn_data, 'rb')
+        return fh, rc
+
+    def read(self, fn, size):
+        """
+        Reads the file and returns content as bytes.
+        :param fn: Filename
+        :param size: Number of bytes to read, if -1 reads all (default).
+        :return: bytes
+        """
+        fn_data = self.build_path(fn)
+        with open(fn_data, 'rb') as fh:
+            return fh.read(size)
+
+    def delete(self, fn):
+        """
+        Deletes this file from cache, incl. metadata file.
+        :param fn: Filename, relative to our root directory.
+        """
+        fn_data = self.build_path(fn.lstrip(os.path.sep))
+        fn_rc = fn_data + '.yaml'
+        if os.path.exists(fn_data):
+            os.remove(fn_data)
+        if os.path.exists(fn_rc):
+            os.remove(fn_rc)
+
+    def purge(self, ttl=None):
+        """
+        Deletes all files from cache older than ``ttl`` in seconds.
+
+        :param ttl: Time-to-live in seconds. This overrides the instance setting.
+        """
+        if not ttl:
+            ttl = self.ttl
+        rp = PurePath(self.root_dir)
+        threshold = time.time() - ttl
+        for root, dirs, files in os.walk(self.root_dir):
+            for f in files:
+                # absolute path
+                fn = PurePath(root, f)
+                if fn.name.endswith('.yaml'):
+                    continue
+                # make path relative to cache root, because we call delete()
+                # which prepends root again.
+                if os.path.getctime(str(fn)) < threshold:
+                    self.delete(str(fn.relative_to(rp)))
+
+
+class UploadCache(BaseFsCache):
+
+    def __init__(self, root_dir='/tmp/pym/upload_cache'):
+        """
+        Class to manage a cache for uploaded files.
+
+        :param root_dir: Root directory for the cache, default
+            '/tmp/pym/upload_cache'. As a precaution, ``root_dir`` must be
+            '/tmp' or have at least 3 elements, like
+            '/home/professor_xavier/foo'.
+        """
+        super().__init__(root_dir)
+        self._files = []
+
+        self.magic_inst = magic.Magic(mime=True, mime_encoding=True, keep_going=True)
+        """Instance of :class:magic.Magic"""
+
     def add_file(self, uf, cache_filename=None):
         """
         Adds instance of :class:`UploadedFile` to our list.
@@ -798,7 +878,7 @@ class UploadCache():
 
     def save(self, lgg, overwrite=False):
         """
-        Saves uploaded data in cache.
+        Saves uploaded data to cache.
 
         Two files are created: 1 for the data, 2 with ext '.yaml' with metadata.
 
@@ -844,73 +924,6 @@ class UploadCache():
                 f.validation_msg = 'Cache error'
             finally:
                 fh.close()
-
-    def read(self, fn, size=-1):
-        """
-        Reads the file and returns content as bytes.
-
-        :param fn: Filename
-        :param size: Size on bytes to read, if -1 reads all.
-        :return: bytes
-        """
-        fn_data = self.build_path(fn)
-        with open(fn_data, 'rb') as fh:
-            return fh.read(size)
-
-    def open(self, fn):
-        """
-        Returns settings and an opened file handle
-
-        DO NOT FORGET TO CLOSE THE FILE HANDLE AFTER USE!
-
-        :param fn: Filename
-        :return: 2-tuple: (file handle, meta data)
-        """
-        fn_data = self.build_path(fn)
-        fn_rc = fn_data + '.yaml'
-        with open(fn_rc, 'rt', encoding='utf-8') as fh:
-            rc = yaml.load(fh)
-        fh = open(fn_data, 'rb')
-        return fh, rc
-
-    def delete(self, fn):
-        """
-        Deletes this file from cache, incl. metadata file.
-
-        :param fn: Filename, relative to our root directory.
-        """
-        fn_data = self.build_path(fn.lstrip(os.path.sep))
-        fn_rc = fn_data + '.yaml'
-        if os.path.exists(fn_data):
-            os.remove(fn_data)
-        if os.path.exists(fn_rc):
-            os.remove(fn_rc)
-
-    def purge(self, timeout=None):
-        """
-        Deletes all files from cache older than ``timeout`` in seconds.
-
-        :param timeout: Timeout in seconds. This overrides the instance setting.
-        """
-        if not timeout:
-            timeout = self.timeout
-        rp = PurePath(self.root_dir)
-        threshold = time.time() - timeout
-        for root, dirs, files in os.walk(self.root_dir):
-            for f in files:
-                # absolute path
-                fn = PurePath(root, f)
-                if fn.name.endswith('.yaml'):
-                    continue
-                # make path relative to cache root, because we call delete()
-                # which prepends root again.
-                if os.path.getctime(str(fn)) < threshold:
-                    self.delete(str(fn.relative_to(rp)))
-
-    @property
-    def root_dir(self):
-        """Root directory of cache."""
-        return self._root_dir
 
     @property
     def files(self):
