@@ -1,6 +1,6 @@
 angular.module('pym.fs').factory('pymFsService',
-        ['$log', '$http', '$window', 'RC', 'pymService',
-function ($log,   $http,   $window,   RC,   pym) {
+        ['$log', '$http', '$q', '$window', 'RC', 'pymService',
+function ($log,   $http,   $q,   $window,   RC,   pym) {
 
     "use strict";
 
@@ -21,12 +21,17 @@ function ($log,   $http,   $window,   RC,   pym) {
 
         onUploadFinished: null,
 
+        lastSearch: {
+            path: null,
+            incdel: null,
+            sarea: null,
+            sfields: null,
+            s: null
+        },
+        lastSearchResult: null,
+
         find: function () {
             if (this.globalOptions.search.length) {
-                // Set prevPath only if current node is not a virtual node
-                if (this.path[0].id > 0) {
-                    this.prevPath = this.path;
-                }
                 this.tree.setPathById(-1000);
             }
         },
@@ -45,6 +50,9 @@ function ($log,   $http,   $window,   RC,   pym) {
         },
 
         setPath: function (path) {
+            if (this.path[this.path.length - 1].id > 0) {
+                this.prevPath = this.path;
+            }
             this.path = path;
             this.tree.setPath(path);
             this.browser.setPath(path);
@@ -187,26 +195,76 @@ function ($log,   $http,   $window,   RC,   pym) {
         },
 
         loadItems: function () {
-            var httpConfig = {
-                params: {
+            var self = this,
+                httpConfig = {params: {}},
+                action = 'load',
+                leafNode = this.getLeafNode();
+
+            // The current leaf node tell us which data to load.
+            // Handle virtual node
+            if (leafNode && leafNode.id <= 0) {
+                // Handle search or search results
+                if (leafNode.name === 'search') {
+                    var searchParams,
+                        s = this.globalOptions.search
+                            .replace(/^\s+/, '')
+                            .replace(/\s+$/, ''),
+                        path = this.pathToStr(this.path) || this.rootPathStr;
+                    action = 'search';
+                    // Assemble search command
+                    searchParams = {
+                        path: s.length ? path : self.prevPath,
+                        incdel: this.globalOptions.includeDeleted,
+                        sarea: this.globalOptions.searchArea,
+                        sfields: this.globalOptions.searchFields,
+                        s: s
+                    };
+                    // If this command equals the last one, just return our
+                    // buffered result.
+                    if (angular.equals(searchParams, self.lastSearch)) {
+                        var data = {
+                                ok: true,
+                                data: {
+                                    rows: self.lastSearchResult
+                                }
+                            },
+                            dfr = $q.defer();
+                        dfr.resolve(data);
+                        return dfr.promise;
+                    }
+                    // Nope, this is a fresh search:
+                    else {
+                        httpConfig.params = searchParams;
+                    }
+                }
+                else {
+                    throw new Error('Unknown virtual node: ' + leafNode.id);
+                }
+            }
+            // Handle regular node / path
+            else {
+                httpConfig.params = {
                     path: this.pathToStr(this.path) || this.rootPathStr,
                     incdel: this.globalOptions.includeDeleted,
                     sarea: this.globalOptions.searchArea,
                     sfields: this.globalOptions.searchFields,
-                    s: this.globalOptions.search
-                }
-            };
-            // Current node is a virtual node, so use prevPath
-            if (this.path.length && this.path[0].id < 1) {
-                httpConfig.params.path = this.pathToStr(this.prevPath);
+                    s: ''
+                };
             }
             return $http.get(RC.urls.load_items, httpConfig)
                 .then(
                 function (resp) {
-                    if (resp.data.ok) {
-                        // noop
+                    // Search results may have both, valid rows and error/warning
+                    // messages. So look for rows and not just for the ok flag.
+                    if (resp.data.data.rows) {
+                        // Process search results
+                        if (action === 'search') {
+                            // Put them into our buffer
+                            self.lastSearchResult = resp.data.data.rows;
+                        }
+                        // action === 'load' needs no special processing
                     }
-                    else {
+                    if (! resp.data.ok) {
                         pym.growler.growlAjaxResp(resp.data);
                     }
                     return resp;

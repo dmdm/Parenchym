@@ -32,7 +32,7 @@ body {height: 100%;}
   overflow: auto;
 }
 #page_content {
-  overflow: auto;
+  /*overflow: auto;*/
   padding-bottom: $footer-height;
 }
 
@@ -412,4 +412,13 @@ body > footer {
     padding: $padding-small-vertical $padding-small-horizontal;
     td { white-space: nowrap; }
   }
+}
+
+.pym-navbar {
+  top: -10px;
+  background: $chrome-bg-color;
+  border-color: $chrome-border-color;
+  border-top-color: white;
+  margin-bottom: 0.5ex;
+  .container-fluid { padding: 0; }
 }

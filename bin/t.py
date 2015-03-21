@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-import copy
 import datetime
 import time
 import argparse
 import logging
 import sys
 import os
-import transaction
 
 import pym.cli
-from pym.fs.const import DEFAULT_RC_SCHEMA
-from pym.fs.models import FsNode, RcSchema
+from pym.res.models import VwParents
 
 
 class Runner(pym.cli.Cli):
@@ -19,22 +16,9 @@ class Runner(pym.cli.Cli):
         super().__init__()
 
     def run(self):
-        sch = RcSchema()
-        appstruct = copy.deepcopy(DEFAULT_RC_SCHEMA)
-        cstruct = sch.serialize(appstruct)
-        print(appstruct)
-        print(cstruct)
-        s = pym.lib.json_serializer(cstruct)
-        print(s)
-        cstruct = pym.lib.json_deserializer(s)
-        appstruct = sch.deserialize(cstruct)
-        print(appstruct)
-        with transaction.manager:
-            n = self.sess.query(FsNode).filter(
-                FsNode.name == 'fs'
-            ).one()
-            n.rc = copy.deepcopy(DEFAULT_RC_SCHEMA)
-            n.editor_id = self.actor.id
+        rs = self.sess.query(VwParents)
+        for r in rs:
+            print(r.id, r.name, r.parent_path, r.parents)
 
 
 def parse_args(app, argv):

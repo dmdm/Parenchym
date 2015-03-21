@@ -231,9 +231,9 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                 it.ctime = it.ctime ?  new Date(it.ctime) : null;
                 it.mtime = it.mtime ? new Date(it.mtime) : null;
                 it.dtime = it.dtime ? new Date(it.dtime) : null;
-                it.owner2 = function () { return this.owner ? this.owner + ' (' + this.owner_id + ')' : '' };
-                it.editor2 = function () { return this.editor ? this.editor + ' (' + this.editor_id + ')' : '' };
-                it.deleter2 = function () { return this.deleter ? this.deleter + ' (' + this.editor_id + ')' : '' };
+                it.owner2 = function () { return this.owner ? this.owner + ' (' + this.owner_id + ')' : ''; };
+                it.editor2 = function () { return this.editor ? this.editor + ' (' + this.editor_id + ')' : ''; };
+                it.deleter2 = function () { return this.deleter ? this.deleter + ' (' + this.editor_id + ')' : ''; };
             });
         },
 
@@ -323,7 +323,8 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
             { name:'editor', field: 'editor2()', displayName: 'Editor', enableCellEdit: false, width: 150 },
             { name:'dtime', displayName: 'DTime', cellFilter: 'date: "yyyy-MM-dd HH:mm"', enableCellEdit: false, width: 150 },
             { name:'deleter', field: 'deleter2()', displayName: 'Deleter', enableCellEdit: false, width: 150 },
-            { name:'deletion_reason', displayName: 'Reason', enableCellEdit: false, width: 150 }
+            { name:'deletion_reason', displayName: 'Reason', enableCellEdit: false, width: 150 },
+            { name:'location', displayName: 'Location', enableCellEdit: false, width: 300 }
         ]
     };
 

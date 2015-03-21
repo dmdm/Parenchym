@@ -6544,7 +6544,7 @@ body {
   overflow: auto; }
 
 #page_content {
-  overflow: auto;
+  /*overflow: auto;*/
   padding-bottom: 20px; }
 
 #page_header_top_row {
@@ -6881,3 +6881,12 @@ body > footer {
     padding: 5px 10px; }
     .pym-fs-uploader .body td {
       white-space: nowrap; }
+
+.pym-navbar {
+  top: -10px;
+  background: #f5f5f5;
+  border-color: #ccc;
+  border-top-color: white;
+  margin-bottom: 0.5ex; }
+  .pym-navbar .container-fluid {
+    padding: 0; }

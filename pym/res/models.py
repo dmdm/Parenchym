@@ -1,6 +1,7 @@
 from pyramid.decorator import reify
 import pyramid.util
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import ARRAY
 import sqlalchemy.event
 from sqlalchemy.orm import (relationship, backref)
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -811,3 +812,39 @@ def resource_node_load_listener(target, context):
         zope.interface.alsoProvides(target, iface)
 
 sa.event.listen(ResourceNode, 'load', resource_node_load_listener)
+
+
+class VwParents(DbBase):
+    """
+    Excerpt of view ``pym.vw_resource_node`` to map resource ID to parents.
+
+    Parents are given as a single-dimensioned array of strings. Each two
+    elements belong together and form the ID and name of a node. Path is
+    listed from current node up to root node of the resource tree. ID needs
+    to be cast to integer.
+    """
+
+    __tablename__ = "vw_resource_tree"
+    __table_args__ = (
+        {'schema': 'pym'}
+    )
+
+    id = sa.Column(sa.Integer(), primary_key=True)
+    name = sa.Column(sa.Unicode(255))
+    _parents = sa.Column('parents', ARRAY(sa.UnicodeText(), dimensions=1))
+
+    @property
+    def parents(self):
+        pp = self._parents
+        if pp:
+            return tuple([(int(pp[i]), pp[i + 1]) for i in range(0, len(pp), 2)])
+        else:
+            return None
+
+    @property
+    def parent_path(self):
+        pp = reversed(self.parents)
+        if pp:
+            return '/'.join(x[1] for x in pp)
+        else:
+            return '/'

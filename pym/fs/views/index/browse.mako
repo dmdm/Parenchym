@@ -170,7 +170,7 @@ ${parent.scripts()}
                 <li>
                     <label class="anchor">
                         <input type="radio"
-                               name="search_where"
+                               name="search_area"
                                ng-model="fs.globalOptions.searchArea"
                                value="here"> ${_("Here")}
                     </label>
@@ -178,7 +178,7 @@ ${parent.scripts()}
                 <li>
                     <label class="anchor">
                         <input type="radio"
-                               name="search_where"
+                               name="search_area"
                                ng-model="fs.globalOptions.searchArea"
                                value="everywhere"> ${_("Everywhere")}
                     </label>
@@ -189,7 +189,7 @@ ${parent.scripts()}
                 <li>
                     <label class="anchor">
                         <input type="radio"
-                               name="search_field"
+                               name="search_fields"
                                ng-model="fs.globalOptions.searchFields"
                                value="name"> ${_("Name and Title")}
                     </label>
@@ -197,7 +197,7 @@ ${parent.scripts()}
                 <li>
                     <label class="anchor">
                         <input type="radio"
-                               name="search_field"
+                               name="search_fields"
                                ng-model="fs.globalOptions.searchFields"
                                value="all"> ${_("Include Meta Data")}
                     </label>
@@ -237,7 +237,7 @@ ${parent.scripts()}
 
 <div ng-controller="pymFsController as fs" ng-cloak  ng-controller="pymFsUploaderController as upl">
     <div ng-controller="pymFsUploaderController as upl">
-        <nav class="navbar navbar-default navbar-pym">
+        <nav class="navbar navbar-default pym-navbar">
             <div class="container-fluid">
                 <ul class="nav navbar-nav">
                     ${tools_menu()}

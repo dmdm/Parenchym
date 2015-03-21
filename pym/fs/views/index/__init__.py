@@ -2,20 +2,23 @@ import logging
 import functools
 from pprint import pprint
 import random
+import re
 import tempfile
 
 from pyramid.location import lineage
 import sqlalchemy as sa
 import sqlalchemy.orm
+import sqlalchemy.sql.operators as sqlop
 from pyramid.view import view_config, view_defaults
 import pyramid.response
 
 from pym.fs.tools import Sentry, UploadCache, UploadedFile, Uploader
 from pym.lib import json_serializer
-from ...models import IFsNode, FsNode, WriteModes
+from ...models import IFsNode, FsNode, WriteModes, FsContent
 from ...const import MIME_TYPE_DIRECTORY
 import pym.exc
 import pym.fs.manager
+from pym.res.models import VwParents
 import pym.security
 import pym.validator
 from pym.i18n import _
@@ -88,6 +91,28 @@ class Validator(pym.validator.Validator):
         return self.fetch_bool('incdel', required=True, multiple=False)
 
     @property
+    def search_area(self):
+        v = self.fetch('sarea', required=False, multiple=False)
+        if v is None:
+            return 'here'
+        if v not in ('here', 'everywhere'):
+            raise pym.exc.ValidationError("Invalid sarea: '{}".format(v))
+        return v
+
+    @property
+    def search_fields(self):
+        v = self.fetch('sfields', required=False, multiple=False)
+        if v is None:
+            return 'name'
+        if v not in ('name', 'all'):
+            raise pym.exc.ValidationError("Invalid sfields: '{}".format(v))
+        return v
+
+    @property
+    def search(self):
+        return self.fetch('s', required=False, multiple=False)
+
+    @property
     def files(self):
         return self.fetch('files', required=True, multiple=False)
 
@@ -110,106 +135,6 @@ class Worker(object):
         for k in self.cache.keys("ResourceNode:children:*{}".format(parent_id)):
             self.cache.delete(k)
 
-    def OLD_validate_files(self, resp, path, files, request):
-        """
-        Validates the given files using their meta data and checks permissions.
-
-        :param resp: Response
-        :type resp: :class:`pym.resp.JsonResp`
-        :param path: String that identifies path to destination node.
-        :param files: Files are given as a list of dicts with meta data. Keys
-            'filename', 'size', 'mime_type', optionally key 'encoding'.
-        :param request:
-        :return: Returns a list of initialised instances of
-            :class:`pym.cache.UploadedFile`.
-        """
-        u_files = []
-        # Use path to find destination node. We may change that later on, in
-        # case the provided file names already have existing nodes. Then those
-        # will become destinations.
-        path_node = self.fs_root.find_by_path(path)
-        path_sentry = Sentry(path_node)
-
-        # 1. stage checks info provided by client
-        for f in files:
-            uf = UploadedFile()
-            u_files.append(uf)
-            uf.key = f['key']
-            meta = {
-                'filename': f['filename'],
-                'size': f['size'],
-                'mime_type': f['mime_type'],
-            }
-            uf.init_by_client_meta(meta)
-            try:
-                path_sentry.check_file_meta(meta)
-            # ValueError if name is not safe, PermissionError in all other cases
-            except (PermissionError, ValueError) as exc:
-                uf.exc = exc
-                uf.validation_msg = str(exc)
-
-        # 1.5 Interlude: setup destination node and corresponding sentry
-        for uf in u_files:
-            if not uf.is_ok:
-                continue
-            try:
-                file_node = path_node[uf.client_filename]
-            except KeyError:
-                # File does not yet exist
-                file_node = None
-                uf.exists = False
-                uf.dst_node = path_node
-                uf.sentry = path_sentry
-            else:
-                # File does exist.
-                uf.exists = True
-                uf.dst_node = file_node
-                uf.sentry = Sentry(file_node)
-
-        # 2. stage checks destination's permissions
-        for uf in u_files:
-            if not uf.is_ok:
-                continue
-            if not uf.exists:
-                # Dst does not exist, so we ask for "create".
-                try:
-                    uf.sentry.check_permission(request, WriteModes.create)
-                    uf.allow_create()
-                except PermissionError as exc:
-                    uf.exc = exc
-                    uf.validation_msg = str(exc)
-            else:
-                # Dst exists, check both, "update" and "revise"
-                e1, e2 = None, None
-                try:
-                    uf.sentry.check_permission(request, WriteModes.update)
-                    uf.allow_update()
-                except PermissionError as exc:
-                    # Do not set exception to uf, we still may be allowed to
-                    # revise...
-                    e1 = exc
-                try:
-                    uf.sentry.check_permission(request, WriteModes.revise)
-                    uf.allow_revise()
-                except PermissionError as exc:
-                    e2 = exc
-                # Aww, both permissions denied.
-                if e1 and e2:
-                    uf.validation_msg = _("Destination exists. Permission denied to update or revise.")
-                    uf.exc = e2
-
-        # Epilog: setup response
-        rr = {}
-        for uf in u_files:
-            rr[uf.key] = {
-                'ok': uf.is_ok,
-                'exists': uf.exists,
-                'permissions': uf.get_permissions(),
-                'validation_msg': uf.validation_msg
-            }
-        resp.data = rr
-        return u_files
-
     def validate_files(self, resp, path, files, request):
         """
         Validates the given files using their meta data and checks permissions.
@@ -231,13 +156,12 @@ class Worker(object):
         resp.data = uploader.get_file_states()
 
     def upload(self, resp, key, path, size, file, write_mode, request, tika=None):
-        files = []
-        files.append({
+        files = [{
             'key': key,
             'filename': file.filename,
             'size': size,
             'mime_type': file.type
-        })
+        }]
 
         path_node = self.fs_root.find_by_path(path)
         uploader = Uploader(path_node, request)
@@ -314,22 +238,18 @@ class Worker(object):
             n.editor_id = self.owner_id
             n.content.editor_id = n.editor_id
 
-    def ls(self, resp, path, include_deleted):
-        cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
-        if not self.has_permission(Permissions.read.value, context=cur_node):
-            resp.error("Forbidden to list")
-            return
+    def ls(self, resp, path, include_deleted, search_area, search_fields,
+            search):
+
+        # Aliases and sub-selects we need in any case
         owner = sa.orm.aliased(pym.auth.models.User, name='owner')
         editor = sa.orm.aliased(pym.auth.models.User, name='editor')
         deleter = sa.orm.aliased(pym.auth.models.User, name='deleter')
-        fil = [
-            FsNode.parent_id == cur_node.id
-        ]
-        if not include_deleted:
-            fil.append(FsNode.deleter_id == None)
         nchildren = self.sess.query(FsNode.parent_id, sa.func.count('*').label(
             'nchildren')).group_by(FsNode.parent_id).subquery()
-        rs = self.sess.query(
+
+        # Base query
+        q = self.sess.query(
             FsNode,
             owner.display_name.label('owner'),
             editor.display_name.label('editor'),
@@ -343,11 +263,107 @@ class Worker(object):
             deleter, deleter.id == FsNode.deleter_id
         ).outerjoin(
             nchildren, nchildren.c.parent_id == FsNode.id
-        ).filter(*fil)
+        )
+
+        # Init filter
+        fil = []
+        if not include_deleted:
+            fil.append(FsNode.deleter_id == None)
+
+        # If a search expression is present...
+        if search:
+            # Join VwParents from resources to obtain the location
+            q = q.add_entity(VwParents)
+            q = q.outerjoin(
+                VwParents, VwParents.id == FsNode.id
+            )
+            # Init op and expression
+            search = '%' + re.sub(r'\s+', '%', search) + '%'
+            op = sqlop.ilike_op
+
+            # 1. Apply search area
+            #    a) We search here: init vanilla ls on current node
+            if search_area == 'here':
+                cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
+                if not self.has_permission(Permissions.read.value, context=cur_node):
+                    resp.error("Forbidden to list")
+                    return
+                fil.append(FsNode.parent_id == cur_node.id)
+            #   b) We search everywhere:  I) No filter by parent_id
+            #                            II) Check read permission of each
+            #                                single node that we selected
+            #                                (see below)
+            elif search_area == 'everywhere':
+                pass
+            else:
+                raise ValueError("Invalid search area: '{}'".format(search_area))
+
+            # 2. Apply search fields
+            #    a) name: we look into name and title fields
+            if search_fields == 'name':
+                fil.append(sa.or_(
+                    op(FsNode.name, search),
+                    op(FsNode.title, search),
+                ))
+            #    b) all: we look into name, title, meta_json, data_text fields
+            #       To do that, we must join with FsContent
+            elif search_fields == 'all':
+                q = q.outerjoin(
+                    FsContent, FsContent.id == FsNode.fs_content_id
+                )
+                fil.append(sa.or_(
+                    op(FsNode.name, search),
+                    op(FsNode.title, search),
+                    op(sa.cast(FsContent.meta_json, sa.UnicodeText), search),
+                    op(FsContent.data_text, search),
+                ))
+            else:
+                raise ValueError("Invalid search fields: '{}'".format(search_fields))
+
+        # No search expression present: perform vanilla ls on current node
+        else:
+            cur_node = self.fs_root.find_by_path(path, include_deleted=include_deleted)
+            if not self.has_permission(Permissions.read.value, context=cur_node):
+                resp.error("Forbidden to list")
+                return
+            fil.append(FsNode.parent_id == cur_node.id)
+
+        q = q.filter(*fil)
         excl = {
-            'FsNode': ('content_bin', 'content_text', 'content_json', '_slug')
+            'FsNode': ('content_bin', 'content_text', 'content_json', '_slug'),
+            'VwParents': ('id', '_parents')
         }
-        resp.data = {'rows': dictate_iter(rs, excludes=excl, objects_as='flat')}
+        rows = []
+        no_perm = 0
+        fs_root_id = self.fs_root.id
+        for r in q:
+            # We had searched everywhere, so each individual row needs to be
+            # checked for read permission
+            if search and search_area == 'everywhere':
+                n = r.FsNode
+                vwp = r.VwParents
+                if self.has_permission(Permissions.read.value, context=n):
+                    x = dictate(r, excludes=excl, objects_as='flat')
+                    if vwp.parents:
+                        pp = []
+                        for p in vwp.parents:
+                            pp.append(p[1])
+                            if p[0] == fs_root_id:
+                                break
+                        x['location'] = '/'.join(reversed(pp))
+                    else:
+                        x['location'] = '/'
+                    rows.append(x)
+                else:
+                    no_perm += 1
+                if no_perm:
+                    resp.warn("{} rows skipped because you have no read permission")
+            # Vanilla: just append the row
+            else:
+                x = dictate(r, excludes=excl, objects_as='flat')
+                x['location'] = ''
+                rows.append(x)
+        resp.data = {'rows': rows}
 
     def delete_items(self, resp, path, names, reason):
         cur_node = self.fs_root.find_by_path(path, include_deleted=True)
@@ -619,7 +635,8 @@ class FsView(object):
         request_method='GET'
     )
     def ls(self):
-        keys = ('path', 'include_deleted')
+        keys = ('path', 'include_deleted', 'search_area', 'search_fields',
+            'search')
         func = functools.partial(
             self.worker.ls
         )
