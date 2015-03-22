@@ -14,6 +14,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     ctrl.canOpenNode = false;
 
     ctrl.globalOptions = pymFsService.globalOptions;
+    $scope.buildDownloadUrl = pymFsService.buildDownloadUrl;
 
 
     ctrl.toggleIncludeDeleted = function () {
@@ -69,6 +70,13 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                 ctrl.FileTree.refresh();
                 ctrl.FileBrowser.refresh();
             });
+    };
+
+
+    ctrl.openNode = function () {
+        var sel = ctrl.FileBrowser.api.selection.getSelectedRows();
+        if (! sel.length) { return; }
+        ctrl.FileTree.setPathById(sel[0].id);
     };
 
 
@@ -234,6 +242,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                 it.owner2 = function () { return this.owner ? this.owner + ' (' + this.owner_id + ')' : ''; };
                 it.editor2 = function () { return this.editor ? this.editor + ' (' + this.editor_id + ')' : ''; };
                 it.deleter2 = function () { return this.deleter ? this.deleter + ' (' + this.editor_id + ')' : ''; };
+                it.download_url = pymFsService.buildDownloadUrl(it);
             });
         },
 
@@ -284,6 +293,12 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
 
     var nodeIdTpl = '<div class="ui-grid-cell-contents"><span tooltip-trigger="click" tooltip-append-to-body="true" tooltip-html-unsafe="{{row.entity.id}}">{{row.entity.id}}</span></div>';
     var aggNumTpl = '<div class="ui-grid-cell-contents" style="text-align: right;">{{grid.getColumn("size").getAggregationValue()|number:0}}</div>';
+    //var nodeNameTpl = '<div class="ui-grid-cell-contents">'
+    //                + '<a ng-href="{{grid.appScope.buildDownloadUrl(row.entity)}}">{{row.entity._name}}, {{grid.appScope.canUpload}}: {{grid.appScope.buildDownloadUrl(row.entity)}}</a>'
+    //                + '</div>';
+    var nodeNameTpl = '<div class="ui-grid-cell-contents">'
+                    + '<a ng-href="{{row.entity.download_url}}?disposition=attachment">{{row.entity._name}}</a>'
+                    + '</div>';
 
     ctrl.FileBrowser.options = {
         data: ctrl.FileBrowser.data,
@@ -311,7 +326,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
 
         columnDefs: [
             { name:'id', displayName: 'ID', enableFiltering: false, enableCellEdit: false, width: 50, cellTemplate:nodeIdTpl },
-            { name:'_name', displayName: 'Name', enableCellEdit: true, width: 230 },
+            { name:'_name', displayName: 'Name', enableCellEdit: true, width: 230, cellTemplate: nodeNameTpl },
             { name:'_title', displayName: 'Title', enableCellEdit: true, width: 230 },
             { name:'rev', displayName: 'Rev', enableCellEdit: false, width: 45, cellFilter: "number:0", cellClass: "text-right" },
             { name:'size', displayName: 'Size', enableCellEdit: false, width: 80, cellFilter: "number:0", cellClass: "text-right", aggregationType: uiGridConstants.aggregationTypes.sum, aggregationHideLabel: true, footerCellTemplate: aggNumTpl },

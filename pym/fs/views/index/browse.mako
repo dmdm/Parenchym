@@ -107,7 +107,7 @@ ${parent.scripts()}
                         </li>
                         <li ng-class="{'disabled':!fs.canUndeleteItems}">
                             <a href="#" ng-click="fs.ToolsMenu.undeleteItems()">
-                                <i class="fa fa-fw fa-trash-o fa-rotate-180"></i> ${_("Undelete")}
+                                <i class="fa fa-fw fa-trash-o fa-flip-vertical"></i> ${_("Undelete")}
                             </a>
                         </li>
                         <li class="divider"></li>

@@ -361,7 +361,15 @@ class Worker(object):
             # Vanilla: just append the row
             else:
                 x = dictate(r, excludes=excl, objects_as='flat')
-                x['location'] = ''
+                pp = []
+                nr = cur_node.class_root
+                while True:
+                    pp.append(cur_node._name)
+                    if cur_node != nr and cur_node.__parent__:
+                        cur_node = cur_node.__parent__
+                    else:
+                        break
+                x['location'] = '/'.join(reversed(pp))
                 rows.append(x)
         resp.data = {'rows': rows}
 

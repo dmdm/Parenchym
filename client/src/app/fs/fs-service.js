@@ -342,17 +342,34 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
             );
         },
 
-        buildDownloadUrl: function (name) {
-            var pp, s;
-            // Make local copy of original path
-            pp = this.path.slice();
-            // Remove filesystem root, because browser is already there:
-            // http://HOST:PORT/TENANT/fs/@@_br_
-            if (pp[0].name === 'fs') { pp.shift(); }
-            // Stringify path and append name
-            s = pp.length ? this.pathToStr(pp) + '/' + name : name;
-            // Get current url and apply our path string
-            return $window.location.href.replace(/@@_br_/, s);
+        buildDownloadUrl: function (nameOrEntity) {
+            var pp, s, name, entity, uu, loc;
+            $log.log(nameOrEntity, typeof nameOrEntity);
+            if (angular.isString(nameOrEntity)) {
+                name = nameOrEntity;
+                // Make local copy of original path
+                pp = this.path.slice();
+                // Remove filesystem root, because browser is already there:
+                // http://HOST:PORT/TENANT/fs/@@_br_
+                if (pp[0].name === 'fs') { pp.shift(); }
+                // Stringify path and append name
+                s = pp.length ? this.pathToStr(pp) + '/' + name : name;
+                // Get current url and apply our path string
+                return $window.location.href.replace(/@@_br_/, s);
+            }
+            else {
+                entity = nameOrEntity;
+                // Get current path from browser and keep only the first 2
+                // elements: 0=EMPTY, 1=TENANT. This will discard the 3rd node
+                // ("fs") too, because entity.location starts with "fs".
+                uu = $window.location.pathname.split('/').slice(0, 2).join('/');
+                // From location remove leading /
+                s = $window.location.origin + uu + '/'
+                    + entity.location + '/' + entity._name;
+                $log.log('new path: ', s);
+                return s;
+            }
+
         },
 
         pathToStr: function (path) {
