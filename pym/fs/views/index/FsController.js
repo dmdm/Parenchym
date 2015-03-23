@@ -131,7 +131,6 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     ctrl.extractMeta = function () {
         var selected = [];
         angular.forEach(ctrl.FileBrowser.api.selection.getSelectedRows(), function (v) {
-            $log.log(v);
             selected.push(v._name);
         });
         pymFsService.extractMeta(selected)
@@ -279,8 +278,8 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                 if (newValue === oldValue) { return; }
                 // User edited a cell, the grid already stored the change.
                 // Now tell the server about it.
-                pymFsService.changeItemAttr(rowEntity.id, fld, newValue, oldValue).
-                then(
+                pymFsService.changeItemAttr(rowEntity.id, fld, newValue, oldValue)
+                .then(
                     angular.noop(),
                     // Server says, invalid or error: reset the data to oldValue
                     function (result) {
@@ -484,7 +483,6 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
                     self.loading = false;
                     if (resp.data.ok) {
                         self.postProcessItems(resp.data.data);
-                        $log.log(resp.data.data);
                         for (j=0, jmax=resp.data.data.length; j<jmax; j++) {
                             dst.push(resp.data.data[j]);
                         }

@@ -73,7 +73,7 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
          */
         toggleIncludeDeleted: function () {
             var pp = this.path, p0 = pp[0];
-            this.globalOptions.includeDeleted = !this.globalOptions.includeDeleted;
+            //this.globalOptions.includeDeleted = !this.globalOptions.includeDeleted;
             if (this.getLeafNode().is_deleted && !this.globalOptions.includeDeleted) {
                 while (pp.length && pp[pp.length-1].is_deleted) {
                     pp.pop();
@@ -353,7 +353,7 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
             // Caller need not to differentiate between invalid data and network
             // errors: Return a rejected promise in both cases.
             return $http.put(RC.urls.edit_item, putData, httpConfig)
-                .then(
+            .then(
                 function (resp) {
                     pym.growler.growlAjaxResp(resp.data);
                     return resp.data.ok ? resp : $q.reject(resp);
@@ -366,7 +366,6 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
 
         buildDownloadUrl: function (nameOrEntity) {
             var pp, s, name, entity, uu, loc;
-            $log.log(nameOrEntity, typeof nameOrEntity);
             if (angular.isString(nameOrEntity)) {
                 name = nameOrEntity;
                 // Make local copy of original path
@@ -388,7 +387,6 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
                 // From location remove leading /
                 s = $window.location.origin + uu + '/'
                     + entity.location + '/' + entity._name;
-                $log.log('new path: ', s);
                 return s;
             }
 

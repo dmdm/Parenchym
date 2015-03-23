@@ -156,9 +156,14 @@ class Worker(object):
             if attr not in ('_name', '_title'):
                 raise pym.exc.ValidationError(
                     _("Unknown attribute: '{}'".format(attr)))
-            if attr == '_name' and not new_value:
-                raise pym.exc.ValidationError(
-                    _("Name must not be empty."))
+            if attr == '_name':
+                if not new_value:
+                    raise pym.exc.ValidationError(
+                        _("Name must not be empty."))
+                if not pym.security.is_path_safe(new_value, split=False,
+                        raise_error=False):
+                    raise pym.exc.ValidationError(
+                        _("Name contains invalid characters."))
             n = self.sess.query(FsNode).get(item_id)
             if not n:
                 # This is serious, do not catch it but let it kill the request
