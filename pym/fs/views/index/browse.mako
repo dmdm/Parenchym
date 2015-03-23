@@ -372,7 +372,6 @@ ${parent.scripts()}
                              ui-grid-selection
                              ui-grid-resize-columns
                              ui-grid-edit
-                             ui-grid-row-edit
                              ui-grid-cellNav
                              class="grid"
                             >

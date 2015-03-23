@@ -21,6 +21,7 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
         pymFsService.toggleIncludeDeleted();
     };
 
+
     ctrl.find = function () {
         pymFsService.find();
     };
@@ -219,7 +220,6 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
         rc: {},
         path: [],
         includeDeleted: false,
-        data: [],
         api: null,
 
         cbWindowResized: function (ghostPosition, length) {
@@ -274,9 +274,27 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
             self.api = gridApi;
             $timeout(gridApi.core.handleWindowResize, 100);
             gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
-                $log.log('edited row id:' + rowEntity.id + ' Column:' + colDef.name + ' newValue:' + newValue + ' oldValue:' + oldValue);
+                var fld = colDef.name || colDef.field;
+                $log.log('edited row id:' + rowEntity.id + ' Column:' + fld + ' newValue:' + newValue + ' oldValue:' + oldValue);
+                if (newValue === oldValue) { return; }
+                // User edited a cell, the grid already stored the change.
+                // Now tell the server about it.
+                pymFsService.changeItemAttr(rowEntity.id, fld, newValue, oldValue).
+                then(
+                    angular.noop(),
+                    // Server says, invalid or error: reset the data to oldValue
+                    function (result) {
+                        var i, imax, dd = self.options.data;
+                        for (i=0, imax=dd.length; i<imax; i++) {
+                            if (dd[i].id == rowEntity.id) {
+                                dd[i][fld] = oldValue;
+                                break;
+                            }
+                        }
+                    }
+                );
             });
-            gridApi.rowEdit.on.saveRow($scope, ctrl.FileBrowser.saveRow);
+            // TODO implement gridApi.rowEdit.on.saveRow($scope, angular.noop);
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                 self.rc.onRowSelectionChanged(row);
@@ -296,12 +314,12 @@ function ($scope,   pymFsService,   FILE_STATES,   RC,   T,   $window,   GridToo
     //var nodeNameTpl = '<div class="ui-grid-cell-contents">'
     //                + '<a ng-href="{{grid.appScope.buildDownloadUrl(row.entity)}}">{{row.entity._name}}, {{grid.appScope.canUpload}}: {{grid.appScope.buildDownloadUrl(row.entity)}}</a>'
     //                + '</div>';
-    var nodeNameTpl = '<div class="ui-grid-cell-contents">'
+    var nodeNameTpl = '<div class="ui-grid-cell-contents" title="{{row.entity._name}}">'
                     + '<a ng-href="{{row.entity.download_url}}?disposition=attachment">{{row.entity._name}}</a>'
                     + '</div>';
 
     ctrl.FileBrowser.options = {
-        data: ctrl.FileBrowser.data,
+        data: [],
 
         enableSorting: true,
         useExternalSorting: false,

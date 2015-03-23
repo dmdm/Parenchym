@@ -55,6 +55,22 @@ class Validator(pym.validator.Validator):
         return self.fetch_int('size', required=True, multiple=False)
 
     @property
+    def item_id(self):
+        return self.fetch_int('id', required=True, multiple=False)
+
+    @property
+    def attr(self):
+        return self.fetch('attr', required=True, multiple=False)
+
+    @property
+    def new_value(self):
+        return self.fetch('nv', required=False, multiple=False)
+
+    @property
+    def old_value(self):
+        return self.fetch('ov', required=False, multiple=False)
+
+    @property
     def ids(self):
         v = self.fetch_int('ids', required=True, multiple=True)
         return v
@@ -134,6 +150,26 @@ class Worker(object):
     def del_cached_children(self, parent_id):
         for k in self.cache.keys("ResourceNode:children:*{}".format(parent_id)):
             self.cache.delete(k)
+
+    def edit_item(self, resp, item_id, attr, new_value, old_value):
+        try:
+            if attr not in ('_name', '_title'):
+                raise pym.exc.ValidationError(
+                    _("Unknown attribute: '{}'".format(attr)))
+            if attr == '_name' and not new_value:
+                raise pym.exc.ValidationError(
+                    _("Name must not be empty."))
+            n = self.sess.query(FsNode).get(item_id)
+            if not n:
+                # This is serious, do not catch it but let it kill the request
+                raise FileNotFoundError(
+                    'Node with ID {} not found.'.format(item_id))
+            if not self.has_permission(Permissions.write.value, context=n):
+                raise PermissionError(_("You have no write permission."))
+        except (pym.exc.ValidationError, PermissionError) as exc:
+            resp.error(str(exc))
+            return
+        setattr(n, attr, new_value)
 
     def validate_files(self, resp, path, files, request):
         """
@@ -532,7 +568,8 @@ class FsView(object):
             load_fs_properties=request.resource_url(context, '@@_load_fs_properties_'),
             load_item_properties=request.resource_url(context, '@@_load_item_properties_'),
             validate_files=request.resource_url(context, '@@_validate_files_'),
-            extract_meta=request.resource_url(context, '@@_extract_meta_')
+            extract_meta=request.resource_url(context, '@@_extract_meta_'),
+            edit_item=request.resource_url(context, '@@_edit_item_')
         )
 
     @view_config(
@@ -792,6 +829,27 @@ class FsView(object):
         func = functools.partial(
             self.worker.extract_meta,
             tika=tika
+        )
+        resp = pym.resp.build_json_response(
+            lgg=self.lgg,
+            validator=self.validator,
+            keys=keys,
+            func=func,
+            request=self.request,
+            die_on_error=False
+        )
+        return json_serializer(resp.resp)
+
+    @view_config(
+        name='_edit_item_',
+        renderer='string',
+        request_method='PUT'
+    )
+    def edit_item(self):
+        self.validator.inp = self.request.json_body
+        keys = ('item_id', 'attr', 'new_value', 'old_value')
+        func = functools.partial(
+            self.worker.edit_item
         )
         resp = pym.resp.build_json_response(
             lgg=self.lgg,

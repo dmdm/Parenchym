@@ -342,6 +342,28 @@ function ($log,   $http,   $q,   $window,   RC,   pym) {
             );
         },
 
+        changeItemAttr: function (itemId, attr, newValue, oldValue) {
+            var httpConfig = {},
+                putData = {
+                    id: itemId,
+                    attr: attr,
+                    nv: newValue,
+                    ov: oldValue
+                };
+            // Caller need not to differentiate between invalid data and network
+            // errors: Return a rejected promise in both cases.
+            return $http.put(RC.urls.edit_item, putData, httpConfig)
+                .then(
+                function (resp) {
+                    pym.growler.growlAjaxResp(resp.data);
+                    return resp.data.ok ? resp : $q.reject(resp);
+                },
+                function (result) {
+                    return $q.reject(result);
+                }
+            );
+        },
+
         buildDownloadUrl: function (nameOrEntity) {
             var pp, s, name, entity, uu, loc;
             $log.log(nameOrEntity, typeof nameOrEntity);
