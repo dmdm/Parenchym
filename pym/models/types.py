@@ -49,8 +49,10 @@ class LocalDateTime(sa.types.TypeDecorator):
 
     impl = sa.DateTime(timezone=False)
     # We want the tzinfo object from pytz, not that of dateutil
-    server_tz = pytz.timezone(dateutil.tz.tzlocal()
-        .tzname(datetime.datetime.now()))
+    _tz = dateutil.tz.tzlocal().tzname(datetime.datetime.now())
+    if _tz == 'CEST':
+        _tz = 'CET'
+    server_tz = pytz.timezone(_tz)
 
     def process_bind_param(self, value, dialect):
         if value is None:

@@ -1,5 +1,4 @@
 <%inherit file="pym:templates/layouts/default.mako" />
-
 <%block name="styles">
 ${parent.styles()}
 <link rel="stylesheet" href="${request.static_url('pym:static/vendor/ui-grid/ui-grid.css')}">
@@ -58,6 +57,7 @@ ${parent.styles()}
 ${parent.scripts()}
 </%block>
 <%block name="meta_title">${_("Filesystem")}</%block>
+## <%block name="help_href_block">${request.resource_url(request.root['help'], '@@userman', 'filesystem')}</%block>
 
 <%def name="tools_menu()">
                 <li class="dropdown" dropdown is-open="fs.ToolsMenu.isOpen">

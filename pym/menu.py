@@ -1,20 +1,18 @@
 import functools
-import pyramid.i18n
 import pyramid.location
 
-import pym.i18n
+from pym.i18n import _
 from pym.tenants.const import DEFAULT_TENANT_NAME
 from pym.sys.const import NODE_NAME_SYS, NODE_NAME_SYS_CACHE_MGMT
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
 from pym.fs.const import NODE_NAME_FS
 from pym.journals.const import NODE_NAME_JOURNALS, Journals
+from pym.help.const import NODE_NAME_HELP
 from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
                             NODE_NAME_SYS_AUTH_PERMISSION_MGR)
 from pym.tenants.manager import find_tenant_node
-
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 
 
 # TODO Build menus from table pym.resource_tree
@@ -41,6 +39,20 @@ _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 #         'href': url_to(node)
 #     })
 #     return menu
+
+
+def help_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
+        translate=lambda s: s):
+    # Help
+    node_help = root_node[NODE_NAME_HELP]
+    id_ = resource_path(node_help)
+    menu_help = {
+        'id': id_,
+        'text': translate(_("Help")),
+        'href': url_to(node_help),
+        'children': []
+    }
+    return menu_help
 
 
 def fs_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
@@ -174,7 +186,8 @@ def main_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         me_menu(root_node, url_to, tenant, translate),
         journals_menu(root_node, url_to, tenant, translate),
         sys_menu(root_node, url_to, tenant, translate),
-        fs_menu(request, root_node, url_to, tenant, translate)
+        fs_menu(request, root_node, url_to, tenant, translate),
+        help_menu(request, root_node, url_to, tenant, translate)
     ]
     return menu
 

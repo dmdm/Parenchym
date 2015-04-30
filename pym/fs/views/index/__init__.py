@@ -574,7 +574,8 @@ class FsView(object):
             load_item_properties=request.resource_url(context, '@@_load_item_properties_'),
             validate_files=request.resource_url(context, '@@_validate_files_'),
             extract_meta=request.resource_url(context, '@@_extract_meta_'),
-            edit_item=request.resource_url(context, '@@_edit_item_')
+            edit_item=request.resource_url(context, '@@_edit_item_'),
+            help_href=request.resource_url(context.root['help'], '@@userman', 'filesystem')
         )
 
     @view_config(

@@ -52,7 +52,6 @@
         </div><!-- END #page_container -->
 ##      Needed to growl the flash messages from server
         <div ng-controller="GrowlCtrl as gr"></div>
-
         <%include file="pym:templates/layouts/page_footer.mako" />
         <script>
         require(['ng',     'pym/app'],

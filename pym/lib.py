@@ -380,9 +380,9 @@ def build_breadcrumbs(request):
 
     from pyramid.location import lineage
     # If context has no session, this raises a DetachedInstanceError:
-    linea = list(lineage(request.context))
+    linea = list(reversed(list(lineage(request.context))))
     bcs = []
-    for i, elem in enumerate(reversed(linea)):
+    for i, elem in enumerate(linea):
         bc = [request.resource_url(elem)]
         if i == 0:
             bc.append('Home')
@@ -390,7 +390,13 @@ def build_breadcrumbs(request):
             bc.append(elem.title)
         bcs.append(bc)
     if request.view_name:
-        bcs.append([None, request.view_name.replace('_', ' ').title()])
+        bcs.append([request.resource_url(linea[-1], request.view_name),
+            request.view_name.replace('_', ' ').title()])
+    if request.subpath and linea[1].name == 'help':
+        for i, p in enumerate(request.subpath):
+            bcs.append([request.resource_url(linea[-1],
+                '@@' + request.view_name, *request.subpath[0:i + 1]),
+                p.replace('_', ' ').title()])
     return bcs
 
 

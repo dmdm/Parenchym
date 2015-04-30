@@ -729,7 +729,10 @@ def guess_mime_type(fn,
     # It may not find all types, e.g. it returns None for 'text/plain', so
     # fallback on python-magic.
     if not mt:
-        mt = magic_inst.from_file(fn).decode('ASCII')
+        if magic_inst:
+            mt = magic_inst.from_file(fn).decode('ASCII')
+        else:
+            mt = magic.from_file(fn).decode('ASCII')
     if not enc:
         enc = None
     return mt, enc

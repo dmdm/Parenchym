@@ -30,7 +30,8 @@
                 </div>
             </div>
             <div class="col-md-2" id="user_info">
-                <div id="user_display_name" style="display: inline-block;">${request.user.display_name}
+                <div id="user_display_name" style="display: inline-block;">
+                    ${request.user.display_name}
                     <div id="user_log_in_out" class="hidden-print" style="display: inline-block;">
                         % if request.user.is_auth():
                             <a href="${request.resource_url(request.root, '@@logout')}">Logout</a>
@@ -38,6 +39,11 @@
                             <a href="${request.resource_url(request.root, '@@login')}">Login</a>
                         % endif
                     </div>
+                </div>
+                <div style="display: inline-block;" class="pull-right">
+                    <a href="<%block name="help_href_block">${request.resource_url(request.root['help'])}</%block>">
+                        <i class="fa fa-question-circle fa-2x" title="${_('Help')}"></i>
+                    </a>
                 </div>
             </div>
         </div>

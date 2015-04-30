@@ -23,6 +23,7 @@ import pym.tenants.setup
 import pym.me.setup
 import pym.fs.setup
 import pym.journals.setup
+import pym.help.setup
 
 
 class Runner(pym.cli.Cli):
@@ -43,35 +44,38 @@ class Runner(pym.cli.Cli):
         # SA's create_all(), and SA creates a table for each class whose view
         # (__tablename__) does not exist yet!
         with transaction.manager:
-            self._create_schema(sess)
-            pym.res.setup.create_schema(sess, rc=self.rc)
-            pym.sys.setup.create_schema(sess, rc=self.rc)
-            pym.auth.setup.create_schema(sess, rc=self.rc)
-            pym.tenants.setup.create_schema(sess, rc=self.rc)
-            pym.me.setup.create_schema(sess, rc=self.rc)
-            pym.fs.setup.create_schema(sess, rc=self.rc)
-            pym.journals.setup.create_schema(sess, rc=self.rc)
+            # self._create_schema(sess)
+            # pym.res.setup.create_schema(sess, rc=self.rc)
+            # pym.sys.setup.create_schema(sess, rc=self.rc)
+            # pym.auth.setup.create_schema(sess, rc=self.rc)
+            # pym.tenants.setup.create_schema(sess, rc=self.rc)
+            # pym.me.setup.create_schema(sess, rc=self.rc)
+            # pym.fs.setup.create_schema(sess, rc=self.rc)
+            # pym.journals.setup.create_schema(sess, rc=self.rc)
+            pym.help.setup.create_schema(sess, rc=self.rc)
             mark_changed(sess)
         with transaction.manager:
             # Create all models
             pym.models.create_all()
             # Users and stuff we need to setup the modules
-            pym.auth.setup.populate(sess, root_pwd=root_pwd, rc=self.rc)
+            # ####  pym.auth.setup.populate(sess, root_pwd=root_pwd, rc=self.rc)
             if not self.args.schema_only:
                 pass
-                pym.res.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.sys.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.auth.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.tenants.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.me.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.fs.setup.setup(sess, rc=self.rc)
-                sess.flush()  # Need ID
-                pym.journals.setup.setup(sess, rc=self.rc)
+                # pym.res.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.sys.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.auth.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.tenants.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.me.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.fs.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                # pym.journals.setup.setup(sess, rc=self.rc)
+                # sess.flush()  # Need ID
+                pym.help.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID
 
             if self.args.alembic_config:

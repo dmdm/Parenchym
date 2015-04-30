@@ -13,7 +13,7 @@ ${parent.styles()}
 <%block name="scripts">
 ${parent.scripts()}
 </%block>
-<%block name="meta_title">${_("Help")}</%block>
+<%block name="meta_title">${title}</%block>
 
 <div class="outer-gutter">
     ${content|n}

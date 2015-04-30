@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from collections import OrderedDict
+from humanfriendly import format_size
 import concurrent.futures
 import fnmatch
 import glob
+import pickle
 from pprint import pprint
 import textwrap
 import time
@@ -14,6 +16,11 @@ import datetime
 import functools
 import zipfile
 import io
+import collections
+import colorama
+from elasticsearch import Elasticsearch, RequestsHttpConnection
+import magic
+import math
 
 import sqlparse
 import transaction
@@ -411,6 +418,190 @@ class Runner(pym.cli.Cli):
             print(sqlparse.format(str(qry), reindent=True, keyword_case='upper'))
         return qry
 
+    def cmd_collect_osfs(self):
+
+        def _fetch_info(filename):
+            if self.args.tika:
+                tika = self._build_tika_runner(self.args.tika)
+                meta = tika.meta(fn, type_='json')
+                pprint(meta)
+                mt = meta['Content-Type'], None
+            else:
+                meta = None
+                mt, enc = pym.fs.tools.guess_mime_type(filename, magic_inst=None)
+            sz = os.path.getsize(filename)
+            return filename, sz, mt, meta
+
+        ff = []
+        root_dir = '/'
+        for fn in self.args.start_dirs:
+            rd, dd2, ff2 = self._collect_files(root_dir, fn, self.args.recursive)
+            ff += ff2
+        ff.sort()
+        dd = []
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.args.jobs) as executor:
+            # Start the load operations and mark each future with its URL
+            fut = {executor.submit(_fetch_info, filename=f): f for f in ff}
+            for future in concurrent.futures.as_completed(fut):
+                fn = fut[future]
+                try:
+                    dd.append(future.result())
+                except Exception as exc:
+                    self.lgg.error("Error in future: '{}'".format(future))
+                    self.lgg.error("Failed to process file: '{}'".format(fn))
+                    self.lgg.exception(exc)
+                    raise
+        if self.args.output:
+            with open(self.args.output, 'wb') as fh:
+                pickle.dump(dd, file=fh)
+        else:
+            for d in dd:
+                print(d)
+
+    def cmd_es_search(self):
+        #colorama.init()
+        host, port = self.args.host.split(':')
+        port = int(port)
+        es = Elasticsearch(hosts=[{'host': host, 'port': port}],
+            connection_class=RequestsHttpConnection)
+        index = 'fs'
+        doc_type = 'fn'
+        pg = self.args.page
+        ps = self.args.page_size
+        body = {
+            'highlight': {
+                'fields': {
+                    'basename': {}
+                }
+            }
+        }
+        res = es.search(index=index, doc_type=doc_type, q=self.args.query,
+            size=ps, from_=(pg - 1) * ps, sort=['dirname', '_score:desc'],
+            _source=False, fields='basename,dirname,filename,size', body=body)
+        if self.args.dump:
+            pprint(res)
+        tab = []
+        if self.args.list:
+            for h in res['hits']['hits']:
+                print('"', h['fields']['filename'][0], '"', sep='')
+        else:
+            for i, h in enumerate(res['hits']['hits']):
+                try:
+                    hbn = h['highlight']['basename'][0].replace(
+                        '<em>', colorama.Style.BRIGHT).replace(
+                        '</em>', colorama.Style.RESET_ALL)
+                except KeyError:
+                    hbn = h['fields']['basename'][0]
+                #print("{} ({:8.7f}): {}".format(hbn, h['_score'], h['fields']['filename'][0]))
+                tab.append(collections.OrderedDict([
+                    ('#', i + 1),
+                    ('basename', hbn),
+                    ('size', format_size(h['fields']['size'][0])),
+                    ('filename', h['fields']['filename'][0]),
+                    ('score', "{:8.7f}".format(h['_score'] or 0.0))
+                ]))
+            self.print(tab)
+        n1 = (pg - 1) * ps + 1
+        n2 = pg * ps
+        if n2 > res['hits']['total']:
+            n2 = res['hits']['total']
+        mp = math.ceil(res['hits']['total'] / ps)
+        print('{n1}-{n2} of {total} hits, page {pg}/{mp}, {took} ms'.format(
+            n1=n1, n2=n2, total=res['hits']['total'], took=res['took'], pg=pg, mp=mp))
+
+    def cmd_es_import(self):
+        host, port = self.args.host.split(':')
+        port = int(port)
+        es = Elasticsearch(hosts=[{'host': host, 'port': port}],
+            connection_class=RequestsHttpConnection)
+        index = 'fs'
+        doc_type = 'fn'
+        if self.args.create_index:
+            self._create_es_index(es, index, doc_type)
+
+        with open(self.args.file, 'rb') as fh:
+            dd = pickle.load(file=fh)
+        bulk = []
+        for d in dd:
+            action = {
+                '_index': index,
+                '_type': doc_type,
+                '_id': d[0]
+            }
+            body = {
+                'filename': d[0],
+                'dirname': os.path.dirname(d[0]),
+                'basename': os.path.basename(d[0]),
+                'size': d[1],
+                'mime_type': d[2],
+                'meta': d[3]
+            }
+            bulk.append({'index': action})
+            bulk.append(body)
+        es.bulk(bulk)
+
+    def _create_es_index(self, es, index, doc_type):
+        if es.indices.exists(index=index):
+            es.indices.delete(index=index)
+        body = {
+            'settings': {
+                'analysis': {
+                    'tokenizer': {
+                        'pym_filename_tokenizer': {
+                            'type': 'pattern',
+                            'pattern': r'[^\p{L}0-9]+'
+                        }
+                    },
+                    'analyzer': {
+                        'pym_filename_analyzer': {
+                            'type': 'custom',
+                            'tokenizer': 'pym_filename_tokenizer',
+                            'filter': ['lowercase'],
+                        }
+                    }
+                },
+            },
+            'mappings': {
+                'fn': {
+                    'properties': {
+                        'filename': {
+                            'type': 'string',
+                            'analyzer': 'pym_filename_analyzer'
+                        },
+                        'dirname': {
+                            'type': 'string',
+                            'analyzer': 'pym_filename_analyzer'
+                        },
+                        'basename': {
+                            'type': 'string',
+                            'analyzer': 'pym_filename_analyzer'
+                        }
+                    }
+                }
+            }
+        }
+        res = es.indices.create(index=index, body=body)
+        print('Index created:', res)
+
+    def cmd_es(self):
+        host, port = self.args.host.split(':')
+        port = int(port)
+        es = Elasticsearch(hosts=[{'host': host, 'port': port}],
+            connection_class=RequestsHttpConnection)
+
+        if self.args.es_cmd.startswith('ix_'):
+            cmd = self.args.es_cmd[3:]
+            m = getattr(es.indices, cmd)
+        else:
+            cmd = self.args.es_cmd
+            m = getattr(es, cmd)
+        aa = self.args.es_args
+        args = {aa[i]: aa[i + 1] for i in range(0, len(aa) - 1, 2)}
+        pprint(args)
+        res = m(**args)
+        pprint(res)
+
 
 def parse_args(app, argv):
     # Main parser
@@ -650,6 +841,119 @@ def parse_args(app, argv):
         '--tika',
         required=False,
         help='"Host:port" of TIKA server, or path/to/cmd or "tika" to use pipe.'
+    )
+
+    # Parser collect files from OSFS
+    p_collect_osfs = subparsers.add_parser('collect-osfs',
+        help="Collect files from OSFS")
+    p_collect_osfs.set_defaults(func=app.cmd_collect_osfs)
+    p_collect_osfs.add_argument(
+        'start_dirs',
+        nargs='+',
+        help="""List of start directories. Basename may be a glob pattern."""
+    )
+    p_collect_osfs.add_argument(
+        '-j', '--jobs',
+        type=int,
+        default=1,
+        required=False,
+        help='Number of concurrent jobs'
+    )
+    p_collect_osfs.add_argument(
+        '-r', '--recursive',
+        action='store_true',
+        help='Recursively collect files'
+    )
+    p_collect_osfs.add_argument(
+        '--tika',
+        required=False,
+        help='"Host:port" of TIKA server, or path/to/cmd or "tika" to use pipe.'
+    )
+    p_collect_osfs.add_argument(
+        '-o', '--output',
+        required=False,
+        help='Write results to this file.'
+    )
+
+    # Parser cmd ElasticSearch import
+    p_es_import = subparsers.add_parser('es-import',
+        help="Import file collection into ElasticSearch server")
+    p_es_import.set_defaults(func=app.cmd_es_import)
+    p_es_import.add_argument(
+        '--host',
+        default='localhost:9200',
+        help='"Host:port" of es server (default: localhost:9200).'
+    )
+    p_es_import.add_argument(
+        '--create-index',
+        action='store_true',
+        help='Create index with doc type first.'
+    )
+    p_es_import.add_argument(
+        'file',
+        help="""File with pickled data collection, as created e.g. with
+            'collect-osfs'."""
+    )
+
+    # Parser cmd ElasticSearch
+    p_es = subparsers.add_parser('es',
+        help="Communicate with ElasticSearch server")
+    p_es.set_defaults(func=app.cmd_es)
+    p_es.add_argument(
+        '--host',
+        default='localhost:9200',
+        help='"Host:port" of es server (default: localhost:9200).'
+    )
+    p_es.add_argument(
+        'es_cmd',
+        help="""Command: Method of the Python ES client. Prefix with 'ix_' to
+            use IndicesClient. E.g. "ix_create index foo" to create index "foo".
+            See "https://elasticsearch-py.readthedocs.org/en/master/api.html"
+            for details."""
+    )
+    p_es.add_argument(
+        'es_args',
+        nargs=argparse.REMAINDER,
+        help="""Arguments of the given command. Must always be pairs of keyword
+         and value."""
+    )
+
+    # Parser cmd ElasticSearch search
+    p_es_search = subparsers.add_parser('es-search',
+        help="Search index 'fs' in ElasticSearch server")
+    p_es_search.set_defaults(func=app.cmd_es_search)
+    p_es_search.add_argument(
+        '--host',
+        default='localhost:9200',
+        help='"Host:port" of es server (default: localhost:9200).'
+    )
+    p_es_search.add_argument(
+        '-p', '--page',
+        type=int,
+        default=1,
+        required=False,
+        help='Page'
+    )
+    p_es_search.add_argument(
+        '--page-size',
+        type=int,
+        default=50,
+        required=False,
+        help='Page size'
+    )
+    p_es_search.add_argument(
+        'query',
+        help="""Query"""
+    )
+    p_es_search.add_argument(
+        '--dump',
+        action='store_true',
+        help='Dump raw search results.'
+    )
+    p_es_search.add_argument(
+        '--list',
+        action='store_true',
+        help='Just list the file names, no tabular display.'
     )
 
     return parser.parse_args(argv)
