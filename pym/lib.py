@@ -392,7 +392,7 @@ def build_breadcrumbs(request):
     if request.view_name:
         bcs.append([request.resource_url(linea[-1], request.view_name),
             request.view_name.replace('_', ' ').title()])
-    if request.subpath and linea[1].name == 'help':
+    if request.subpath and len(linea) > 1 and linea[1].name == 'help':
         for i, p in enumerate(request.subpath):
             bcs.append([request.resource_url(linea[-1],
                 '@@' + request.view_name, *request.subpath[0:i + 1]),
