@@ -502,11 +502,11 @@ def parse_args(app, argv):
     p_resource_tree = subparsers.add_parser('resource-tree',
         help="Show resource tree")
     p_resource_tree.set_defaults(func=app.cmd_resource_tree)
-    p_resource_tree.add_argument(
-        '-v', '--verbose',
-        action='count',
-        help="""Show detailed info about each node"""
-    )
+    # p_resource_tree.add_argument(
+    #     '-v', '--verbose',
+    #     action='count',
+    #     help="""Show detailed info about each node"""
+    # )
     p_resource_tree.add_argument(
         '--with-acl',
         action='store_true',
