@@ -105,6 +105,7 @@ def locale_negotiator(request):
     #   File "/home/ceres/.virtualenvs/pym-py32-env/lib/python3.2/site-packages/webob/acceptparse.py", line 316, in _check_offer
     #     raise ValueError("The application should offer specific types, got %r" % offer)
     # ValueError: The application should offer specific types, got '*'
+    r = request.registry.settings['pyramid.default_locale_name']
     avail_languages = request.registry.settings['i18n.avail_languages']
     wanted_loc = request.user.preferred_locale
     if wanted_loc is not None:
@@ -113,11 +114,12 @@ def locale_negotiator(request):
         wanted_loc = pyramid.i18n.default_locale_negotiator(request)
     if wanted_loc:
         if '*' in avail_languages or wanted_loc in avail_languages:
-            return wanted_loc
+            r = wanted_loc
     try:
-        return request.accept_language.best_match(avail_languages)
+        r = request.accept_language.best_match(avail_languages)
     except ValueError:
-        return 'en'
+        pass  # Keep default locale name
+    return r
 
 
 def get_locale(request):
