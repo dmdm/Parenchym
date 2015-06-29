@@ -17,6 +17,29 @@ ENV_DEVELOPMENT = 'development'
 ENV_PRODUCTION = 'production'
 
 
+def month_start_end(months_ago=0):
+    """
+    Returns start and end date of given month.
+
+    Month is given as number of months ago, i.e. 0 is current month, 1 is
+    previous month etc.
+
+    :param months_ago: Number of months ago, default 0
+    :return: 2-tuple with start and end date
+    """
+    today = datetime.date.today()
+    # First day of current month
+    start_date = today.replace(day=1)
+    # Go n months back
+    while months_ago > 0:
+        months_ago -= 1
+        start_date = (start_date - datetime.timedelta(days=1)).replace(day=1)
+    # Find last day of month
+    end_date = (start_date + datetime.timedelta(days=32)).replace(day=1) \
+        - datetime.timedelta(days=1)
+    return start_date, end_date
+
+
 def install_db_scripts(lgg, sess, root_dir, scripts):
     """
     Executes SQL scripts.
