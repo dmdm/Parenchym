@@ -98,6 +98,10 @@ class JsonResp(object):
         for m in self._msgs:
             print(m['kind'].upper(), m['text'])
 
+    def translate(self, translate_func):
+        for m in self.msgs:
+            m['text'] = translate_func(m['text'])
+
     @property
     def is_ok(self):
         """
