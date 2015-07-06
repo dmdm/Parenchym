@@ -612,6 +612,12 @@ function (angular) {
       };
     });
 
+    PymApp.filter('unsafe', function ($sce) {
+        return function (v) {
+            return $sce.trustAsHtml(v);
+        };
+    });
+
     PymApp.directive('pymSpinner', function() {
         return {
             restrict: 'E',
