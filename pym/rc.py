@@ -290,7 +290,7 @@ class Rc:
         d = self.g(key, defval)
         return d.format(here=self.root_dir)
 
-    def get_these(self, prefix):
+    def get_these(self, prefix, cut_prefix=True):
         """Returns all rc nodes which start with prefix.
         """
         if not prefix.endswith('.'):
@@ -299,7 +299,9 @@ class Rc:
         conf = {}
         for k, v in self.data.items():
             if k.startswith(prefix):
-                conf[k[l:]] = v
+                if cut_prefix:
+                    k = k[l:]
+                conf[k] = v
         return conf
 
     def dump(self, prettyprinter=None):
