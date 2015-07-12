@@ -214,22 +214,31 @@ class Cli(object):
     def base_init2(self):
         self._sess = pym.models.DbSession()
         pym.init_auth(self.rc)
+        # if hasattr(self.args, 'actor') and self.args.actor:
+        #     actor = self.args.actor
+        #     try:
+        #         try:
+        #             actor = int(actor)
+        #         except ValueError:
+        #             self.actor = self._sess.query(pym.auth.models.User).filter(pym.auth.models.User.principal == actor).one()
+        #         else:
+        #             self.actor = self._sess.query(pym.auth.models.User).get(actor)
+        #             if not self.actor:
+        #                 raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+        #     except sa.orm.exc.NoResultFound:
+        #         raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+        # else:
+        #     self.actor = getpass.getuser()
         if hasattr(self.args, 'actor') and self.args.actor:
             actor = self.args.actor
+        else:
+            actor = getpass.getuser()
+        if hasattr(self.args, 'actor'):
             try:
-                try:
-                    actor = int(actor)
-                except ValueError:
-                    self.actor = self._sess.query(pym.auth.models.User).filter(pym.auth.models.User.principal == actor).one()
-                else:
-                    self.actor = self._sess.query(pym.auth.models.User).get(actor)
-                    if not self.actor:
-                        raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+                self.actor = pym.auth.models.User.find(self._sess, actor)
             except sa.orm.exc.NoResultFound:
                 raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
-        else:
-            self.actor = getpass.getuser()
-        self.lgg.debug('Actor: {}'.format(self.actor))
+            self.lgg.debug('Actor: {}'.format(self.actor))
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
