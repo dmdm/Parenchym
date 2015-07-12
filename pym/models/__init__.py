@@ -101,7 +101,7 @@ Default DB engine.
 
 # ===[ IMPORTABLE SETUP FUNCS ]=======
 
-def init(settings, prefix, invalidate_caches=False):
+def init(settings, prefix='', invalidate_caches=False):
     """
     Initializes scoped SQLAlchemy by rc settings.
 
