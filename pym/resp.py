@@ -152,10 +152,6 @@ class JsonResp(object):
             data=self._data
         )
 
-    @property
-    def is_ok(self):
-        return self._is_ok
-
 
 def build_json_response(lgg, validator, keys, func, request=None, die_on_error=True):
     resp = JsonResp()
