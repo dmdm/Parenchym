@@ -12,6 +12,7 @@ import datetime
 import sqlalchemy as sa
 import sqlalchemy.event
 from sqlalchemy import engine_from_config, MetaData
+from sqlalchemy.engine import RowProxy
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import (
     scoped_session,
@@ -46,7 +47,7 @@ from .types import LocalDateTime
 naming_convention = {
     "ix": '%(column_0_label)s_ix',
     "uq": "%(table_name)s_%(column_0_name)s_ux",
-    "ck": "%(table_name)s_%(constraint_name)s_ck",
+    ### "ck": "%(table_name)s_%(constraint_name)s_ck",
     "fk": "%(table_name)s_%(column_0_name)s_%(referred_table_name)s_fk",
     "pk": "%(table_name)s_pk"
 }
