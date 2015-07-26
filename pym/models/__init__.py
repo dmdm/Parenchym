@@ -11,7 +11,7 @@ import collections
 import datetime
 import sqlalchemy as sa
 import sqlalchemy.event
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, MetaData
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import (
     scoped_session,
@@ -33,7 +33,6 @@ from sqlalchemy.util import KeyedTuple
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from zope.deprecation import deprecation
-import pyramid.i18n
 import pym.exc
 from pym.i18n import _
 import pym.lib
@@ -42,10 +41,15 @@ import pym.cache
 from .types import LocalDateTime
 
 
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
-
-
 # ===[ DB HELPERS ]=======
+
+naming_convention = {
+    "ix": '%(column_0_label)s_ix',
+    "uq": "%(table_name)s_%(column_0_name)s_ux",
+    "ck": "%(table_name)s_%(constraint_name)s_ck",
+    "fk": "%(table_name)s_%(column_0_name)s_%(referred_table_name)s_fk",
+    "pk": "%(table_name)s_pk"
+}
 
 cache_regions = {}
 
@@ -55,10 +59,15 @@ DbSession = scoped_session(
         extension=ZopeTransactionExtension()
     )
 )
+
 """
 Factory for DB session.
 """
-DbBase = declarative_base()
+metadata = MetaData(
+    naming_convention=naming_convention
+)
+
+DbBase = declarative_base(metadata=metadata)
 """
 Our base class for declarative models.
 """
@@ -225,7 +234,7 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
     has column ``id`` as the first, and the other columns of :class:`PymMixin`
     at the end.
 
-    There are two types of input data we can process:
+    There are three types of input data we can process:
 
         - Object:
 
@@ -257,9 +266,9 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
           transform into a dict of its own. If argument ``objects_as`` is
           ``nested``, which is the default, we store this object's dict under the
           object's class name as ``result_dict['ResourceNode'] = object_dict``.
-          If ``objects_nested`` is ``flat`` we update the resulting dict with
+          If ``objects_as`` is ``flat`` we update the resulting dict with
           the object dict. This may overwrite existing keys, which the caller
-          has to handle by e.g. using labels in the query. If ``objects_nested``
+          has to handle by e.g. using labels in the query. If ``objects_as``
           is ``qualified`` we again store the values of the object's dict in the
           resulting dict, but using keys prefixed with the class name.
 
@@ -267,6 +276,10 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
           `excludes``, and ``fmap`` for this object as a nested dict under a
           key that is the object's class name. E.g.
           ``fmap['ResourceNode']['parent'] = lambda it: it.name``.
+
+        - RowProxy:
+
+          We treat RowProxies like KeyedTuples. Seems to work ;)
 
     We keep the old functions ``todict`` and ``todata`` for legacy reasons, but
     they are deprecated.
@@ -283,7 +296,7 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
       if you need them.
 
     :param inp: Data object to transmogrify.
-    :type inp: sqlalchemy.util.KeyedTuple | object
+    :type inp: sqlalchemy.util.KeyedTuple | object | sqlalchemy.engine.result.RowProxy
     :param objects_as: How to store attributes of objects. ``nested`` (default),
         ``flat``, or ``qualified``.
     :type objects_as: str
@@ -402,8 +415,17 @@ def dictate(inp, objects_as='nested', fmap=None, excludes=None, includes=None,
             ktd = proc_columns(o, None, columns, value_getter, 0)
             return ktd
 
-        if isinstance(inp, KeyedTuple):
+        def proc_row_proxy(o):
+            columns = o.keys()
+            value_getter = lambda col: getattr(o, col)
+            ktd = proc_columns(o, None, columns, value_getter, 0)
+            return ktd
+
+        # if isinstance(inp, KeyedTuple):
+        if isinstance(inp, tuple):  # For SA>=1.0.0, previously used KeyedTuple
             return proc_keyed_tuple(inp)
+        if isinstance(inp, RowProxy):
+            return proc_row_proxy(inp)
         return proc_object(inp, None, 0)
 
 

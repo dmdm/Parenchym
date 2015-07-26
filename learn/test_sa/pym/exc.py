@@ -1,0 +1,5 @@
+
+class PymError(Exception):
+    pass
+
+
