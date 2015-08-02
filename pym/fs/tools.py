@@ -38,7 +38,7 @@ class Uploader():
 
         Typically the flow is like this:
 
-        1. We add the files to upload to pur internal list. A file is an instance
+        1. We add the files to upload to our internal list. A file is an instance
            of :class:`UploadedFile` and generated with data taken from
            :class:`cgi.fieldStorage`.
         2. We check the meta data provided by the client (is name safe,
