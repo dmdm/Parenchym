@@ -663,6 +663,8 @@ class FsView(object):
         # handle multipart/form-data of a single file
         self.validator.inp = pym.lib.json_deserializer(self.request.POST['data'])
         tika = pym.fs.tools.TikaServer('localhost', 9998)
+        if not tika.is_running():
+            tika = None
         keys = ('key', 'path', 'size', 'write_mode')
         func = functools.partial(
             self.worker.upload,
@@ -678,6 +680,8 @@ class FsView(object):
             request=self.request,
             die_on_error=False
         )
+        if not tika:
+            resp.warn('Tika server is not running! No meta data obtained.')
         return json_serializer(resp.resp)
 
     @view_config(

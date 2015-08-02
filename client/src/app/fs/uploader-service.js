@@ -126,12 +126,12 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                     }
                 }
                 else {
-                    pym.growler.growlAjaxResp(data);
                     if (file.state === FILE_STATES.UPLOADING) {
                         file.setState(FILE_STATES.UPLOAD_ERROR);
                         file.validationMessage = 'Unknown error';
                     }
                 }
+                pym.growler.growlAjaxResp(data, false);
             })
             .error(function (data, status, headers, config) {
                 file.setState(FILE_STATES.UPLOAD_ERROR);
@@ -228,8 +228,7 @@ function ($log,   $upload,   $http,   RC,   pym,          FILE_STATES,   FILE_ST
                     return result;
                 }
             );
-        },
-
+        }
     };
     return UploaderService;
 }]);

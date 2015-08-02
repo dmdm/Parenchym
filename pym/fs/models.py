@@ -134,6 +134,9 @@ class FsContent(DbBase, DefaultMixin):
                 mlgg.warn("Saving file as binary: '{}'".format(fn))
                 with open(fn, 'rb') as fh:
                     setattr(self, 'data_bin', fh.read())
+                # This sets only our mime type, parent node is not updated,
+                # meaning, it reflects the original mime-type
+                self.mime_type = MIME_TYPE_DEFAULT
 
     def set_meta(self, meta):
         kk = 'meta_json meta_xmp data_text data_html_head data_html_body'.split(' ')

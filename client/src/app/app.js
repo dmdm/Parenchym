@@ -907,10 +907,12 @@ function (angular) {
                 return dfrr.promise;
             },
 
-            growlAjaxResp: function (resp) {
+            growlAjaxResp: function (resp, withSuccess) {
                 var i, imax = resp.msgs.length;
                 for (i = 0; i < imax; i++) {
-                    this.growl(resp.msgs[i]);
+                    if (withSuccess || resp.msgs[i].kind[0] !== 's') {
+                        this.growl(resp.msgs[i]);
+                    }
                 }
                 if (imax < 1) {
                     if (resp.ok) {

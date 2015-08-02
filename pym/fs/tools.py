@@ -7,6 +7,7 @@ import mimetypes
 import os
 from pathlib import PurePath
 import re
+import socket
 import subprocess
 import time
 import uuid
@@ -449,6 +450,8 @@ class Sentry():
         return self.dst_node.fs_total_items
 
 
+# See also https://github.com/chrismattmann/tika-python/blob/master/tika/tika.py
+
 class TikaPymMixin():
 
     def pym(self, fn, hh=None):
@@ -601,6 +604,20 @@ class TikaServer(TikaPymMixin):
         self.host = host
         self.port = port
         self.url = 'http://{}:{}'.format(host, port)
+
+    def is_running(self):
+        ip = socket.gethostbyname(self.host)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            r = sock.connect_ex((ip, self.port))
+            if r == 0:
+                sock.close()
+                return True
+            else:
+                return False
+        except socket.error as exc:
+            mlgg.exception(exc)
+            return False
 
     def detect(self, fn, hh):
         """
