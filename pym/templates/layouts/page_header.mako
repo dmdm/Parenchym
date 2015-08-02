@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div style="display: inline-block;" class="pull-right">
-                    <a href="<%block name="help_href_block">${request.resource_url(request.root['help'])}</%block>">
+                    <a href="<%block name="help_href_block">${h.url_help(request)}</%block>">
                         <i class="fa fa-question-circle fa-2x" title="${_('Help')}"></i>
                     </a>
                 </div>

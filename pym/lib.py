@@ -399,7 +399,7 @@ def build_breadcrumbs(request):
     sess = sa.inspect(request.context).session
     if not sess:
         sess = pym.models.DbSession()
-        sess.add(request.context)
+        request.context = sess.merge(request.context)
 
     from pyramid.location import lineage
     # If context has no session, this raises a DetachedInstanceError:
