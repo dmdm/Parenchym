@@ -19,9 +19,10 @@ def _create_views(sess, rc):
         ('pym', 'vw_group_member_browse'),
         ('pym', 'vw_permissions_with_children'),
         ('pym', 'vw_permission_tree'),
-        ('pym', 'vw_resource_acl_browse'),
+        #('pym', 'vw_resource_acl_browse'),
     )
-    pym.lib.install_db_scripts(mlgg, sess, rc.root_dir, scripts)
+    root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+    pym.lib.install_db_scripts(mlgg, sess, root_dir, scripts)
 
 
 def _setup_users(sess, root_pwd):

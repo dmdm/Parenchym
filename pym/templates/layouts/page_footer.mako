@@ -67,17 +67,19 @@
 
 <%def name="this_acl(c)">
     <p>${c}</p>
-    <table class="tblLayout">
-        <tbody>
-            % for ace in c.__acl__():
-                <tr>
-                    % for x in ace:
-                        <td style="border: solid 1px silver; padding: 2px 4px;">${pformat(x)}</td>
-                    % endfor
-                </tr>
-            % endfor
-        </tbody>
-    </table>
+    % if hasattr(c, '__acl__'):
+        <table class="tblLayout">
+            <tbody>
+                % for ace in c.__acl__():
+                    <tr>
+                        % for x in ace:
+                            <td style="border: solid 1px silver; padding: 2px 4px;">${pformat(x)}</td>
+                        % endfor
+                    </tr>
+                % endfor
+            </tbody>
+        </table>
+    % endif
     %if c.__parent__:
         ${this_acl(c.parent)}
     %endif

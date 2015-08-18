@@ -125,10 +125,13 @@ def init(settings, prefix='', invalidate_caches=False):
     :param prefix: Prefix for SQLAlchemy settings
     """
     global DbEngine
+    # DbEngine = engine_from_config(
+    #     settings, prefix,
+    #     json_serializer=pym.lib.json_serializer,
+    #     json_deserializer=pym.lib.json_deserializer
+    # )
     DbEngine = engine_from_config(
-        settings, prefix,
-        json_serializer=pym.lib.json_serializer,
-        json_deserializer=pym.lib.json_deserializer
+        settings, prefix
     )
     DbSession.configure(bind=DbEngine)
     DbBase.metadata.bind = DbEngine
@@ -157,11 +160,14 @@ def init_unscoped(settings, prefix):
     :return: Dict with ``DbEngine``, ``DbSession`` and ``DbBase``.
     """
     global DbEngine, DbSession, DbBase
+    # DbEngine = engine_from_config(
+    #     settings, prefix,
+    #     json_serializer=pym.lib.json_serializer,
+    #     json_deserializer=pym.lib.json_deserializer
+    # )
     DbEngine = engine_from_config(
-        settings, prefix,
-        json_serializer=pym.lib.json_serializer,
-        json_deserializer=pym.lib.json_deserializer
-    ),
+        settings, prefix
+    )
     DbSession = sessionmaker(bind=DbEngine)
     DbBase = declarative_base(bind=DbEngine)
 

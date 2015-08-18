@@ -8,6 +8,8 @@ import decimal
 import colander
 
 import sqlalchemy as sa
+import sqlalchemy.exc
+import sqlalchemy.orm.exc
 import yaml
 
 import pym.exc
@@ -396,10 +398,16 @@ def build_breadcrumbs(request):
     # Ensure that our context still has a session.
     # It may have lost its session if we are called from an error page after
     # an exception that closed the current session.
-    sess = sa.inspect(request.context).session
+    try:
+        sess = sa.inspect(request.context).session
+    except sa.exc.NoInspectionAvailable:
+        sess = None
     if not sess:
         sess = pym.models.DbSession()
-        request.context = sess.merge(request.context)
+        try:
+            request.context = sess.merge(request.context)
+        except sa.orm.exc.UnmappedInstanceError:
+            return []
 
     from pyramid.location import lineage
     # If context has no session, this raises a DetachedInstanceError:

@@ -5,7 +5,7 @@ from pyramid.config import Configurator
 import pym
 from pym.rc import Rc
 
-from .res.models import root_factory
+from pym.res.models import root_factory
 
 """
 If you want to use Parenchym as a framework and develop your project as a

@@ -12,6 +12,11 @@ uses Google+ as auth provider.
 See https://parenchym.com/py-pym-demo/
 
 
+---
+We have a starter application, see https://github/dmdm/GreatFormsOfFire
+---
+
+
 What is it good for?
 --------------------
 

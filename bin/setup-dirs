@@ -1,22 +1,45 @@
 #!/bin/bash
 
-# Creates directories for project and sets permissions
+# Creates directories for project and sets permissions.
+#
+# Maybe must be run with sudo to set ownership correctly.
 
-PROJECT="Parenchym"
-EGG="Pym-0.0-py3.3.egg"
+
+## Configure here #####################################################
+
+# Configure the owner of all files (defaults to current user), and the group
+# that gets execute permission on the scripts in bin/ (defaults to 1st group of
+# current user).
 if [ `hostname` == "foobar" ]
 then
     USER="foo"
     GROUP="bar"
 else
-    USER="dm"
-    GROUP="dm"
+    USER=${USER}
+    GROUP=${GROUPS}
 fi
+# This group should be the group of the web server. It must have read permission
+# to all directories, and will get write permission to var/.
+# If current user shall maintain this installation, make sure he is member of
+# this group too.
 GROUP_APPLICATION="www-data"
+
+# As a safeguard that this script is executed form the correct directory, we
+# check that we either are in the project directory or in this egg.
+# Adjust version numbers accordingly.
+EGG="Greatformsoffire-0.1-py3.4.egg"
+
+# Project must match your project root directory
+PROJECT="Parenchym"
+# Python sources root directory is derived from project root, you may override
+# it.
+SRC_ROOT="$(echo $PROJECT | tr '[A-Z]' '[a-z]')"
+
+#######################################################################
 
 function die()
 {
-	echo "*** ERROR: $1. Exit code: $2"
+	echo "*** ERROR: $1. Exit code: $2" 1>&2
 	exit $2
 }
 
@@ -64,5 +87,5 @@ mk_dir "var/sstore"       $USER $GROUP_APPLICATION 775 664
 mk_dir "var/run"          $USER $GROUP_APPLICATION 775 664
 mk_dir "var/db"           $USER $GROUP_APPLICATION 775 664
 mk_dir "var/tmp_uploads"  $USER $GROUP_APPLICATION 775 664
-mk_dir "pym/locale"       $USER $GROUP_APPLICATION 755 644
+mk_dir "$SRC_ROOT/locale"       $USER $GROUP_APPLICATION 755 644
 
