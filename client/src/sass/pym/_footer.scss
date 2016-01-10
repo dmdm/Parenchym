@@ -1,0 +1,13 @@
+body > footer {
+  clear: both;
+  height: $footer-height;
+  margin-top: -($footer-height);
+  position: relative;
+  border: solid 1px $breadcrumb-border-color;
+  border-bottom: none;
+  font-size: 80%;
+  @include border-top-radius($border-radius);
+  color: $footer-color;
+  background-color: $breadcrumb-bg;
+  padding-top: 2px;
+}

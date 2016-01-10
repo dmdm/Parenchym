@@ -1,0 +1,52 @@
+/*
+ * pym.Fs.Uploader
+ */
+.progress-no-margin {
+  margin: 0;
+}
+
+.pym-fs-uploader-total-progress {
+  margin-bottom: 0;
+  display: inline-block;
+}
+
+.pym-fs-uploader {
+  margin: $padding-small-vertical 0;
+  border-radius: $border-radius;
+  border: 1px solid $chrome-border-color;
+  header {
+    padding: $padding-small-vertical $padding-small-horizontal;
+    background: $chrome-bg-color;
+    border-bottom: 1px solid $chrome-border-color-light;
+    display: flex;
+    .text {
+      vertical-align: middle;
+      height: 22px;
+      @include button-size($padding-xs-vertical, $padding-xs-horizontal, $font-size-small, $line-height-small, $border-radius-small);
+      padding-top: 2px;
+    }
+    .btn {
+      @include button-size($padding-xs-vertical, $padding-xs-horizontal, $font-size-small, $line-height-small, $border-radius-small);
+      margin-right: $padding-small-horizontal;
+    }
+    .progress {
+      @include button-size($padding-xs-vertical, $padding-xs-horizontal, $font-size-small, $line-height-small, $border-radius-small);
+      margin-bottom: 0;
+      height: 22px;
+      min-width: 50px;
+      width: 250px;
+    }
+    div {
+      margin-right: $padding-small-horizontal;
+    }
+  }
+
+  .body {
+    max-height: 25vh;
+    overflow: auto;
+    padding: $padding-small-vertical $padding-small-horizontal;
+    td {
+      white-space: nowrap;
+    }
+  }
+}

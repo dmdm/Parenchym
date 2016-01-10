@@ -1,0 +1,36 @@
+#page_header_top_row {
+  border-left: solid 1px $breadcrumb-border-color;
+  border-right: solid 1px $breadcrumb-border-color;
+  border-bottom: solid 1px lighten($breadcrumb-border-color, 10);
+  background-color: $breadcrumb-bg;
+  min-height: $page-header-top-row-height;
+  padding-top: 6px;
+  vertical-align: top;
+  //overflow: hidden;
+}
+
+.page-header {
+  margin: 0;
+  padding: 8px 0;
+  display: inline-block;
+  h1 {
+    margin: 0;
+    font-size: $font-size-h2;
+    font-family: "Yanone Kaffeesatz";
+    color: #550000;
+    letter-spacing: 2px;
+  }
+}
+
+#logo {
+  vertical-align: top;
+}
+
+#page_title {
+  font-size: 180%;
+}
+
+#userInfo .sub-info {
+  line-height: 1.2;
+  font-size: 85%;
+}

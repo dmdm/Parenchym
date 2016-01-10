@@ -1,0 +1,24 @@
+.pym-tree {
+
+  .selected {
+    color: $dropdown-link-active-color;
+    background-color: $dropdown-link-active-bg;
+  }
+
+  .expand-collapse-button { display: inline-block; margin-right: 0px; cursor: pointer; }
+
+  ul {
+    list-style: none;
+    padding-left: 22px;
+
+  }
+  ul.root {
+      padding-left: 0;
+    }
+}
+
+.pym-node-text {
+  padding: 0 4px;
+  display: inline-block;
+  line-height: 1;
+}

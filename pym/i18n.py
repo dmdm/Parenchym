@@ -144,6 +144,15 @@ def default_locale(request):
     return request.locale
 
 
+def wanted_languages(request, default_lang=None):
+    wanted = [str(request.locale)]
+    if default_lang:
+        wanted.append(default_lang)
+    if request.user.preferred_locale:
+        wanted.insert(0, str(request.user.preferred_locale))
+    return wanted
+
+
 def fetch_translated(request, data):
     """
     Returns translation in requested language.

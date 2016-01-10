@@ -1,0 +1,81 @@
+
+
+.disabled > a {
+  pointer-events: none;
+}
+
+.pym-panel {
+  @include border-bottom-radius($border-radius);
+  @include border-top-radius($border-radius);
+  background-color: $breadcrumb-bg;
+  padding: 4px;
+}
+
+.popup-container {
+  position: relative;
+}
+
+.popup-container:hover .popup {
+  display: block;
+}
+
+.popup {
+  display: none;
+  position: absolute;
+  padding: 4px;
+  width: 250px;
+  border: solid 1px $breadcrumb-border-color;
+  text-align: left;
+  left: 18px;
+  z-index: 10;
+  @include border-top-radius($border-radius);
+  @include border-bottom-radius($border-radius);
+  @include box-shadow(0 6px 12px rgba(0, 0, 0, .175));
+}
+
+.popup hr {
+  margin: 4px;
+  border-top: solid 1px $breadcrumb-border-color;
+}
+
+.select2-container {
+  width: 100%;
+}
+
+.page-notes {
+  margin-top: 6ex;
+  font-size: 90%;
+}
+
+
+
+
+
+.pym-navbar {
+  top: -10px;
+  background: $chrome-bg-color;
+  border-color: $chrome-border-color;
+  border-top-color: white;
+  margin-bottom: 0.5ex;
+  .container-fluid {
+    padding: 0;
+  }
+}
+
+.pym-sysmsg {
+  width: 70%;
+  margin: auto;
+  border: solid 2px $chrome-border-color;
+  padding: 1ex;
+}
+
+
+.ng-cloak { display: none; }
+
+.active {
+  color: $dropdown-link-active-color;
+  background-color: $dropdown-link-active-bg;
+}
+a.active:hover, a.active:focus {
+  color: $dropdown-link-active-color;
+}

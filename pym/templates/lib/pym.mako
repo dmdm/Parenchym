@@ -40,6 +40,29 @@ from pprint import pformat
 % endfor
 </%def>
 
+<%def name="alert_flash()">
+    <%
+        nojs_mq, mq_json = pym.lib.build_flash_msgs(request)
+    %>
+    <noscript>
+    % for m in nojs_mq:
+        <div class="alert alert-${'danger' if m['type'] == 'error' else m['type']}"
+             role="alert">
+            <div style="display: table-row;">
+                <div class="fa toast-${m['type']}-icon" style="display: table-cell; padding-right: 0.75rem;"></div>
+                <div style="display: table-cell;">
+                    %if 'title' in m and m['title']:
+                        <div>${m['title'] | n}</div>
+                    %endif
+                    <div>${m['text'] | n}</div>
+                </div>
+            </div>
+        </div>
+    % endfor
+    </noscript>
+    <!-- directive: pym-growl-flash ${mq_json|n} -->
+</%def>
+
 <%def name="growl_flash()">
 % for m in pym.lib.build_growl_msgs(request):
     pym.growler.growl( ${m|n} );
