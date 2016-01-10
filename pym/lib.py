@@ -440,7 +440,7 @@ def flash_ok(*args, **kw):
 
 def flash_error(request, text, *args, **kw):
     kw['kind'] = 'error'
-    if not request.registry.settings['full_db_errors']:
+    if not request.registry['rc'].g('full_db_errors'):
         text = re.sub(r'DETAIL:.+$', '', text, flags=re.DOTALL)
     flash(request, text, *args, **kw)
 

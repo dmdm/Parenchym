@@ -6,18 +6,18 @@
         <meta charset="utf-8">
   		<meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title><%block name="meta_title">${request.registry.settings['project.title']}
+          <title><%block name="meta_title">${request.registry['rc'].g('project.title')}
             % if 'project.subtitle' in request.registry.settings:
-                <small>${request.registry.settings['project.subtitle']}</small>
+                <small>${request.registry['rc'].g('project.subtitle')}</small>
             % endif
         </%block></title>
-        <meta name="description" content="<%block name="meta_descr">${request.registry.settings['project.description']}</%block>">
-        <meta name="keywords"    content="<%block name="meta_keywords">${request.registry.settings['project.keywords']}</%block>">
-        <meta name="author"      content="<%block name="meta_author">${request.registry.settings['project.author']}</%block>">
+        <meta name="description" content="<%block name="meta_descr">${request.registry['rc'].g('project.description')}</%block>">
+        <meta name="keywords"    content="<%block name="meta_keywords">${request.registry['rc'].g('project.keywords')}</%block>">
+        <meta name="author"      content="<%block name="meta_author">${request.registry['rc'].g('project.author')}</%block>">
         <%block name="styles">
             <link rel="stylesheet" href="${request.static_url('pym:static/assets/css/pym-1.css')}">
-            % if request.registry.settings['environment'] != 'production':
-                <link rel="stylesheet" href="${request.static_url('pym:static/assets/css/styles-' + request.registry.settings['environment'] + '.css')}">
+            % if request.registry['rc'].g('environment') != 'production':
+                <link rel="stylesheet" href="${request.static_url('pym:static/assets/css/styles-' + request.registry['rc'].g('environment') + '.css')}">
             % endif
 		</%block>
 		<%block name="scripts">

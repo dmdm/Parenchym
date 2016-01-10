@@ -69,9 +69,12 @@ auth.tkt_policy.secret: SECRET
 # Initial password for user 'root'
 auth.user_root.pwd: SECRET
 # Class for auth provider (login/logout)
-auth.provider: pym.auth.AuthProvider
-# Class for user objects
+auth.class.provider: pym.auth.AuthProvider
+# Classes for authentication objects (user, group, groupmember, ace)
 auth.class.user: pym.auth.models.User
+auth.class.group: pym.auth.models.Group
+auth.class.group_member: pym.auth.models.GroupMember
+auth.class.ace: pym.auth.models.Ace
 # Encrypt password using this scheme.
 # Pym uses passlib with one of these schemes:
 #   ldap_plaintext, ldap_salted_sha1, sha512_crypt, pbkdf2_sha512

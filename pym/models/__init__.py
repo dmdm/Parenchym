@@ -111,7 +111,7 @@ Default DB engine.
 
 # ===[ IMPORTABLE SETUP FUNCS ]=======
 
-def init(settings, prefix='', invalidate_caches=False):
+def init(settings, invalidate_caches=False):
     """
     Initializes scoped SQLAlchemy by rc settings.
 
@@ -130,9 +130,7 @@ def init(settings, prefix='', invalidate_caches=False):
     #     json_serializer=pym.lib.json_serializer,
     #     json_deserializer=pym.lib.json_deserializer
     # )
-    DbEngine = engine_from_config(
-        settings, prefix
-    )
+    DbEngine = engine_from_config(settings, prefix='')
     DbSession.configure(bind=DbEngine)
     DbBase.metadata.bind = DbEngine
 

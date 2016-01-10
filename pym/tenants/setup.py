@@ -1,11 +1,9 @@
 from pym.auth.models import User
-from pym.auth.manager import create_group_member
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from pym.sys.const import NODE_NAME_SYS
 from pym.auth.const import SYSTEM_UID, NODE_NAME_SYS_AUTH_MGR
 from .const import NODE_NAME_TENANT_MGR, DEFAULT_TENANT_NAME, DEFAULT_TENANT_TITLE
-from . import manager as mgr
 
 
 def _create_views(sess):
@@ -21,21 +19,22 @@ def _setup_resources(sess):
         iface='pym.tenants.models.ITenantMgrNode')
 
 
-def _setup_tenants(sess):
+def _setup_tenants(sess, tenmgr):
     # Create tenant. Cascade also creates a resource and a group
-    ten = mgr.create_tenant(sess, SYSTEM_UID, name=DEFAULT_TENANT_NAME,
+    ten = tenmgr.create_tenant(SYSTEM_UID, name=DEFAULT_TENANT_NAME,
         title=DEFAULT_TENANT_TITLE, descr="The default tenant")
     # Put all so far existing users into our group
     g = ten.load_my_group()
     uu = sess.query(User)
     for u in uu:
-        create_group_member(sess, owner=SYSTEM_UID, group=g, member_user=u)
+        tenmgr.authmgr.create_group_member(owner=SYSTEM_UID, group=g,
+            member_user=u)
 
 
 def create_schema(sess, rc):
     _create_views(sess)
 
 
-def setup(sess, rc):
+def setup(sess, rc, tenmgr):
     _setup_resources(sess)
-    _setup_tenants(sess)
+    _setup_tenants(sess, tenmgr)

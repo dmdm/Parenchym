@@ -803,8 +803,8 @@ class CurrentUser(object):
         self.uid = None
         self.principal = None
         self.sess = sess
-        rc = request.registry.settings['rc']
-        cls = _dnr.resolve(rc.g('auth.provider'))
+        rc = request.registry['rc']
+        cls = rc.g('auth.class.provider')
         self.auth_provider = cls(self.sess, user_class)
         self.init_nobody()
 
@@ -961,8 +961,8 @@ def get_current_user(request):
     #mlgg.debug("get user: {}".format(request.path))
     principal = pyramid.security.unauthenticated_userid(request)
     sess = DbSession()
-    rc = request.registry.settings['rc']
-    user_class = _dnr.resolve(rc.g('auth.class.user'))
+    rc = request.registry['rc']
+    user_class = rc.g('auth.class.user')
     cusr = CurrentUser(sess, request, user_class)
     if principal is not None:
         cusr.load_by_principal(principal)
