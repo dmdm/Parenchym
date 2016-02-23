@@ -28,6 +28,7 @@ from sqlalchemy.ext.declarative import (
     declared_attr)
 from sqlalchemy.sql import compiler
 import sqlalchemy.engine
+from sqlalchemy.dialects.postgresql import JSONB
 from psycopg2.extensions import adapt as sqlescape
 # or use the appropriate escape function from your db driver
 from sqlalchemy.util import KeyedTuple
@@ -752,6 +753,18 @@ class DefaultMixin(object):
         """Optional reason for deletion."""
         return sa.Column(sa.Unicode(255), nullable=True,
             info={'colanderalchemy': {'title': _("Deletion Reason")}}
+        )
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def deleted_data(cls):
+        """
+        Deletion may need to overwrite data in unique fields to make the old
+        value usable again. Store those values here before overwriting them
+        with e.g. UUIDs.
+        """
+        return sa.Column(JSONB, nullable=True,
+            info={'colanderalchemy': {'title': _("Deleted Data")}}
         )
 
     def dump(self):
