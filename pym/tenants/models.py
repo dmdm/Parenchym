@@ -61,9 +61,19 @@ class Tenant(pym.res.models.ResourceNode):
         primary_key=True,
         nullable=False
     )
-    # Load description only if needed
-    descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
-    """Optional description."""
+
+    group_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            'pym.group.id',
+            onupdate='CASCADE',
+            ondelete='RESTRICT',
+            name='tenant_group_id_fk'
+        ),
+        nullable=False
+    )
+    """ID of this tenant's group"""
+    group = sa.orm.relationship('Group', foreign_keys=[group_id])
 
     def __init__(self, owner_id, name, **kwargs):
         super().__init__(owner_id=owner_id, name=name, kind='tenant', **kwargs)
@@ -72,16 +82,6 @@ class Tenant(pym.res.models.ResourceNode):
     @classmethod
     def load_default_tenant(cls, sess):
         return sess.query(cls).filter(cls.name == DEFAULT_TENANT_NAME).one()
-
-    def load_my_group(self):
-        sess = sa.inspect(self).session
-        return sess.query(Group).filter(
-            sa.and_(
-                Group.tenant_id == None,
-                Group.name == self.name,
-                Group.kind == GROUP_KIND_TENANT
-            )
-        ).one()
 
     def __repr__(self):
         return "<{name}(id={id}, name='{n}'>".format(

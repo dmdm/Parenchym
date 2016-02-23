@@ -12,7 +12,7 @@ from pym.auth.const import (NODE_NAME_SYS_AUTH_MGR, NODE_NAME_SYS_AUTH_USER_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MGR,
                             NODE_NAME_SYS_AUTH_GROUP_MEMBER_MGR,
                             NODE_NAME_SYS_AUTH_PERMISSION_MGR)
-from pym.tenants.manager import find_tenant_node
+from pym.tenants.manager import TenantMgr
 
 
 # TODO Build menus from table pym.resource_tree
@@ -57,7 +57,7 @@ def help_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
 
 def fs_menu(request, root_node, url_to, tenant=DEFAULT_TENANT_NAME,
         translate=lambda s: s):
-    ten = find_tenant_node(request.context)
+    ten = TenantMgr.find_tenant_node(request.context)
     # Me
     node_fs = ten[NODE_NAME_FS]
     id_ = resource_path(node_fs)

@@ -28,6 +28,7 @@ from sqlalchemy.ext.declarative import (
     declared_attr)
 from sqlalchemy.sql import compiler
 import sqlalchemy.engine
+from sqlalchemy.dialects.postgresql import JSONB
 from psycopg2.extensions import adapt as sqlescape
 # or use the appropriate escape function from your db driver
 from sqlalchemy.util import KeyedTuple
@@ -111,7 +112,7 @@ Default DB engine.
 
 # ===[ IMPORTABLE SETUP FUNCS ]=======
 
-def init(settings, prefix='', invalidate_caches=False):
+def init(settings, invalidate_caches=False):
     """
     Initializes scoped SQLAlchemy by rc settings.
 
@@ -130,9 +131,7 @@ def init(settings, prefix='', invalidate_caches=False):
     #     json_serializer=pym.lib.json_serializer,
     #     json_deserializer=pym.lib.json_deserializer
     # )
-    DbEngine = engine_from_config(
-        settings, prefix
-    )
+    DbEngine = engine_from_config(settings, prefix='')
     DbSession.configure(bind=DbEngine)
     DbBase.metadata.bind = DbEngine
 
@@ -754,6 +753,18 @@ class DefaultMixin(object):
         """Optional reason for deletion."""
         return sa.Column(sa.Unicode(255), nullable=True,
             info={'colanderalchemy': {'title': _("Deletion Reason")}}
+        )
+
+    # noinspection PyMethodParameters
+    @declared_attr
+    def deleted_data(cls):
+        """
+        Deletion may need to overwrite data in unique fields to make the old
+        value usable again. Store those values here before overwriting them
+        with e.g. UUIDs.
+        """
+        return sa.Column(JSONB(none_as_null=True), nullable=True,
+            info={'colanderalchemy': {'title': _("Deleted Data")}}
         )
 
     def dump(self):

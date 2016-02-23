@@ -7,18 +7,19 @@ import logging
 import sys
 import os
 import datetime
-import redis
 import alembic.command
 import alembic.config
 from zope.sqlalchemy import mark_changed
-from pym.auth.const import SYSTEM_UID
 import pym.cli
 import pym.exc
-from pym.models import DbSession
 import pym.cache
+import pym.models
+import pym.auth.manager
+import pym.auth.models
 import pym.res.setup
 import pym.sys.setup
 import pym.auth.setup
+import pym.tenants.manager
 import pym.tenants.setup
 import pym.me.setup
 import pym.fs.setup
@@ -36,8 +37,16 @@ class Runner(pym.cli.Cli):
             setup_logging=setup_logging)
 
     def run(self):
-        root_pwd = self.rc.g('auth.user_root.pwd')
         sess = self._sess
+        authmgr = pym.auth.manager.AuthMgr.factory(lgg=self.lgg, sess=sess,
+            rc=self.rc)
+        tenmgr = pym.tenants.manager.TenantMgr.factory(
+            lgg=self.lgg,
+            sess=self.sess,
+            rc=self.rc,
+            authmgr=authmgr
+        )
+        root_pwd = self.rc.g('auth.user_root.pwd')
         self._config.scan('pym')
         # Create schema
         # Make sure, views etc are also created here. In the next block we call
@@ -58,7 +67,7 @@ class Runner(pym.cli.Cli):
             # Create all models
             pym.models.create_all()
             # Users and stuff we need to setup the modules
-            pym.auth.setup.populate(sess, root_pwd=root_pwd, rc=self.rc)
+            pym.auth.setup.populate(sess, authmgr=authmgr, root_pwd=root_pwd, rc=self.rc)
             if not self.args.schema_only:
                 pass
                 pym.res.setup.setup(sess, rc=self.rc)
@@ -67,11 +76,11 @@ class Runner(pym.cli.Cli):
                 sess.flush()  # Need ID
                 pym.auth.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID
-                pym.tenants.setup.setup(sess, rc=self.rc)
+                pym.tenants.setup.setup(sess, rc=self.rc, tenmgr=tenmgr)
                 sess.flush()  # Need ID
                 pym.me.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID
-                pym.fs.setup.setup(sess, rc=self.rc)
+                pym.fs.setup.setup(sess, rc=self.rc, authmgr=authmgr)
                 sess.flush()  # Need ID
                 pym.journals.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID

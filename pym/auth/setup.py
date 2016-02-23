@@ -1,10 +1,11 @@
 import logging
 import os
 import pym.models
+import pym.lib
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from pym.sys.const import NODE_NAME_SYS
-from . import manager as authmgr
+from .manager import AuthMgr
 from .const import *
 from .models import Permission, Permissions
 
@@ -25,10 +26,9 @@ def _create_views(sess, rc):
     pym.lib.install_db_scripts(mlgg, sess, root_dir, scripts)
 
 
-def _setup_users(sess, root_pwd):
+def _setup_users(authmgr, root_pwd):
     # 1// Create user system
     u_system = authmgr.create_user(
-        sess,
         owner=SYSTEM_UID,
         id=SYSTEM_UID,
         is_enabled=False,
@@ -45,7 +45,6 @@ def _setup_users(sess, root_pwd):
     # This group should not have members.
     # Not-authenticated users are automatically member of 'everyone'
     authmgr.create_group(
-        sess,
         owner=SYSTEM_UID,
         id=EVERYONE_RID,
         name='everyone',
@@ -53,13 +52,11 @@ def _setup_users(sess, root_pwd):
         kind=GROUP_KIND_SYSTEM
     )
     authmgr.create_group(
-        sess,
         owner=SYSTEM_UID,
         id=SYSTEM_RID,
         name='system',
     )
     g_wheel = authmgr.create_group(
-        sess,
         owner=SYSTEM_UID,
         id=WHEEL_RID,
         name='wheel',
@@ -67,7 +64,6 @@ def _setup_users(sess, root_pwd):
         kind=GROUP_KIND_SYSTEM
     )
     g_users = authmgr.create_group(
-        sess,
         owner=SYSTEM_UID,
         id=USERS_RID,
         name='users',
@@ -75,7 +71,6 @@ def _setup_users(sess, root_pwd):
         kind=GROUP_KIND_SYSTEM
     )
     g_unit_testers = authmgr.create_group(
-        sess,
         owner=SYSTEM_UID,
         id=UNIT_TESTERS_RID,
         name='unit testers',
@@ -85,13 +80,11 @@ def _setup_users(sess, root_pwd):
 
     # 3// Put 'system' into its groups
     authmgr.create_group_member(
-        sess,
         owner=SYSTEM_UID,
         group=g_users,
         member_user=u_system,
     )
     authmgr.create_group_member(
-        sess,
         owner=SYSTEM_UID,
         group=g_wheel,
         member_user=u_system
@@ -101,7 +94,6 @@ def _setup_users(sess, root_pwd):
 
     # root
     u = authmgr.create_user(
-        sess,
         owner=SYSTEM_UID,
         id=ROOT_UID,
         principal='root',
@@ -115,7 +107,6 @@ def _setup_users(sess, root_pwd):
 
     # nobody
     authmgr.create_user(
-        sess,
         owner=SYSTEM_UID,
         id=NOBODY_UID,
         principal='nobody',
@@ -130,7 +121,6 @@ def _setup_users(sess, root_pwd):
 
     # sample data
     authmgr.create_user(
-        sess,
         owner=SYSTEM_UID,
         id=SAMPLE_DATA_UID,
         principal='sample_data',
@@ -145,7 +135,6 @@ def _setup_users(sess, root_pwd):
 
     # unit_tester
     authmgr.create_user(
-        sess,
         owner=SYSTEM_UID,
         id=UNIT_TESTER_UID,
         principal='unit_tester',
@@ -161,10 +150,10 @@ def _setup_users(sess, root_pwd):
     # 5// Set sequence counter for user-created things
     # XXX PostgreSQL only
     # Regular users have ID > 100
-    sess.execute('ALTER SEQUENCE pym.user_id_seq RESTART WITH 101')
+    authmgr.sess.execute('ALTER SEQUENCE pym.user_id_seq RESTART WITH 101')
     # Regular groups have ID > 100
-    sess.execute('ALTER SEQUENCE pym.group_id_seq RESTART WITH 101')
-    sess.flush()
+    authmgr.sess.execute('ALTER SEQUENCE pym.group_id_seq RESTART WITH 101')
+    authmgr.sess.flush()
 
 
 def _setup_permissions(sess):
@@ -265,8 +254,8 @@ def create_schema(sess, rc):
     pass
 
 
-def populate(sess, root_pwd, rc):
-    _setup_users(sess, root_pwd)
+def populate(sess, authmgr, root_pwd, rc):
+    _setup_users(authmgr, root_pwd)
     _setup_permissions(sess)
 
 

@@ -1,5 +1,4 @@
-﻿#!/usr/bin/env python
-import configparser
+﻿import configparser
 
 from yaml import load
 try:
@@ -10,6 +9,7 @@ except ImportError:
 import os
 import platform
 import re
+import pyramid.util
 
 
 class RcError(Exception):
@@ -36,6 +36,10 @@ class Rc:
 
     Nodes should not contain deeper levels, they are hard to override in
     host's rc file.
+
+    A node may contain '.class.' to specify be a dotted name to a system class,
+    e.g. key 'auth.class.user' specifies a dotted name to the class used for user
+    accounts. Rc resolves these strings automatically to their class objects.
 
     A Node may reference a bunch of other nodes like so::
 
@@ -165,6 +169,7 @@ class Rc:
                 if self.debug:
                     print(str(exc))
 
+        self.resolve_classes()
         self.resolve_references()
         self.expand_these(keys=None, here=self.root_dir, root_dir=self.root_dir)
 
@@ -224,6 +229,13 @@ class Rc:
             else:
                 if self.debug:
                     print("WARNING: File is empty!")
+
+    def resolve_classes(self):
+        cls = {}
+        for k, v in self.data.items():
+            if '.class.' in k:
+                cls[k] = pyramid.util.DottedNameResolver(None).resolve(v)
+        self.data.update(cls)
 
     def resolve_references(self):
         refconf = {}

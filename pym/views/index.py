@@ -1,3 +1,4 @@
+import logging
 from pyramid.security import (
     NO_PERMISSION_REQUIRED
 )
@@ -11,6 +12,9 @@ from pym.tenants.const import DEFAULT_TENANT_NAME
 import pym.tenants.manager
 import pym.resp
 import pym.menu
+
+
+mlgg = logging.getLogger('__name__')
 
 
 # noinspection PyUnusedLocal
@@ -49,7 +53,8 @@ def main(context, request):
     # If only one, redirect to tenant home page,
     # if several, let him choose.
     sess = pym.models.DbSession()
-    tt = pym.tenants.manager.collect_my_tenants(sess, request.user.uid)
+    tenmgr = pym.tenants.manager.TenantMgr.factory(lgg=mlgg, sess=sess, rc=request.registry['rc'])
+    tt = tenmgr.collect_my_tenants(request.user.uid)
     if len(tt) == 1:
         url = request.resource_url(context[tt[0].name])
         return HTTPFound(location=url)

@@ -1,0 +1,42 @@
+/*.grid { font-size: 88%; }*/
+.pym-grid-footer {
+  display: table-row;
+  height: 20px;
+  line-height: 90%;
+  .rowNumbers, .pageSizeChooser, .page, .spinner, .pym-grid-pagination, .spacer {
+    display: table-cell;
+    vertical-align: middle;
+  }
+  .spacer {
+    width: $spacer;
+  }
+  .pym-grid-pagination {
+    .pagination {
+      margin: 0;
+    }
+  }
+  .pageSizeChooser {
+    select {
+      padding-top: 2px;
+      padding-bottom: 0;
+      line-height: $line-height;
+      height: 28px;
+    }
+  }
+  .page {
+    input {
+      padding-top: 2px;
+      padding-bottom: 0;
+      line-height: $line-height;
+      height: 28px;
+      width: 4.5em;
+    }
+  }
+  .spinner {
+    padding-left: .5em;
+  }
+}
+
+.pym-grid-menu-bar {
+  margin-bottom: 1ex;
+}

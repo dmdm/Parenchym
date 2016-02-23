@@ -1,0 +1,1 @@
+{"version":3,"sources":["styles-demo.scss"],"names":[],"mappings":"AAAA;EAAO,wBAAwB;EAAE,aAAa;EAAG,0CAAyC;CAAG","file":"styles-demo.css","sourcesContent":["body { border: solid green 6px; padding: 4px;  background-image: url(../img/bg-demo.png) }\n"],"sourceRoot":"/source/"}

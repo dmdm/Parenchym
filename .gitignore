@@ -29,6 +29,16 @@ nosetests.xml
 .project
 .pydevproject
 
+# jupyter
+.ipynb_checkpoints
+
+# node, jspm, bower etc
+node_modules
+jspm_packages
+client/src/bower_components
+pym/static/jspm_packages
+pym/static/bower_components
+
 # dmdm
 .*.swp
 var/cache/*
@@ -53,4 +63,3 @@ _tmp*
 priv/*
 .idea
 
-node_modules

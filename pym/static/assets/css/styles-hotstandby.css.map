@@ -1,0 +1,1 @@
+{"version":3,"sources":["styles-hotstandby.scss"],"names":[],"mappings":"AAAA;EAAO,6BAA6B;EAAE,aAAa;EAAG,gDAA+C;CAAG","file":"styles-hotstandby.css","sourcesContent":["body { border: solid darkorange 6px; padding: 4px;  background-image: url(../img/bg-hotstandby.png) }\n"],"sourceRoot":"/source/"}

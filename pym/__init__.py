@@ -14,7 +14,8 @@ import pym.res.models
 import pym.auth.manager
 import pym.lib
 import pym.resp
-from pym.rc import Rc
+import pym.rc
+import pym.cache.configure
 
 
 def main(global_config, **settings):
@@ -22,10 +23,10 @@ def main(global_config, **settings):
     """
     # Init Rc
     # Get Rc instance like this, then use its methods e.g. g() or s():
-    #     request.registry.settings['rc']
+    #     request.registry['rc'].g('rc')
     # Rc data is merged directly into settings, so you can retrieve it like
     # this:
-    #     request.registry.settings['project']
+    #     request.registry['rc'].g('project')
     # Set Rc's root_dir, which by default is the project dir (not the package
     # dir)
     #     ProjectDir
@@ -35,31 +36,29 @@ def main(global_config, **settings):
     if 'environment' not in settings:
         raise KeyError('Missing key "environment" in config. Specify '
             'environment in paster INI file.')
-    rc = Rc(environment=settings['environment'],
+    rc = pym.rc.Rc(
+        environment=settings['environment'],
         root_dir=os.path.abspath(
             os.path.join(os.path.dirname(__file__), '..')
         )
     )
     rc.load()
-    settings.update(rc.data)
     rc.s('environment', settings['environment'])
-    # Put rc into config settings
-    settings['rc'] = rc
 
     # Create config
     config = Configurator(
         settings=settings
     )
+    config.registry['rc'] = rc
     config.include(includeme)
 
     return config.make_wsgi_app()
 
 
 def includeme(config):
-    rc = config.registry.settings['rc']
+    rc = config.registry['rc']
 
     # Set some module constants based on RC settings
-    init_auth(rc)
     pym.resp.RESPOND_FULL_EXCEPTION = rc.g('debug', False)
 
     # # Override deform templates
@@ -105,7 +104,7 @@ def includeme(config):
     config.add_request_method(i18n.fetch_translated, 'fetch_translated', reify=True)
 
     # Mailer
-    config.registry['mailer'] = Mailer.from_settings(config.registry.settings)
+    config.registry['mailer'] = Mailer.from_settings(rc.get_these('mail.'), prefix='')
 
     # Mako
     config.include('pyramid_mako')
@@ -113,7 +112,7 @@ def includeme(config):
     #config.include('pyramid_chameleon')
 
     # Init DB
-    models.init(config.registry.settings, 'db.pym.sa.', invalidate_caches=True)
+    models.init(rc.get_these('db.pym.sa.'), invalidate_caches=True)
 
     # Run scan() which also imports db models
     config.scan('pym')
@@ -126,19 +125,5 @@ def includeme(config):
     config.include(duh_view)
     # Redis
     config.include('pyramid_redis')
-    configure_cache_regions(rc)
-
-
-def configure_cache_regions(rc):
-    import pym.cache
-    regions = rc.g('cache.regions')
-    for reg in regions:
-        backend = rc.g('cache.{}.backend'.format(reg))
-        arguments = rc.get_these('cache.{}.arguments.'.format(reg))
-        r = getattr(pym.cache, reg)
-        r.configure(backend, arguments=arguments)
-
-
-def init_auth(rc):
-    pym.auth.manager.PASSWORD_SCHEME = rc.g('auth.password_scheme',
-        pym.auth.manager.PASSWORD_SCHEME).lower()
+    # Pym Cache
+    pym.cache.configure.configure_cache_regions(rc)

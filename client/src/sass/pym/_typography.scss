@@ -1,0 +1,27 @@
+/* FONT PATH
+ * -------------------------- */
+/*
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  src: url('#{$pym-font-path}/YanoneKaffeesatz-Thin.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+*/
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  src: url('#{$pym-font-path}/YanoneKaffeesatz-Bold.otf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Aroania';
+  src: url('#{$pym-font-path}/Aroania_R.otf');
+}
+
+.imprint h2 {
+  font-size: $font-size-base;
+  font-weight: bold;
+  color: $brand-primary;
+}

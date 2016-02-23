@@ -99,7 +99,7 @@ def normpath(path):
     Returns normalised version of user defined path.
 
     Normalised means, relative path segments like '..' are resolved and leading
-    '..' are removed. Leading '/' is also removed, retuning only relative path.
+    '..' are removed. Leading '/' is also removed, returning only relative path.
     E.g.::
         "/../../foo/../../bar"  --> "bar"
         "/../../foo/bar"        --> "foo/bar"

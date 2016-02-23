@@ -100,7 +100,7 @@ class HelpView(object):
             p = 'index'
         self.path = p
         self.root_dir = os.path.join(
-            request.registry.settings['rc'].root_dir,
+            request.registry['rc'].root_dir,
             'var', 'help-docs')
 
         # Do not use safe_mode here to escape raw HTML inside markdown.

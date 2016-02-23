@@ -24,6 +24,7 @@ import pym.models
 import pym.lib
 from pym.resp import JsonResp
 import pym.testing
+import pym.cache.configure
 
 
 mlgg = logging.getLogger(__name__)
@@ -202,18 +203,17 @@ class Cli(object):
                 etc_dir=args.etc_dir
             )
             rc.load()
-        settings.update(rc.data)
-        settings['rc'] = rc
+            rc.s('environment', settings['environment'])
         self.rc = rc
         self.settings = settings
         self._config = pyramid.config.Configurator(
             settings=settings
         )
+        self._config.registry['rc'] = rc
         self._config.scan('pym')
 
     def base_init2(self):
         self._sess = pym.models.DbSession()
-        pym.init_auth(self.rc)
         # if hasattr(self.args, 'actor') and self.args.actor:
         #     actor = self.args.actor
         #     try:
@@ -257,10 +257,10 @@ class Cli(object):
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
 
-        pym.models.init(self.settings, 'db.pym.sa.')
+        pym.models.init(self.rc.get_these('db.pym.sa.'), invalidate_caches=True)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
-        pym.configure_cache_regions(self.rc)
+        pym.cache.configure.configure_cache_regions(self.rc)
 
         self.base_init2()
 

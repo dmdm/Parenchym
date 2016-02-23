@@ -1,58 +1,63 @@
-@import "pym-variables";
-
-// Core variables and mixins
-@import "sass-bootstrap/mixins";
-
-// Reset and dependencies
-@import "sass-bootstrap/normalize";
-@import "sass-bootstrap/print";
-@import "sass-bootstrap/glyphicons";
-
-// Core CSS
-@import "sass-bootstrap/scaffolding";
-@import "sass-bootstrap/type";
-@import "sass-bootstrap/code";
-@import "sass-bootstrap/grid";
-@import "sass-bootstrap/tables";
-@import "sass-bootstrap/forms";
-@import "sass-bootstrap/buttons";
-
-//// Components
-@import "sass-bootstrap/component-animations";
-@import "sass-bootstrap/dropdowns";
-@import "sass-bootstrap/button-groups";
-@import "sass-bootstrap/input-groups";
-@import "sass-bootstrap/navs";
-@import "sass-bootstrap/navbar";
-  //@import "sass-bootstrap/breadcrumbs";
-@import "sass-bootstrap/pagination";
-  //@import "sass-bootstrap/pager";
-  //@import "sass-bootstrap/labels";
-  //@import "sass-bootstrap/badges";
-  //@import "sass-bootstrap/jumbotron";
-  //@import "sass-bootstrap/thumbnails";
-@import "sass-bootstrap/alerts";
-@import "sass-bootstrap/progress-bars";
-  //@import "sass-bootstrap/media";
-  //@import "sass-bootstrap/list-group";
-@import "sass-bootstrap/panels";
-@import "sass-bootstrap/responsive-embed";
-  //@import "sass-bootstrap/wells";
-  //@import "sass-bootstrap/close";
-
-//// Components w/ JavaScript
-@import "sass-bootstrap/modals";
-@import "sass-bootstrap/tooltip";
-//@import "sass-bootstrap/popovers";
-  //@import "sass-bootstrap/carousel";
-
-// Utility classes
-@import "sass-bootstrap/utilities";
-  //@import "sass-bootstrap/responsive-utilities";
+// $enable-flex: true;
+@import "pym/variables4";
 
 
 /*!
- *  Font Awesome 4.2.0 by @davegandy - http://fontawesome.io - @fontawesome
+ * Bootstrap 4
+ */
+// Core variables and mixins
+//@import "bootstrap4/variables";
+@import "bootstrap4/mixins";
+
+// // Reset and dependencies
+@import "bootstrap4/normalize";
+@import "bootstrap4/print";
+
+// Core CSS
+@import "bootstrap4/reboot";
+@import "bootstrap4/type";
+@import "bootstrap4/images";
+@import "bootstrap4/code";
+@import "bootstrap4/grid";
+@import "bootstrap4/tables";
+@import "bootstrap4/forms";
+@import "bootstrap4/buttons";
+
+// // Components
+//@import "bootstrap4/animation";
+@import "bootstrap4/dropdown";
+@import "bootstrap4/button-group";
+@import "bootstrap4/input-group";
+//@import "bootstrap4/custom-forms";
+@import "bootstrap4/nav";
+//@import "bootstrap4/navbar";
+//@import "bootstrap4/card";
+//@import "bootstrap4/breadcrumb";
+//@import "bootstrap4/pagination";
+//@import "bootstrap4/pager";
+//@import "bootstrap4/labels";
+//@import "bootstrap4/jumbotron";
+@import "bootstrap4/alert";
+//@import "bootstrap4/progress";
+//@import "bootstrap4/media";
+//@import "bootstrap4/list-group";
+//@import "bootstrap4/responsive-embed";
+//@import "bootstrap4/close";
+
+// Components w/ JavaScript
+@import "bootstrap4/modal";
+//@import "bootstrap4/tooltip";
+//@import "bootstrap4/popover";
+//@import "bootstrap4/carousel";
+
+// Utility classes
+@import "bootstrap4/utilities";
+@import "bootstrap4/utilities-spacing";
+@import "bootstrap4/utilities-responsive";
+
+
+/*!
+ *  Font Awesome 4.4.0 by @davegandy - http://fontawesome.io - @fontawesome
  *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)
  */
 
@@ -64,6 +69,7 @@
 @import "font-awesome/fixed-width";
 @import "font-awesome/list";
 @import "font-awesome/bordered-pulled";
+@import "font-awesome/animated";
 @import "font-awesome/rotated-flipped";
 @import "font-awesome/stacked";
 @import "font-awesome/icons";
@@ -72,12 +78,29 @@
 /*!
  *   Vendor
  */
-@import "vendor_always_used/pnotify.custom";
-@import "vendor_always_used/select2-bootstrap";
-@import "vendor_always_used/angular-ui-select";
-//@import "vendor_always_used/flexy-layout";
+@import "vendor_always_used/dragula";
+
 
 /*!
  *   Parenchym
  */
-@import "pym-styles";
+
+// Essential
+@import "pym/angular-toastr";
+@import "pym/typography";
+@import "pym/layout";
+@import "pym/header";
+@import "pym/footer";
+@import "pym/breadcrumbs";
+@import "pym/tree";
+
+// Components
+@import "pym/modals";
+//@import "pym/flexy-layout-overrides";
+//@import "pym/fs-uploader";
+//@import "pym/ui-grid-tools";
+//@import "pym/ui-tree-overrides";
+
+// Misc
+@import "pym/misc";
+

@@ -20,10 +20,10 @@ import pym.exc
 import pym.resp
 import pym.google.oauth
 import pym.auth.models as pam
-import pym.auth.manager
+from pym.auth.manager import AuthMgr
 import pym.tenants
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
-from pym.tenants.manager import find_tenant
+from pym.tenants.manager import TenantMgr
 
 
 _ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
@@ -71,7 +71,7 @@ class LoginOutView(object):
 
         self.oidc_clients = {
             'google': pym.google.oauth.OpenIdConnectClient(
-                request.registry.settings['rc'], request.session)
+                request.registry['rc'], request.session)
         }
 
     @view_config(
@@ -134,6 +134,10 @@ class LoginOutView(object):
         renderer='string'
     )
     def xhr_connect_gplus(self):
+        authmgr = AuthMgr.factory(lgg=self.lgg, sess=self.sess,
+            rc=self.request.registry['rc'])
+        tenmgr = TenantMgr.factory(lgg=self.lgg, sess=self.sess,
+            rc=self.request.registry['rc'])
         resp = pym.resp.JsonResp()
         cl = self.oidc_clients['google']
 
@@ -249,16 +253,15 @@ class LoginOutView(object):
             # into the current tenant's group.
             groups = [
                 # FIXME Do not use current context, which always is root, but context of referrer. Then we get tenant of the place the user came from.
-                find_tenant(self.sess, self.context).load_my_group()
+                tenmgr.find_tenant(self.context).group
             ]
             self.lgg.info("About to create account for principal '{principal}',"
                 " email '{email}', display name '{display_name}'".format(
                     principal=principal, email=email, display_name=display_name
                 )
             )
-            u = pym.auth.manager.create_user(
-                self.sess,
-                self.request.user.uid,
+            u = authmgr.create_user(
+                owner=self.request.user.uid,
                 is_enabled=True,
                 principal=principal,
                 pwd=pwd,

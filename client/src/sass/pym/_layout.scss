@@ -1,0 +1,38 @@
+
+@media (min-width: 768px) {
+  .row {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}
+
+/* sticky footer */
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+}
+
+@media print {
+  .hidden-print {
+    display: none !important;
+  }
+}
+
+#page_container {
+  min-height: 100%;
+}
+
+#page_content {
+  padding-bottom: $footer-height;
+}
+
+.outer-gutter {
+  padding: 0 $grid-gutter-width/2; // simulate bootstrap grid's gutter at outer sides
+}
+
+.content-margin-top {
+  margin-top: 12px;
+}

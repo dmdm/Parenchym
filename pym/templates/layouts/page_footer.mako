@@ -6,17 +6,17 @@
     <footer class="hidden-print">
         <div class="row">
             <div class="col-md-2">
-                ${request.registry.settings['project.title']} ${request.registry.settings['project.version']}
+                ${request.registry['rc'].g('project.title')} ${request.registry['rc'].g('project.version')}
             </div>
             <div class="col-md-10" style="text-align: right;">
-                <div style="display: inline-block; margin-right: 2em;"><a href="${request.registry.settings['project.copyright_link']}" target="_blank">${request.registry.settings['project.copyright']|n}</a></div>
+                <div style="display: inline-block; margin-right: 2em;"><a href="${request.registry['rc'].g('project.copyright_link')}" target="_blank">${request.registry['rc'].g('project.copyright')|n}</a></div>
                 <div style="display: inline-block;"><a href="${request.resource_url(request.root, 'imprint')}">Imprint</a></div>
             </div>
         </div>
     </footer>
 </%block>
 
-% if request.registry.settings['debug']:
+% if request.registry['rc'].g('debug'):
     <hr>
     <h3>SESSION</h3>
     <table class="tblLayout">

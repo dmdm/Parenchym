@@ -440,7 +440,7 @@ def flash_ok(*args, **kw):
 
 def flash_error(request, text, *args, **kw):
     kw['kind'] = 'error'
-    if not request.registry.settings['full_db_errors']:
+    if not request.registry['rc'].g('full_db_errors'):
         text = re.sub(r'DETAIL:.+$', '', text, flags=re.DOTALL)
     flash(request, text, *args, **kw)
 
@@ -469,69 +469,136 @@ def flash(request, text, kind='notice', title=None, status=None):
     request.session.flash(d)
 
 
-def build_growl_msgs(request):
+def build_flash_msgs(request):
     mq = []
+    nojs_mq = []
     for m in request.session.pop_flash():
-        if isinstance(m, dict):
-            mq.append(json.dumps(m))
-        else:
-            mq.append(json.dumps(dict(kind="notice", text=m)))
-    return mq
+        if not isinstance(m, dict):
+            m = dict(kind="notice", text=m)
+        nojs_mq.append(build_one_growl_msg_nojs(m))
+        mq.append(m)
+    return nojs_mq, json.dumps(mq)
 
 
 def build_growl_msgs_nojs(request):
-    from datetime import datetime
-    mq = []
-    for m in request.session.pop_flash():
-        if isinstance(m, dict):
-            msg = m
-        else:
-            msg = dict(kind="notice", text=m)
-        if 'kind' not in msg:
-            msg['kind'] = 'notice'
-        if 'title' not in msg:
-            msg['title'] = msg['kind']
-        # Put timestamp into title
-        # We get time as UTC
-        if 'time' in msg:
-            dt = datetime(
-                msg['time'][0], msg['time'][1], msg['time'][2],
-                msg['time'][3], msg['time'][4], msg['time'][5]
-            )
-        else:
-            dt = datetime.now()
-
-        msg['title'] = (
-            '<span style="font-weight:normal;font-size:xx-small;">'
-            + dt.strftime('%c')
-            + '</span>&nbsp;'
-            + msg['title'])
-        # Setup type, icon and persistence according to kind
-        k = msg['kind'][0]
-        icon = None
-        if k == 'n':
-            msg['type'] = 'notice'
-            icon = 'ui-icon ui-icon-comment'
-        elif k == 'i':
-            msg['type'] = 'info'
-            icon = 'ui-icon ui-icon-info'
-        elif k == 'w':
-            msg['type'] = 'warning'
-            icon = 'ui-icon ui-icon-notice'
-        elif k == 'e':
-            icon = 'ui-icon ui-icon-alert'
-            msg['type'] = 'error'
-        elif k == 'f':
-            icon = 'ui-icon ui-icon-alert'
-            msg['type'] = 'error'
-        elif k == 's':
-            icon = 'ui-icon ui-icon-check'
-            msg['type'] = 'success'
-        if 'icon' not in msg:
-            msg['icon'] = icon
-
-        mq.append(msg)
+    mq = [build_one_growl_msg_nojs(m) for m in request.session.pop_flash()]
     return mq
+
+
+def build_one_growl_msg_nojs(m):
+    from datetime import datetime
+    if isinstance(m, dict):
+        msg = m
+    else:
+        msg = dict(kind="notice", text=m)
+    if not 'kind' in msg:
+        msg['kind'] = 'notice'
+    if not 'title' in msg:
+        msg['title'] = msg['kind']
+    # Put timestamp into title
+    # We get time as UTC
+    if 'time' in msg:
+        dt = datetime(
+            msg['time'][0], msg['time'][1], msg['time'][2],
+            msg['time'][3], msg['time'][4], msg['time'][5]
+        )
+    else:
+        dt = datetime.now()
+
+    msg['title'] = (
+        '<span style="font-weight:normal;font-size:xx-small;">'
+        + dt.strftime('%c')
+        + '</span>&nbsp;'
+        + msg['title'])
+    # Setup type, icon and persistance according to kind
+    k = msg['kind'][0]
+    icon = None
+    if k == 'n':
+        msg['type'] = 'notice'
+        icon = 'ui-icon ui-icon-comment'
+    elif k == 'i':
+        msg['type'] = 'info'
+        icon = 'ui-icon ui-icon-info'
+    elif k == 'w':
+        msg['type'] = 'warning'
+        icon = 'ui-icon ui-icon-notice'
+    elif k == 'e':
+        icon = 'ui-icon ui-icon-alert'
+        msg['type'] = 'error'
+    elif k == 'f':
+        icon = 'ui-icon ui-icon-alert'
+        msg['type'] = 'error'
+    elif k == 's':
+        icon = 'ui-icon ui-icon-check'
+        msg['type'] = 'success'
+    if not 'icon' in msg:
+        msg['icon'] = icon
+    return msg
+
+
+# def build_growl_msgs(request):
+#     mq = []
+#     for m in request.session.pop_flash():
+#         if isinstance(m, dict):
+#             mq.append(json.dumps(m))
+#         else:
+#             mq.append(json.dumps(dict(kind="notice", text=m)))
+#     return mq
+#
+#
+# def build_growl_msgs_nojs(request):
+#     from datetime import datetime
+#     mq = []
+#     for m in request.session.pop_flash():
+#         if isinstance(m, dict):
+#             msg = m
+#         else:
+#             msg = dict(kind="notice", text=m)
+#         if 'kind' not in msg:
+#             msg['kind'] = 'notice'
+#         if 'title' not in msg:
+#             msg['title'] = msg['kind']
+#         # Put timestamp into title
+#         # We get time as UTC
+#         if 'time' in msg:
+#             dt = datetime(
+#                 msg['time'][0], msg['time'][1], msg['time'][2],
+#                 msg['time'][3], msg['time'][4], msg['time'][5]
+#             )
+#         else:
+#             dt = datetime.now()
+#
+#         msg['title'] = (
+#             '<span style="font-weight:normal;font-size:xx-small;">'
+#             + dt.strftime('%c')
+#             + '</span>&nbsp;'
+#             + msg['title'])
+#         # Setup type, icon and persistence according to kind
+#         k = msg['kind'][0]
+#         icon = None
+#         if k == 'n':
+#             msg['type'] = 'notice'
+#             icon = 'ui-icon ui-icon-comment'
+#         elif k == 'i':
+#             msg['type'] = 'info'
+#             icon = 'ui-icon ui-icon-info'
+#         elif k == 'w':
+#             msg['type'] = 'warning'
+#             icon = 'ui-icon ui-icon-notice'
+#         elif k == 'e':
+#             icon = 'ui-icon ui-icon-alert'
+#             msg['type'] = 'error'
+#         elif k == 'f':
+#             icon = 'ui-icon ui-icon-alert'
+#             msg['type'] = 'error'
+#         elif k == 's':
+#             icon = 'ui-icon ui-icon-check'
+#             msg['type'] = 'success'
+#         if 'icon' not in msg:
+#             msg['icon'] = icon
+#
+#         mq.append(msg)
+#     return mq
 
 
 def fmt_size(num):
