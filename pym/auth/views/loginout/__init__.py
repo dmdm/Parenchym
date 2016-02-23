@@ -253,7 +253,7 @@ class LoginOutView(object):
             # into the current tenant's group.
             groups = [
                 # FIXME Do not use current context, which always is root, but context of referrer. Then we get tenant of the place the user came from.
-                tenmgr.find_tenant(self.context).load_my_group()
+                tenmgr.find_tenant(self.context).group
             ]
             self.lgg.info("About to create account for principal '{principal}',"
                 " email '{email}', display name '{display_name}'".format(

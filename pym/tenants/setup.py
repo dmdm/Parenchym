@@ -24,7 +24,7 @@ def _setup_tenants(sess, tenmgr):
     ten = tenmgr.create_tenant(SYSTEM_UID, name=DEFAULT_TENANT_NAME,
         title=DEFAULT_TENANT_TITLE, descr="The default tenant")
     # Put all so far existing users into our group
-    g = ten.load_my_group()
+    g = ten.group
     uu = sess.query(User)
     for u in uu:
         tenmgr.authmgr.create_group_member(owner=SYSTEM_UID, group=g,

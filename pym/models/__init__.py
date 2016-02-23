@@ -763,7 +763,7 @@ class DefaultMixin(object):
         value usable again. Store those values here before overwriting them
         with e.g. UUIDs.
         """
-        return sa.Column(JSONB, nullable=True,
+        return sa.Column(JSONB(none_as_null=True), nullable=True,
             info={'colanderalchemy': {'title': _("Deleted Data")}}
         )
 

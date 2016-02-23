@@ -43,12 +43,13 @@ class TenantMgr:
         if name in n_root.children:
             raise pym.exc.ItemExistsError("Tenant already exists: '{}'".format(name))
         ten = Tenant(owner_id, name, **kwargs)
-        n_root.children[name] = ten
-    
+
         # Create tenant's group
-        self.authmgr.create_group(owner=owner, name=name, kind=GROUP_KIND_TENANT,
+        gr = self.authmgr.create_group(owner=owner, name=name, kind=GROUP_KIND_TENANT,
             descr="All members of tenant " + name)
+        ten.group_id = gr.id
     
+        n_root.children[name] = ten
         self.sess.flush()
         return ten
 
@@ -67,8 +68,7 @@ class TenantMgr:
         ten.mtime = datetime.datetime.now()
         # If tenant is to be renamed, rename its group too.
         if 'name' in kwargs and ten.name != kwargs['name']:
-            gr = ten.load_my_group()
-            gr.name = kwargs['name']
+            ten.group.name = kwargs['name']
         for k, v in kwargs.items():
             setattr(ten, k, v)
         self.sess.flush()
@@ -87,8 +87,7 @@ class TenantMgr:
         :return: None if really deleted, else instance of tagged tenant.
         """
         ten = Tenant.find(self.sess, tenant)
-        gr = ten.load_my_group()
-        self.authmgr.delete_group(gr, deleter, deletion_reason, delete_from_db)
+        self.authmgr.delete_group(ten.group, deleter, deletion_reason, delete_from_db)
         if delete_from_db:
             self.sess.delete(ten)
             ten = None
@@ -136,8 +135,7 @@ class TenantMgr:
         :param owner: ID, ``principal``, or instance of a user.
         """
         ten = Tenant.find(self.sess, tenant)
-        g_ten = ten.load_my_group()
-        self.authmgr.create_group_member(owner, g_ten, member_user=user, **kwargs)
+        self.authmgr.create_group_member(owner, ten.group, member_user=user, **kwargs)
         self.sess.flush()
 
     def remove_user(self, tenant, user):

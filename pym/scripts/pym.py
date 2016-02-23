@@ -152,7 +152,7 @@ class Runner(pym.cli.Cli):
     def _cmd_ls_tenants(self):
 
         def _my_group(it):
-            gr = it.load_my_group()
+            gr = it.group
             return "{} ({})".format(gr.name, gr.id)
 
         e = self.__class__.ENTITIES[self.args.entity]

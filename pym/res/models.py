@@ -71,6 +71,20 @@ class ResourceNode(DbBase, DefaultMixin):
         ),
         nullable=True
     )
+    tenant_id = sa.Column(
+        sa.Integer(),
+        sa.ForeignKey(
+            'pym.resource_tree.id',
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name='resource_tree_tenant_id_fk',
+        ),
+        nullable=True
+    )
+    """
+    Optional reference to the tenant to which this resource belongs.
+    Remember, tenant is a resource too!
+    """
     _name = sa.Column('name', CleanUnicode(255), nullable=False)
     """
     Name of the resource.
@@ -140,6 +154,9 @@ class ResourceNode(DbBase, DefaultMixin):
         # children will be represented as a dictionary
         # on the "name" attribute.
         collection_class=attribute_mapped_collection('name'),
+
+        # Use these fields to construct the join
+        foreign_keys=[parent_id]
     )
     """
     Children of this node.
