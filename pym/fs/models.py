@@ -307,9 +307,6 @@ class FsNode(pym.res.models.ResourceNode):
     :class:`Sentry` is responsible to resolve the lineage. We here are just
     a local storage.
     """
-    # Load description only if needed
-    descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
-    """Optional description."""
 
     def __init__(self, owner_id, name, **kwargs):
         super().__init__(owner_id=owner_id, name=name, kind='fs', **kwargs)

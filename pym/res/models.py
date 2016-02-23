@@ -115,6 +115,9 @@ class ResourceNode(DbBase, DefaultMixin):
 
     E.g. 'pym.res:IRes'
     """
+    # Load description only if needed
+    descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
+    """Optional description."""
 
     children = relationship("ResourceNode",
         order_by=lambda: [ResourceNode.sortix, ResourceNode.name],
