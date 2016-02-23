@@ -50,59 +50,6 @@ class IPermissionMgrNode(zope.interface.Interface):
     pass
 
 
-# class AuthNode(pym.lib.BaseNode):
-#     __name__ = 'auth'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'AuthManager'
-#         self['user'] = UserNode(self)
-#         self['tenant'] = TenantNode(self)
-#         self['group'] = GroupNode(self)
-#         self['group_member'] = GroupMemberNode(self)
-#         self['permission'] = PermissionNode(self)
-#
-#
-# class UserNode(pym.lib.BaseNode):
-#     __name__ = 'user'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'Users'
-#
-#
-# class TenantNode(pym.lib.BaseNode):
-#     __name__ = 'tenant'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'Tenants'
-#
-#
-# class GroupNode(pym.lib.BaseNode):
-#     __name__ = 'group'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'Groups'
-#
-#
-# class GroupMemberNode(pym.lib.BaseNode):
-#     __name__ = 'group_member'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'Group Members'
-#
-#
-# class PermissionNode(pym.lib.BaseNode):
-#     __name__ = 'permission'
-#
-#     def __init__(self, parent):
-#         super().__init__(parent)
-#         self._title = 'Permissions'
-
-
 class GroupMember(DbBase, DefaultMixin):
     """
     Group member.
