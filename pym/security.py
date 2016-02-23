@@ -104,6 +104,9 @@ def normpath(path):
         "/../../foo/../../bar"  --> "bar"
         "/../../foo/bar"        --> "foo/bar"
         "/foo/bar"              --> "foo/bar"
+
+    :param path: The path to normalise
+    :return: The normalised path
     """
     return os.path.normpath(os.path.join(os.path.sep, path)).lstrip(
         os.path.sep)
