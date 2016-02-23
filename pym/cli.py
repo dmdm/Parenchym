@@ -203,7 +203,7 @@ class Cli(object):
                 etc_dir=args.etc_dir
             )
             rc.load()
-        settings.update(rc.data)
+            rc.s('environment', settings['environment'])
         self.rc = rc
         self.settings = settings
         self._config = pyramid.config.Configurator(
@@ -257,7 +257,7 @@ class Cli(object):
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
 
-        pym.models.init(self.settings, 'db.pym.sa.')
+        pym.models.init(self.rc.get_these('db.pym.sa.'), invalidate_caches=True)
         self.cache = redis.StrictRedis.from_url(
             **self.rc.get_these('cache.redis'))
         pym.cache.configure.configure_cache_regions(self.rc)
