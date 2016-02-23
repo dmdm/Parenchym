@@ -68,6 +68,14 @@ auth.tkt_policy.secret: SECRET
 ### auth.allow_registration: False
 # Initial password for user 'root'
 auth.user_root.pwd: SECRET
+# Encrypt password using this scheme.
+# Pym uses passlib with one of these schemes:
+#   ldap_plaintext, ldap_salted_sha1, sha512_crypt, pbkdf2_sha512
+auth.password_scheme: pbkdf2_sha512
+
+
+# ---[ Class Injection ]-------
+
 # Class for auth provider (login/logout)
 auth.class.provider: pym.auth.AuthProvider
 # Classes for authentication objects (user, group, groupmember, ace)
@@ -75,10 +83,9 @@ auth.class.user: pym.auth.models.User
 auth.class.group: pym.auth.models.Group
 auth.class.group_member: pym.auth.models.GroupMember
 auth.class.ace: pym.auth.models.Ace
-# Encrypt password using this scheme.
-# Pym uses passlib with one of these schemes:
-#   ldap_plaintext, ldap_salted_sha1, sha512_crypt, pbkdf2_sha512
-auth.password_scheme: pbkdf2_sha512
+
+tenants.class.tenant: pym.tenants.models.Tenant
+
 
 # ---[ I18N ]-------
 

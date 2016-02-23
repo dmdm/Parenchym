@@ -3,7 +3,7 @@ from pyramid.location import lineage
 import sqlalchemy as sa
 import pyramid.location
 from pym.auth.const import SYSTEM_UID, GROUP_KIND_TENANT
-import pym.auth.manager
+from pym.auth.manager import AuthMgr
 from pym.res.models import ResourceNode
 from pym.res.const import NODE_NAME_ROOT
 from .models import Tenant
@@ -14,17 +14,22 @@ import pym.exc
 class TenantMgr:
 
     @classmethod
-    def factory(cls, lgg, sess, rc):
+    def factory(cls, lgg, sess, rc,
+            authmgr: 'AuthMgr|None'=None):
+        if not authmgr:
+            authmgr = AuthMgr.factory(lgg=lgg, sess=sess, rc=rc)
         return cls(
             lgg=lgg,
             sess=sess,
-            authmgr=pym.auth.manager.AuthMgr.factory(lgg=lgg, sess=sess, rc=rc)
+            authmgr=authmgr,
+            tenant_cls=rc.g('tenants.class.tenant', Tenant)
         )
 
-    def __init__(self, lgg, sess, authmgr):
+    def __init__(self, lgg, sess, authmgr: AuthMgr, tenant_cls):
         self.lgg = lgg
         self.sess = sess
         self.authmgr = authmgr
+        self.tenant_cls = tenant_cls
 
     def create_tenant(self, owner, name, **kwargs):
         """
@@ -42,7 +47,7 @@ class TenantMgr:
         n_root = ResourceNode.load_root(self.sess, name=NODE_NAME_ROOT, use_cache=False)
         if name in n_root.children:
             raise pym.exc.ItemExistsError("Tenant already exists: '{}'".format(name))
-        ten = Tenant(owner_id, name, **kwargs)
+        ten = self.tenant_cls(owner_id, name, **kwargs)
 
         # Create tenant's group
         gr = self.authmgr.create_group(owner=owner, name=name, kind=GROUP_KIND_TENANT,
@@ -63,7 +68,7 @@ class TenantMgr:
         :param editor: ID, ``principal``, or instance of a user.
         :return: Instance of updated tenant.
         """
-        ten = Tenant.find(self.sess, tenant)
+        ten = self.tenant_cls.find(self.sess, tenant)
         ten.editor_id = self.authmgr.user_cls.find(self.sess, editor).id
         ten.mtime = datetime.datetime.now()
         # If tenant is to be renamed, rename its group too.
@@ -86,7 +91,7 @@ class TenantMgr:
             set True to physically delete record from DB.
         :return: None if really deleted, else instance of tagged tenant.
         """
-        ten = Tenant.find(self.sess, tenant)
+        ten = self.tenant_cls.find(self.sess, tenant)
         self.authmgr.delete_group(ten.group, deleter, deletion_reason, delete_from_db)
         if delete_from_db:
             self.sess.delete(ten)
@@ -114,9 +119,9 @@ class TenantMgr:
         g = self.authmgr.group_cls
         gm = self.authmgr.group_member_cls
         tt = self.sess.query(
-            Tenant
+            self.tenant_cls
         ).join(
-            g, g.name == Tenant.name
+            g, g.name == self.tenant_cls.name
         ).join(
             gm, gm.group_id == g.id
         ).filter(sa.and_(
@@ -134,7 +139,7 @@ class TenantMgr:
         :param user: ID, ``principal``, or instance of a user.
         :param owner: ID, ``principal``, or instance of a user.
         """
-        ten = Tenant.find(self.sess, tenant)
+        ten = self.tenant_cls.find(self.sess, tenant)
         self.authmgr.create_group_member(owner, ten.group, member_user=user, **kwargs)
         self.sess.flush()
 
@@ -178,5 +183,5 @@ class TenantMgr:
             from DB.
         """
         tenant_node = self.__class__.find_tenant_node(resource)
-        tenant = self.sess.query(Tenant).filter(Tenant.name == tenant_node.name).one()
+        tenant = self.sess.query(self.tenant_cls).filter(self.tenant_cls.name == tenant_node.name).one()
         return tenant

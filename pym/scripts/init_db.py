@@ -40,8 +40,12 @@ class Runner(pym.cli.Cli):
         sess = self._sess
         authmgr = pym.auth.manager.AuthMgr.factory(lgg=self.lgg, sess=sess,
             rc=self.rc)
-        tenmgr = pym.tenants.manager.TenantMgr.factory(lgg=self.lgg, sess=self.sess,
-            rc=self.rc)
+        tenmgr = pym.tenants.manager.TenantMgr.factory(
+            lgg=self.lgg,
+            sess=self.sess,
+            rc=self.rc,
+            authmgr=authmgr
+        )
         root_pwd = self.rc.g('auth.user_root.pwd')
         self._config.scan('pym')
         # Create schema

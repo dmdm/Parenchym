@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import pyramid.util
 import pym.exc
 import pym.security
-import pym.auth.models
+from .models import User, Group, GroupMember, Ace
 
 
 class AuthMgr:
@@ -15,10 +15,10 @@ class AuthMgr:
         return cls(
             lgg=lgg,
             sess=sess,
-            user_cls=rc.g('auth.class.user', pym.auth.models.User),
-            group_cls=rc.g('auth.class.group', pym.auth.models.Group),
-            group_member_cls=rc.g('auth.class.group_member', pym.auth.models.GroupMember),
-            ace_cls=rc.g('auth.class.ace', pym.auth.models.Ace),
+            user_cls=rc.g('auth.class.user', User),
+            group_cls=rc.g('auth.class.group', Group),
+            group_member_cls=rc.g('auth.class.group_member', GroupMember),
+            ace_cls=rc.g('auth.class.ace', Ace),
             password_scheme=password_scheme
         )
 
