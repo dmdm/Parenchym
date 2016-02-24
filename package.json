@@ -30,6 +30,7 @@
       "angular-material": "github:angular/bower-material@master",
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.8",
       "angular-toastr": "github:Foxandxss/angular-toastr@^1.6.0",
+      "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.1.1",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
       "babel-polyfill": "npm:babel-polyfill@^6.3.14",
       "components/jquery": "github:components/jquery@^2.1.4",

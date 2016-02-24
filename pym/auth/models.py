@@ -100,7 +100,7 @@ class GroupMember(DbBase, DefaultMixin):
     member_group = relationship('Group', foreign_keys=[member_group_id])
 
 
-class GplusProfile():
+class GplusProfile:
 
     def __init__(self, user):
         self._user = user
@@ -139,7 +139,7 @@ class GenderEnum(pym.lib.Enum):
     unknown = None
 
 
-class UserProfile():
+class UserProfile:
 
     def __init__(self, user, gplus_class=GplusProfile):
         if user._profile is None:
@@ -184,7 +184,7 @@ class UserProfile():
             self._user._profile['gender'] = v.value
 
 
-class UserRc():
+class UserRc:
 
     def __init__(self, user):
         self.user = user
@@ -339,10 +339,32 @@ class User(DbBase, DefaultMixin):
 
     def load_all_groups(self):
         def creator():
-            # TODO Load nested groups
-            return [(x.id, x.name) for x in self.groups]
-        key = 'auth:user:{}:groups'.format(self.principal)
-        return region_auth_long_term.get_or_create(key, creator)
+            # Load nested groups
+            # Init with groups we are member of directly
+            all_gg = {x.id: x for x in self.groups}
+            # make copy, all_gg will be changed in loop
+            gg = list(all_gg.values())
+
+            def _fetch_next_level(g):
+                for mg in g.member_groups:
+                    if mg:
+                        if mg.id not in all_gg:
+                            all_gg[mg.id] = mg
+                            _fetch_next_level(mg)
+
+            # This is depth-first search
+            for g in gg:
+                _fetch_next_level(g)
+            return [(x.id, x.name) for x in all_gg.values()]
+
+        return region_auth_long_term.get_or_create(self.group_cache_key, creator)
+
+    def clear_group_cache(self):
+        region_auth_long_term.delete(self.group_cache_key)
+
+    @property
+    def group_cache_key(self):
+        return 'auth:user:{}:groups'.format(self.principal)
 
     def __repr__(self):
         return "<{name}(id={id}, principal='{p}', email='{e}'>".format(

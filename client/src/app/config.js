@@ -26,6 +26,7 @@ System.config({
     "angular-material": "github:angular/bower-material@master",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
     "angular-toastr": "github:Foxandxss/angular-toastr@1.6.0/angular-toastr.tpls",
+    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.15",
     "babel-polyfill": "npm:babel-polyfill@6.3.14",
     "components/jquery": "github:components/jquery@2.1.4",
@@ -38,10 +39,6 @@ System.config({
     "text": "github:systemjs/plugin-text@0.0.2",
     "traceur": "github:jmcriffey/bower-traceur@0.0.93",
     "traceur-runtime": "github:jmcriffey/bower-traceur-runtime@0.0.93",
-    "github:Foxandxss/angular-toastr@1.6.0": {
-      "angular": "github:angular/bower-angular@1.4.8",
-      "css": "github:systemjs/plugin-css@0.1.20"
-    },
     "github:angular-ui/ui-router@0.2.15": {
       "angular": "github:angular/bower-angular@1.4.8"
     },

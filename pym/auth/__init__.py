@@ -43,7 +43,7 @@ def group_finder(userid, request):
     return gg
 
 
-class AuthProvider():
+class AuthProvider:
 
     def __init__(self, sess, user_class):
         self.sess = sess
@@ -101,6 +101,7 @@ class AuthProvider():
         Performs logout.
         """
         u = self.sess.query(self.user_class).filter(self.user_class.id == uid).one()
+        u.clear_group_cache()
         u.login_ip = None
         u.login_time = None
         u.access_time = None
