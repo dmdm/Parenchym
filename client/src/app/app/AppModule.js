@@ -6,6 +6,8 @@ import PymGrowlerModule from '../parenchym/growler/GrowlerModule';
 import PymTreeModule from '../parenchym/tree/TreeModule';
 import PymStorageModule from '../parenchym/storage/StorageModule';
 import PymDialogsModule from '../parenchym/dialogs/DialogsModule';
+import PymAuthMgrModule from '../parenchym/authmgr/AuthMgrModule';
+
 // General
 import AppService from './AppService';
 import AppController from './AppController';
@@ -70,7 +72,8 @@ const module = angular.module('app', [
         PymModule.name,
         PymTreeModule.name,
         PymStorageModule.name,
-        PymDialogsModule.name
+        PymDialogsModule.name,
+        PymAuthMgrModule.name
     ])
     .config(config)
     .run(run)

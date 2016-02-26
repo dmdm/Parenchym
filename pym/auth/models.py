@@ -1,4 +1,5 @@
 import babel
+import logging
 import pyramid.security
 import pyramid.util
 import sqlalchemy as sa
@@ -17,6 +18,7 @@ from pym.models import (
 from pym.models.types import CleanUnicode
 import pym.lib
 import pym.exc
+from pym.i18n import _
 from pym.cache import region_auth_long_term
 
 from .events import UserAuthError
@@ -24,9 +26,7 @@ from .const import (NOBODY_UID, NOBODY_PRINCIPAL, NOBODY_EMAIL,
     NOBODY_DISPLAY_NAME, WHEEL_RID)
 
 
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
-
-
+mlgg = logging.getLogger(__name__)
 _dnr = pyramid.util.DottedNameResolver(None)
 
 
@@ -340,6 +340,7 @@ class User(DbBase, DefaultMixin):
     def load_all_groups(self):
         def creator():
             # Load nested groups
+            mlgg.debug('Loading groups for {}'.format(self.principal))
             # Init with groups we are member of directly
             all_gg = {x.id: x for x in self.groups}
             # make copy, all_gg will be changed in loop
@@ -355,7 +356,9 @@ class User(DbBase, DefaultMixin):
             # This is depth-first search
             for g in gg:
                 _fetch_next_level(g)
-            return [(x.id, x.name) for x in all_gg.values()]
+            resp = [(x.id, x.name) for x in all_gg.values()]
+            mlgg.debug('Groups for {}: {}'.format(self.principal, resp))
+            return resp
 
         return region_auth_long_term.get_or_create(self.group_cache_key, creator)
 

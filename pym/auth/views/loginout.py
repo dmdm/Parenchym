@@ -24,9 +24,7 @@ from pym.auth.manager import AuthMgr
 import pym.tenants
 from pym.me.const import NODE_NAME_ME, NODE_NAME_ME_PROFILE
 from pym.tenants.manager import TenantMgr
-
-
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
+from pym.i18n import _
 
 
 @view_defaults(
@@ -73,6 +71,26 @@ class LoginOutView(object):
             'google': pym.google.oauth.OpenIdConnectClient(
                 request.registry['rc'], request.session)
         }
+
+    @view_config(
+        name='rootify',
+    )
+    def rootify(self):
+        try:
+            self.request.user.login(login='root', pwd='root',
+                remote_addr=self.request.remote_addr)
+        except pym.exc.AuthError:
+            msg = _("Wrong credentials!")
+            self.request.session.flash(dict(kind="error", text=msg))
+            return HTTPFound(location=self.urls['login'])
+        else:
+            headers = remember(self.request, self.request.user.principal)
+            self.request.session.flash(dict(
+                kind="info",
+                text=_("User {} logged in").format(
+                    self.request.user.display_name
+                )))
+            return HTTPFound(location=self.referrer, headers=headers)
 
     @view_config(
         name='login',

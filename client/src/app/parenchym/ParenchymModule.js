@@ -1,3 +1,4 @@
+import angular from 'angular';
 import StickyBreadcrumbsService from './StickyBreadcrumbsService';
 import RecursionHelper from './RecursionHelper';
 import StickyBreadcrumbsDirective from './StickyBreadcrumbsDirective';

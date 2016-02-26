@@ -28,6 +28,10 @@ var _DialogsModule = require('../parenchym/dialogs/DialogsModule');
 
 var _DialogsModule2 = _interopRequireDefault(_DialogsModule);
 
+var _AuthMgrModule = require('../parenchym/authmgr/AuthMgrModule');
+
+var _AuthMgrModule2 = _interopRequireDefault(_AuthMgrModule);
+
 var _AppService = require('./AppService');
 
 var _AppService2 = _interopRequireDefault(_AppService);
@@ -61,7 +65,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 // Misc
 
+
 // General
+
+
+// From Parenchym
 function config($provide, $httpProvider, $compileProvider, $locationProvider) {
   //$provide.factory('PymHttpErrorInterceptor', PymHttpErrorInterceptor);
   //$httpProvider.interceptors.push('PymHttpErrorInterceptor');
@@ -86,15 +94,12 @@ function config($provide, $httpProvider, $compileProvider, $locationProvider) {
   // NO ! HTML5 Routing
   $locationProvider.html5Mode(false).hashPrefix('!');
 }
-
-// From Parenchym
-
 config.$inject = ['$provide', '$httpProvider', '$compileProvider', '$locationProvider'];
 
 function run($templateCache) {}
 run.$inject = ['$templateCache'];
 
-var _module = _angular2.default.module('app', [_GrowlerModule2.default.name, _ParenchymModule2.default.name, _TreeModule2.default.name, _StorageModule2.default.name, _DialogsModule2.default.name]).config(config).run(run).service('app.AppService', _AppService2.default.serviceFactory).controller('app.AppController', _AppController2.default).controller('FooController', _foo.FooController).directive('fooBar', _fooBarDirective.FooBarDirective.directiveFactory);
+var _module = _angular2.default.module('app', [_GrowlerModule2.default.name, _ParenchymModule2.default.name, _TreeModule2.default.name, _StorageModule2.default.name, _DialogsModule2.default.name, _AuthMgrModule2.default.name]).config(config).run(run).service('app.AppService', _AppService2.default.serviceFactory).controller('app.AppController', _AppController2.default).controller('FooController', _foo.FooController).directive('fooBar', _fooBarDirective.FooBarDirective.directiveFactory);
 
 exports.default = _module;
 //# sourceMappingURL=AppModule.js.map

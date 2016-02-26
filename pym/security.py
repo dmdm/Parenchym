@@ -7,7 +7,7 @@ import passlib.context
 import pyramid.security
 import pyramid.session
 import pyramid.i18n
-from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
+from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound, HTTPMovedPermanently
 from pyramid.view import forbidden_view_config, notfound_view_config
 from pyramid.events import subscriber, NewRequest, NewResponse
 import slugify as python_slugify

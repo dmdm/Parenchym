@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
+var _angular = require('angular');
+
+var _angular2 = _interopRequireDefault(_angular);
+
 var _StickyBreadcrumbsService = require('./StickyBreadcrumbsService');
 
 var _StickyBreadcrumbsService2 = _interopRequireDefault(_StickyBreadcrumbsService);
@@ -26,7 +30,7 @@ config.$inject = [];
 function run() {}
 run.$inject = [];
 
-var _module = angular.module('pym', []).config(config).run(run).service('pym.stickyBreadcrumbsService', _StickyBreadcrumbsService2.default.serviceFactory).service('pym.recursionHelper', _RecursionHelper2.default.serviceFactory).directive('pymStickyBreadcrumbs', _StickyBreadcrumbsDirective2.default.directiveFactory).filter('trusted', _filter.trustedFilter);
+var _module = _angular2.default.module('pym', []).config(config).run(run).service('pym.stickyBreadcrumbsService', _StickyBreadcrumbsService2.default.serviceFactory).service('pym.recursionHelper', _RecursionHelper2.default.serviceFactory).directive('pymStickyBreadcrumbs', _StickyBreadcrumbsDirective2.default.directiveFactory).filter('trusted', _filter.trustedFilter);
 
 exports.default = _module;
 //# sourceMappingURL=ParenchymModule.js.map
