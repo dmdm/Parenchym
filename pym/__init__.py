@@ -76,7 +76,8 @@ def includeme(config):
     config.set_root_factory(res.models.root_factory)
 
     # Init session
-    session_factory = session_factory_from_settings(config.registry.settings)
+    session_factory = session_factory_from_settings(
+        rc.get_these('session.', cut_prefix=False))
     config.set_session_factory(session_factory)
 
     from .auth import group_finder
