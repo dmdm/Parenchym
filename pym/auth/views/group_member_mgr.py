@@ -1,13 +1,13 @@
 from pyramid.view import view_defaults, view_config
 
-from ..models import IGroupMgrNode
+from ..models import IGroupMemberMgrNode
 
 
 @view_defaults(
-    context=IGroupMgrNode,
+    context=IGroupMemberMgrNode,
     permission='visit'
 )
-class GroupMgr(object):
+class GroupMemberMgr(object):
 
     def __init__(self, context, request):
         self.context = context
@@ -15,7 +15,7 @@ class GroupMgr(object):
 
     @view_config(
         name='',
-        renderer='groupmgr.mako'
+        renderer='group_member_mgr.mako'
     )
     def index(self):
         return dict()

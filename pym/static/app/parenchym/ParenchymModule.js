@@ -20,6 +20,10 @@ var _StickyBreadcrumbsDirective = require('./StickyBreadcrumbsDirective');
 
 var _StickyBreadcrumbsDirective2 = _interopRequireDefault(_StickyBreadcrumbsDirective);
 
+var _ParenchymController = require('./ParenchymController');
+
+var _ParenchymController2 = _interopRequireDefault(_ParenchymController);
+
 var _filter = require('./filter');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -30,7 +34,7 @@ config.$inject = [];
 function run() {}
 run.$inject = [];
 
-var _module = _angular2.default.module('pym', []).config(config).run(run).service('pym.stickyBreadcrumbsService', _StickyBreadcrumbsService2.default.serviceFactory).service('pym.recursionHelper', _RecursionHelper2.default.serviceFactory).directive('pymStickyBreadcrumbs', _StickyBreadcrumbsDirective2.default.directiveFactory).filter('trusted', _filter.trustedFilter);
+var _module = _angular2.default.module('pym', []).config(config).run(run).service('pym.stickyBreadcrumbsService', _StickyBreadcrumbsService2.default.serviceFactory).service('pym.recursionHelper', _RecursionHelper2.default.serviceFactory).controller('pym.controller', _ParenchymController2.default).directive('pymStickyBreadcrumbs', _StickyBreadcrumbsDirective2.default.directiveFactory).filter('trusted', _filter.trustedFilter);
 
 exports.default = _module;
 //# sourceMappingURL=ParenchymModule.js.map

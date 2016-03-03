@@ -3,12 +3,9 @@ from pyramid.view import view_config, view_defaults
 import pyramid.i18n
 from pym.lib import json_serializer
 from pym.me.models import IMeProfileNode
-import pym.i18n
+from pym.i18n import _
 import pym.auth.models as pam
 from pym.models import DbSession, todict
-
-
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 
 
 @view_defaults(

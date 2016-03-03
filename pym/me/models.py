@@ -1,9 +1,5 @@
-import pyramid.i18n
 import zope.interface
-import pym.i18n
-
-
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
+from pym.i18n import _
 
 
 class IMeNode(zope.interface.Interface):

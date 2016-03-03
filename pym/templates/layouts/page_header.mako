@@ -1,6 +1,9 @@
 <%page args="parent, pym" />
 <%!
     from pym.res.helper import linkto_help
+    from pym.auth.helper import linkto_auth
+    from pym.me.helper import linkto_me
+    from pym.sys.helper import linkto_sys, execution_permitted_sys
 %>
 ${pym.alert_flash() | n}
 <%block name="pageHeader" args="parent, pym">
@@ -13,7 +16,7 @@ ${pym.alert_flash() | n}
         </ul>
     </script>
 
-    <header>
+    <header ng-controller="pym.controller as pymCtrl">
         <div class="row" id="page_header_top_row">
             <div class="col-md-9" style="vertical-align: top;">
                 <div id="logo" style="display: table-cell; padding-right: 2em;">
@@ -37,14 +40,26 @@ ${pym.alert_flash() | n}
 
 
                 <div id="user_display_name" style="display: inline-block;">
-                    ${request.user.display_name}
-                    <div id="user_log_in_out" class="hidden-print" style="display: inline-block;">
-                        % if request.user.is_auth():
-                            <a href="${request.resource_url(request.root, '@@logout')}">Logout</a>
-                        % else:
-                            <a href="${request.resource_url(request.root, '@@login')}">Login</a>
-                        % endif
-                    </div>
+                    <span uib-dropdown is-open="pymCtrl.UserMenu.isOpen">
+                        <span uib-dropdown-toggle style="cursor: pointer;">
+                            ${request.user.display_name}
+                            <span class="caret"></span>
+                        </span>
+                        <div uib-dropdown-menu role="menu" class="ng-cloak">
+                            % if request.user.is_auth():
+                                <a class="dropdown-item" href="${linkto_me(request, '')}">Dashboard</a>
+                                <a class="dropdown-item" href="${linkto_me(request, 'profile')}">Profile</a>
+                                % if execution_permitted_sys(request, '', ''):
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="${linkto_sys(request, '')}">System</a>
+                                % endif
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="${linkto_auth(request, 'logout')}">Logout</a>
+                            % else:
+                                <a class="dropdown-item" href="${linkto_auth(request, 'login')}">Login</a>
+                            % endif
+                        </div>
+                    </span>
                 </div>
             </div>
         </div>
