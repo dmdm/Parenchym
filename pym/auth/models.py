@@ -340,7 +340,6 @@ class User(DbBase, DefaultMixin):
     def load_all_groups(self):
         def creator():
             # Load nested groups
-            mlgg.debug('Loading groups for {}'.format(self.principal))
             # Init with groups we are member of directly
             all_gg = {x.id: x for x in self.groups}
             # make copy, all_gg will be changed in loop
