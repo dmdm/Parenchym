@@ -931,11 +931,11 @@ def get_current_user(request):
     to the request object as property ``user``.
     """
     #mlgg.debug("get user: {}".format(request.path))
-    principal = pyramid.security.unauthenticated_userid(request)
+    userid = request.unauthenticated_userid
     sess = DbSession()
     rc = request.registry['rc']
     user_class = rc.g('auth.class.user')
     cusr = CurrentUser(sess, request, user_class)
-    if principal is not None:
-        cusr.load_by_principal(principal)
+    if userid is not None:
+        cusr.load_by_principal(userid)
     return cusr
