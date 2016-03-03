@@ -73,26 +73,6 @@ class LoginOutView(object):
         }
 
     @view_config(
-        name='rootify',
-    )
-    def rootify(self):
-        try:
-            self.request.user.login(login='root', pwd='root',
-                remote_addr=self.request.remote_addr)
-        except pym.exc.AuthError:
-            msg = _("Wrong credentials!")
-            self.request.session.flash(dict(kind="error", text=msg))
-            return HTTPFound(location=self.urls['login'])
-        else:
-            headers = remember(self.request, self.request.user.principal)
-            self.request.session.flash(dict(
-                kind="info",
-                text=_("User {} logged in").format(
-                    self.request.user.display_name
-                )))
-            return HTTPFound(location=self.referrer, headers=headers)
-
-    @view_config(
         name='login',
         renderer='login.mako',
         request_method='GET'

@@ -12,7 +12,6 @@ label { width: 6em; display: inline-block; }
 </%block>
 <%block name="scripts">
 ${parent.scripts()}
-<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
 </%block>
 <%block name="meta_title">Login</%block>
 <div>
@@ -20,7 +19,6 @@ ${parent.scripts()}
     <div class="row">
         <div class="col-md-3">
             <h1>Login</h1>
-            <p><a href="${request.resource_url(request.context, 'rootify')}">Rootify</a></p>
             <p>Login with your registered user name or email address and password.</p>
 
             <form action="${rc['urls']['login']}" method="post" role="form">
