@@ -12,10 +12,9 @@ from pyramid.i18n import get_localizer
 import pym.models
 import pym.auth.models
 import pym.events
-import pym.i18n
+from pym.i18n import _
 
 
-_ = pyramid.i18n.TranslationStringFactory(pym.i18n.DOMAIN)
 mlgg = logging.getLogger(__name__)
 
 DEBUG = False
