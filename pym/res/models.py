@@ -1,22 +1,22 @@
-from pyramid.decorator import reify
+import pyramid.security
 import pyramid.util
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import ARRAY
 import sqlalchemy.event
+import zope.interface
+from pyramid.decorator import reify
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (relationship, backref)
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.ext.hybrid import hybrid_property
-import pyramid.security
 from sqlalchemy.orm.exc import NoResultFound
-import zope.interface
 
-import pym.lib
-import pym.exc
-import pym.cache
-from pym.security import is_string_clean, is_path_safe
 import pym.auth.models as pam
+import pym.cache
+import pym.exc
+import pym.lib
 from pym.models import (DbBase, DefaultMixin, DbSession)
 from pym.models.types import CleanUnicode
+from pym.security import is_string_clean, is_path_safe
 
 
 class IRootNode(zope.interface.Interface):
@@ -132,6 +132,9 @@ class ResourceNode(DbBase, DefaultMixin):
     # Load description only if needed
     descr = sa.orm.deferred(sa.Column(sa.UnicodeText, nullable=True))
     """Optional description."""
+    meta = sa.orm.deferred(
+        sa.Column(JSONB(none_as_null=True), nullable=True))
+    """Optional meta information as JSON"""
 
     children = relationship("ResourceNode",
         order_by=lambda: [ResourceNode.sortix, ResourceNode.name],
