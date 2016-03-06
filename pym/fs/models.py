@@ -12,6 +12,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.event
 
+import pym.lib
 import pym.exc
 import pym.colander
 import pym.auth.models
@@ -196,10 +197,12 @@ class RcSchema(colander.MappingSchema):
     max_total_items = colander.SchemaNode(pym.colander.JsonInteger(),
         validator=colander.Range(min=-1))
 
+    # noinspection PyPep8Naming
     @colander.instantiate()
     class allowed_mimes(colander.SequenceSchema):
         mime_type = colander.SchemaNode(colander.String())
 
+    # noinspection PyPep8Naming
     @colander.instantiate()
     class denied_mimes(colander.SequenceSchema):
         mime_type = colander.SchemaNode(colander.String())
@@ -407,8 +410,12 @@ class FsNode(pym.res.models.ResourceNode):
         We throw an exception if a node with this name already exists. Use
         :meth:`.update_file` in this case.
 
+
         :param owner: ID, principal or instance of a user.
-        :param name: Name of the new node.
+        :param filename: Filename
+        :param mime_type: Mime type
+        :param size: Size in bytes
+        :param encoding: Encoding
         :param kwargs: Additional attributes.
         :return: Instance of the new node.
         """
@@ -489,6 +496,8 @@ class FsNode(pym.res.models.ResourceNode):
 
         To update a node in-place, use :meth:`.update`.
 
+        :param keep_content: Whether to keep content of previous revision or
+            overwrite it.
         :param editor: ID, principal or instance of a user.
         :param kwargs: Additional attributes.
         """
@@ -518,6 +527,7 @@ class FsNode(pym.res.models.ResourceNode):
         """
         Creates all nodes needed by given path as directories.
 
+        :param owner: ID, principal or instance of a user.
         :param path: Path to create.
         :type path: string
         :param recursive: If True, any intermediate directories will also be
@@ -566,6 +576,10 @@ class FsNode(pym.res.models.ResourceNode):
                 else:
                     n = n.add_directory(owner, p)
         return n
+
+    def copy(self, owner, path, overwrite=False):
+        # TODO Use links instead of copies
+        raise NotImplementedError('TODO')
 
     @reify
     def class_root(self):
