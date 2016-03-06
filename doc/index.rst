@@ -12,6 +12,8 @@ Narrative:
    :maxdepth: 2
 
    narr/cli
+   narr/doit
+
 
 API:
 

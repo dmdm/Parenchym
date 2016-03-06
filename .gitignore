@@ -48,6 +48,7 @@ var/run/*
 var/sstore/*
 var/sessions/data/*
 var/sessions/lock/*
+doc/_build/
 .~*
 *~
 *.pgdump
