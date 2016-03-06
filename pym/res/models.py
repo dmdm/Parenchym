@@ -198,6 +198,9 @@ class ResourceNode(DbBase, DefaultMixin):
         self.kind = kind
         for k, v in kwargs.items():
             setattr(self, k, v)
+        # If interface was given, check that it exists (no typo etc)
+        if self.iface:
+            pyramid.util.DottedNameResolver(None).resolve(self.iface)
 
     def _set_ace(self, owner, allow, permission, user=None, group=None,
             **kwargs):
