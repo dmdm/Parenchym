@@ -213,6 +213,7 @@ class ResourceNode(DbBase, DefaultMixin):
             permission = permission.value
         permission = pam.Permission.find(sess, permission)
         fil = [
+            pam.Ace.resource_id == self.id,
             pam.Ace.allow == allow,
             pam.Ace.permission_id == permission.id
         ]
