@@ -63,4 +63,5 @@ Pym.egg-info
 _tmp*
 priv/*
 .idea
+npm-debug.log
 
