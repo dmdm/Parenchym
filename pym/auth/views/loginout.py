@@ -68,8 +68,8 @@ class LoginOutView(object):
         request.session['login.referrer'] = referrer
 
         self.oidc_clients = {
-            'google': pym.google.oauth.OpenIdConnectClient(
-                request.registry['rc'], request.session)
+            # 'google': pym.google.oauth.OpenIdConnectClient(
+            #     request.registry['rc'], request.session)
         }
 
     @view_config(
