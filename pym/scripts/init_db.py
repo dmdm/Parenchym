@@ -25,6 +25,7 @@ import pym.me.setup
 import pym.fs.setup
 import pym.journals.setup
 import pym.help.setup
+import pym.api.setup
 
 
 class Runner(pym.cli.Cli):
@@ -62,6 +63,7 @@ class Runner(pym.cli.Cli):
             pym.fs.setup.create_schema(sess, rc=self.rc)
             pym.journals.setup.create_schema(sess, rc=self.rc)
             pym.help.setup.create_schema(sess, rc=self.rc)
+            pym.api.setup.create_schema(sess, rc=self.rc)
             mark_changed(sess)
         with transaction.manager:
             # Create all models
@@ -85,6 +87,8 @@ class Runner(pym.cli.Cli):
                 pym.journals.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID
                 pym.help.setup.setup(sess, rc=self.rc)
+                sess.flush()  # Need ID
+                pym.api.setup.setup(sess, rc=self.rc)
                 sess.flush()  # Need ID
 
             if self.args.alembic_config:
