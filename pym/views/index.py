@@ -79,3 +79,28 @@ def xhr_main_menu(context, request):
         translate=request.localizer.translate
     )
     return json_serializer(resp.resp)
+
+
+@view_config(
+    name='4marina',
+    context=pym.res.models.IRootNode,
+    renderer='string',
+    permission=NO_PERMISSION_REQUIRED
+)
+def formarina(context, request):
+    """
+    Receives data sent from a PDF form.
+
+    Use URL: /4marina/{FORM_NAME}
+    """
+    from pprint import pprint
+    frm = request.subpath[0]
+    print('*************************************')
+    print('Received data for form: {}'.format(frm))
+    dd = request.GET
+    pprint(dd)
+    dd = request.POST
+    pprint(dd)
+    pprint(request.body)
+    print('*************************************')
+    return 'ok'
