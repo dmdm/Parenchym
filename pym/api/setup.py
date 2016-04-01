@@ -1,12 +1,11 @@
 import logging
-from sqlalchemy.orm.exc import NoResultFound
-from pym.auth.const import SYSTEM_UID, USERS_RID
-from pym.auth.models import Permissions
-from pym.res.models import ResourceNode
-from pym.res.const import NODE_NAME_ROOT
-from pym.tenants.const import DEFAULT_TENANT_NAME
-from .const import *
 
+from sqlalchemy.orm.exc import NoResultFound
+
+from pym.auth.const import SYSTEM_UID
+from pym.res.const import NODE_NAME_ROOT
+from pym.res.models import ResourceNode
+from .const import *
 
 mlgg = logging.getLogger(__name__)
 
@@ -26,8 +25,6 @@ def _setup_resources(sess):
             kind="res",
             name=NODE_NAME_API, title='api',
             iface='pym.api.models.IApiNode')
-    # Grant group 'users' permission 'visit' on resource 'api'.
-    n_api.allow(SYSTEM_UID, Permissions.visit.value, group=USERS_RID)
     try:
         n_rest = ResourceNode.find(sess, None, parent_id=n_api.id,
             name=NODE_NAME_API_REST)
@@ -36,8 +33,6 @@ def _setup_resources(sess):
             kind="res",
             name=NODE_NAME_API_REST, title='rest',
             iface='pym.api.models.IApiRestNode')
-    # Grant group 'users' permission 'visit' on resource 'rest'.
-    n_rest.allow(SYSTEM_UID, Permissions.visit.value, group=USERS_RID)
 
 
 def create_schema(sess, rc):
