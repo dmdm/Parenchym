@@ -10,8 +10,8 @@ function logInfo(event) {
 
 gulp.task(
     'watch', function () {
-        "use strict";
         gulp.watch(paths.sassIn, ['sass']).on('change', logInfo);
-        gulp.watch(paths.srcIn, ['es6']).on('change', logInfo);
+        gulp.watch(paths.srcIn, ['ts', 'systemConfig']).on('change', logInfo);
+        gulp.watch(paths.srcSystemConfig, ['systemConfig']).on('change', logInfo);
     }
 );

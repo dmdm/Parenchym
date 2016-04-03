@@ -5,13 +5,13 @@ module.exports = {
     ],
     sassOut: 'pym/static/assets/css/',
 
-    srcIn: 'client/src/app/**/*.js',
+    srcIn: 'client/src/app/**/*.ts',
     srcOut: 'pym/static/app',
-    srcIgnore: ['client/src/app/app-material-start/**/*.js'],
+    srcIgnore: [],
+    srcSystemConfig: 'client/src/app/config.js',
 
     html: 'client/src/**/*.html',
     json: 'client/src/**/*.json',
     templates: 'client/src/**/*.html',
     tests: 'client/test/e2e/**/*.spec.js'
 };
-

@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "system",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "removeComments": true,
+    "noImplicitAny": false,
+    "newLine": "lf",
+    "rootDir": "client/src/app",
+    "outDir": "pym/static/app",
+    //"outFile": "pym/static/app/bootstrap.js",
+    "listFiles": false
+  },
+  "exclude": [
+    "node_modules",
+    "bower_components",
+    "jspm_packages",
+    "client/src/bower_components",
+    "client/src/assets",
+    "client/src/sass",
+    "client/src/vendor",
+    "client/dist",
+    "pym",
+    "pym.egg-info",
+    "doc",
+    "var",
+    "alembic",
+    "bin",
+    "downloads",
+    "etc",
+    "install",
+    "notebooks",
+    "snippets",
+    "tests",
+    "typings/main",
+    "typings/main.d.ts"
+  ]
+}

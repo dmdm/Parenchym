@@ -40,12 +40,11 @@ ${pym.alert_flash() | n}
 
 
                 <div id="user_display_name" style="display: inline-block;">
-                    <span uib-dropdown is-open="pymCtrl.UserMenu.isOpen">
-                        <span uib-dropdown-toggle style="cursor: pointer;">
-                            ${request.user.display_name}
-                            <span class="caret"></span>
-                        </span>
-                        <div uib-dropdown-menu role="menu" class="ng-cloak">
+                    <span id="userMenu" ngb-dropdown [is-open]="false" auto-close="never">
+                        <a tabindex="0" ngb-dropdown-toggle ownToggle style="cursor: pointer;">
+                            ${request.user.display_name}<span class="caret"></span>
+                        </a>
+                        <div ngb-dropdown-menu role="menu" class="ng-cloak">
                             % if request.user.is_auth():
                                 <a class="dropdown-item" href="${linkto_me(request, '')}">Dashboard</a>
                                 <a class="dropdown-item" href="${linkto_me(request, 'profile')}">Profile</a>
@@ -57,6 +56,7 @@ ${pym.alert_flash() | n}
                                 <a class="dropdown-item" href="${linkto_auth(request, 'logout')}">Logout</a>
                             % else:
                                 <a class="dropdown-item" href="${linkto_auth(request, 'login')}">Login</a>
+                                <a class="dropdown-item">Sth else</a>
                             % endif
                         </div>
                     </span>
