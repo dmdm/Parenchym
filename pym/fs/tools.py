@@ -726,7 +726,7 @@ class TikaServer(TikaPymMixin):
             return requests.put(url, data=fh, headers=hh)
 
 
-def guess_mime_type(fn,
+def guess_mime_type(fn, buffer=None,
         magic_inst=magic.Magic(mime=True, mime_encoding=True, keep_going=True)):
     """
     Guesses mime-type from filename.
@@ -737,6 +737,8 @@ def guess_mime_type(fn,
     Returned encoding might be None.
 
     :param fn: Filename.
+    :param buffer: An optional buffer, already holding data in memory. If
+        present, magic uses this rather than loading the file given by `fn`.
     :param magic_inst: Instance of :class:`magic.Magic`. Should be created with
         mime=True, mime_encoding=True, keep_going=True.
     :return: Tuple(mime_type, encoding).
@@ -746,10 +748,11 @@ def guess_mime_type(fn,
     # It may not find all types, e.g. it returns None for 'text/plain', so
     # fallback on python-magic.
     if not mt:
-        if magic_inst:
-            mt = magic_inst.from_file(fn).decode('ASCII')
+        mag = magic_inst if magic_inst else magic
+        if buffer:
+            mt = mag.from_buffer(buffer, mime=True).decode('ASCII')
         else:
-            mt = magic.from_file(fn).decode('ASCII')
+            mt = mag.from_file(fn, mime=True).decode('ASCII')
     if not enc:
         enc = None
     return mt, enc
