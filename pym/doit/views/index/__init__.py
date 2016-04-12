@@ -2,14 +2,14 @@ import logging
 from pyramid.view import view_config, view_defaults
 import pyramid.i18n
 from pym.lib import json_serializer
-from pym.me.models import IMeNode
+from ...models import IDoitNode
 from pym.i18n import _
 from pym.auth.models import Permissions
 from pym.models import DbSession
 
 
 @view_defaults(
-    context=IMeNode,
+    context=IDoitNode,
     permission=Permissions.visit.name
 )
 class MeView(object):
