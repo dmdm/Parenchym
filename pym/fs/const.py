@@ -4,6 +4,7 @@ MIME_TYPE_DIRECTORY = 'inode/directory'
 MIME_TYPE_JSON = 'application/json'
 MIME_TYPE_DEFAULT = 'application/octet-stream'
 MIME_TYPE_UNKNOWN = 'application/x-unknown'
+MIME_TYPE_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 TIKA_CMD = 'tika'
 
