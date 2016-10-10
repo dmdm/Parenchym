@@ -16,6 +16,7 @@ import os
 from prettytable import PrettyTable
 import sqlalchemy as sa
 import sqlalchemy.orm.exc
+import sqlalchemy.exc
 import pym.exc
 from pym.security import safepath
 import pym.auth.models
@@ -159,18 +160,21 @@ class Cli(object):
             rc. Default is True.
         """
         self.args = args
-        fn_config = os.path.abspath(args.config)
+        fn_config = os.path.abspath(args.config) if args.config else None
         self.rc_key = rc_key
         if setup_logging:
-            logging.config.fileConfig(
-                fn_config,
-                dict(
-                    __file__=fn_config,
-                    here=os.path.dirname(fn_config)
-                ),
-                # Keep module loggers
-                disable_existing_loggers=False
-            )
+            if fn_config:
+                logging.config.fileConfig(
+                    fn_config,
+                    dict(
+                        __file__=fn_config,
+                        here=os.path.dirname(fn_config)
+                    ),
+                    # Keep module loggers
+                    disable_existing_loggers=False
+                )
+            else:
+                logging.basicConfig()
         if lgg:
             self.lgg = lgg
 
@@ -180,12 +184,15 @@ class Cli(object):
             elif args.verbose > 0:
                 lgg.setLevel(logging.INFO)
 
-        p = configparser.ConfigParser()
-        p.read(fn_config)
-        settings = dict(p['app:main'])
-        if 'environment' not in settings:
-            raise KeyError('Missing key "environment" in config. Specify '
-                'environment in INI file "{}".'.format(args.config))
+        if fn_config:
+            p = configparser.ConfigParser()
+            p.read(fn_config)
+            settings = dict(p['app:main'])
+            if 'environment' not in settings:
+                raise KeyError('Missing key "environment" in config. Specify '
+                    'environment in INI file "{}".'.format(args.config))
+        else:
+            settings = {'environment': 'production'}
 
         self.lang_code, self.encoding = init_cli_locale(
             args.locale if hasattr(args, 'locale') else None,
@@ -202,7 +209,10 @@ class Cli(object):
                 root_dir=args.root_dir,
                 etc_dir=args.etc_dir
             )
-            rc.load()
+            try:
+                rc.load()
+            except FileNotFoundError as exc:
+                self.lgg.warning('No RC file: {}'.format(exc))
             rc.s('environment', settings['environment'])
         self.rc = rc
         self.settings = settings
@@ -210,7 +220,7 @@ class Cli(object):
             settings=settings
         )
         self._config.registry['rc'] = rc
-        self._config.scan('pym')
+        # self._config.scan('pym')
 
     def base_init2(self):
         self._sess = pym.models.DbSession()
@@ -233,12 +243,14 @@ class Cli(object):
             actor = self.args.actor
         else:
             actor = getpass.getuser()
-        if hasattr(self.args, 'actor'):
-            try:
-                self.actor = pym.auth.models.User.find(self._sess, actor)
-            except sa.orm.exc.NoResultFound:
-                raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
-            self.lgg.debug('Actor: {}'.format(self.actor))
+        try:
+            self.actor = pym.auth.models.User.find(self._sess, actor)
+        except sa.orm.exc.NoResultFound:
+            raise sa.orm.exc.NoResultFound("Actor '{}' not found".format(actor))
+        except sa.exc.UnboundExecutionError:
+            self.lgg.warn('Database not initialised. Actor not checked.')
+            self.actor = actor
+        self.lgg.debug('Actor: {}'.format(self.actor))
 
     def init_app(self, args, lgg=None, rc=None, rc_key=None, setup_logging=True):
         """
@@ -257,10 +269,14 @@ class Cli(object):
         self.base_init(args, lgg=lgg, rc=rc, rc_key=rc_key,
             setup_logging=setup_logging)
 
-        pym.models.init(self.rc.get_these('db.pym.sa.'), invalidate_caches=True)
-        self.cache = redis.StrictRedis.from_url(
-            **self.rc.get_these('cache.redis'))
-        pym.cache.configure.configure_cache_regions(self.rc)
+        conf = self.rc.get_these('db.pym.sa.')
+        if conf:
+            pym.models.init(conf, invalidate_caches=True)
+        conf = self.rc.get_these('cache.redis')
+        if conf:
+            self.cache = redis.StrictRedis.from_url(
+                **conf)
+            pym.cache.configure.configure_cache_regions(self.rc)
 
         self.base_init2()
 
